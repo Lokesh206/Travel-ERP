@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a2e21">
+  <title>{{ 'Create account' if register else 'Sign In to Wanderwise Travel Desk' }} · Wanderwise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=6">
+</head>
+<body class="auth-page">
+  <main class="auth-shell">
+    <!-- Left: India Art & Heritage Showcase -->
+    <section class="auth-art">
+      <div class="auth-art-header">
+        <a class="brand brand-light" href="{{ url_for('public_home') }}">
+          <span class="brand-mark">w.</span> wanderwise
+        </a>
+        <span class="auth-badge-pill">★ INCREDIBLE INDIA</span>
+      </div>
+
+      <div class="auth-art-copy">
+        <span class="eyebrow eyebrow-light"><span class="live-dot"></span> LUXURY &amp; SACRED HERITAGE ERP</span>
+        <h1>Experience<br>the Soul of<br><em>India.</em></h1>
+        <p>From the marble serenity of the Taj Mahal to sacred Himalayan peaks and Kerala backwaters, discover journeys thoughtfully planned with verified concierge care.</p>
+
+        <ul class="auth-highlights-list">
+          <li><span>✓</span> 12 Iconic Cultural Landmarks &amp; Sacred Pilgrimages</li>
+          <li><span>✓</span> Upfront Transparent Pricing &amp; Guaranteed Stays</li>
+          <li><span>✓</span> Live Multi-Tier Agent Network &amp; Instant Commission Wallet</li>
+        </ul>
+      </div>
+
+      <div class="art-footer">
+        <span>Designed for journeys that matter. © {{ today[:4] if today else '2026' }} Wanderwise.</span>
+      </div>
+    </section>
+
+    <!-- Right: Modern Sign-In Form Side -->
+    <section class="auth-form-side">
+      <div class="mobile-brand" style="margin-bottom: 14px;">
+        <a class="brand" href="{{ url_for('public_home') }}"><span class="brand-mark">w.</span> wanderwise</a>
+      </div>
+
+      <div class="auth-form-wrap">
+        <div class="auth-form-header">
+          <span class="eyebrow" style="color: #49634e; font-weight: 700;">{{ 'YOUR NEXT CHAPTER' if register else 'WORKSPACE ACCESS' }}</span>
+          <h2>{{ 'Create your account.' if register else 'Welcome back.' }}</h2>
+          <p>{{ 'Join us to reserve handcrafted Indian journeys.' if register else 'Sign in to access your travel desk, bookings, and earnings.' }}</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }} page-flash" style="margin-bottom: 16px;">
+              {{ message }} <button onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
+            </div>
+          {% endfor %}
+        {% endwith %}
+
+        {% if not register %}
+          <!-- 1-Click Quick Demo Sign-In Selector -->
+          <div class="demo-role-selector">
+            <div class="demo-role-selector-label">
+              <span>⚡ ONE-CLICK QUICK DEMO LOGIN</span>
+              <small style="color: #687e6c;">Click role to pre-fill</small>
+            </div>
+            <div class="demo-chips-grid">
+              <button type="button" class="demo-chip-btn" onclick="quickFillRole('admin')" id="chip-admin" title="Log in as Administrator">
+                <span>👑 Admin</span>
+                <small>Full Control</small>
+              </button>
+              <button type="button" class="demo-chip-btn" onclick="quickFillRole('agent')" id="chip-agent" title="Log in as Travel Agent">
+                <span>💼 Partner</span>
+                <small>Agent Circle</small>
+              </button>
+              <button type="button" class="demo-chip-btn" onclick="quickFillRole('customer')" id="chip-customer" title="Log in as Traveller">
+                <span>✈️ Traveller</span>
+                <small>Bookings</small>
+              </button>
+            </div>
+            <details style="margin-top: 10px; font-size: 11px; background: rgba(255,255,255,0.7); border: 1px solid #dbe4d8; border-radius: 8px; padding: 8px 12px; color: #2e4433;">
+              <summary style="cursor: pointer; font-weight: 700; color: #1a2e21;">🔑 View All Sample Login Credentials &amp; Tiers</summary>
+              <div style="margin-top: 8px; line-height: 1.6;">
+                <div>👑 <strong>Administrator:</strong> <code>admin@wanderwise.local</code> / <code>Admin@123</code></div>
+                <div>💼 <strong>Principal Partner (Tier 4):</strong> <code>agent@wanderwise.local</code> / <code>Agent@123</code> (WW-1001)</div>
+                <div>💼 <strong>Senior Partner (Tier 3):</strong> <code>rohan@wanderwise.local</code> / <code>Agent@123</code> (WW-1002)</div>
+                <div>💼 <strong>Associate Partner (Tier 2):</strong> <code>nisha@wanderwise.local</code> / <code>Agent@123</code> (WW-1003)</div>
+                <div>💼 <strong>Junior Partner (Tier 1):</strong> <code>kabir@wanderwise.local</code> / <code>Agent@123</code> (WW-1004)</div>
+                <div>✈️ <strong>Verified Customer:</strong> <code>customer@wanderwise.local</code> / <code>Travel@123</code> (Maya Kapoor)</div>
+                <div>✈️ <strong>Verified Customer:</strong> <code>vikram@wanderwise.local</code> / <code>Vikram@123</code> (Vikramaditya S.)</div>
+              </div>
+            </details>
+          </div>
+        {% endif %}
+
+        <form method="post" class="auth-form" id="login-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+
+          {% if register %}
+            <div class="auth-input-group">
+              <label for="reg-name">Your Full Name</label>
+              <div class="input-with-icon">
+                <span class="input-icon-glyph">👤</span>
+                <input id="reg-name" name="name" autocomplete="name" placeholder="Priya Sharma" maxlength="80" required>
+              </div>
+            </div>
+          {% endif %}
+
+          <div class="auth-input-group">
+            <label for="login-email">Email Address</label>
+            <div class="input-with-icon">
+              <span class="input-icon-glyph">✉</span>
+              <input id="login-email" name="email" type="email" autocomplete="email" placeholder="e.g. admin@wanderwise.local" required>
+            </div>
+          </div>
+
+          <div class="auth-input-group">
+            <label for="login-password">
+              <span>Password</span>
+              {% if not register %}
+                <span style="font-weight: 400; color: #738576; font-size: 10px;">Demo: Admin@123</span>
+              {% endif %}
+            </label>
+            <div class="input-with-icon">
+              <span class="input-icon-glyph">🔒</span>
+              <input id="login-password" name="password" type="password" autocomplete="{{ 'new-password' if register else 'current-password' }}" placeholder="{{ 'At least 10 characters' if register else 'Enter your password' }}" {% if register %}minlength="10"{% endif %} required>
+              <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility" title="Show/Hide password">👁</button>
+            </div>
+          </div>
+
+          {% if register %}
+            <div class="auth-input-group">
+              <label for="reg-role">I am joining as</label>
+              <div class="input-with-icon">
+                <span class="input-icon-glyph">◈</span>
+                <select id="reg-role" name="role">
+                  <option value="customer">A Traveller (explore &amp; book trips)</option>
+                  <option value="agent">A Travel Partner / Agent (earn commissions)</option>
+                </select>
+              </div>
+            </div>
+            <div class="auth-input-group">
+              <label for="reg-referral">Agent Referral Code <span class="optional">(optional)</span></label>
+              <div class="input-with-icon">
+                <span class="input-icon-glyph">↗</span>
+                <input id="reg-referral" name="referral" placeholder="e.g. WW-1001" maxlength="24">
+              </div>
+            </div>
+          {% endif %}
+
+          <button class="auth-submit-btn" type="submit" id="auth-submit">
+            <span>{{ 'Create Account & Start' if register else 'Sign In to Workspace' }}</span>
+            <span>↗</span>
+          </button>
+        </form>
+
+        <p class="auth-switch" style="margin-top: 18px;">
+          {{ 'Already have an account?' if register else "Don't have an account yet?" }}
+          <a href="{{ url_for('login' if register else 'register', next=request.args.get('next')) }}">
+            <strong>{{ 'Sign in' if register else 'Create an account' }}</strong>
+          </a>
+        </p>
+
+        <p class="auth-switch auth-site-link" style="margin-top: 8px;">
+          <a href="{{ url_for('public_home') }}">← Back to Wanderwise Homepage</a>
+        </p>
+      </div>
+
+      <div style="margin-top: 22px; text-align: center; color: #8e9b8f; font-size: 10px;">
+        <span>🔒 256-Bit SSL Encrypted · Official Travel ERP Portal</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function quickFillRole(role) {
+      const emailField = document.getElementById('login-email');
+      const passField = document.getElementById('login-password');
+      if (!emailField || !passField) return;
+
+      // Reset button highlights
+      document.querySelectorAll('.demo-chip-btn').forEach(btn => btn.style.borderColor = '#d8e2d4');
+
+      if (role === 'admin') {
+        emailField.value = 'admin@wanderwise.local';
+        passField.value = 'Admin@123';
+        document.getElementById('chip-admin').style.borderColor = '#2a4c35';
+      } else if (role === 'agent') {
+        emailField.value = 'agent@wanderwise.local';
+        passField.value = 'Agent@123';
+        document.getElementById('chip-agent').style.borderColor = '#2a4c35';
+      } else if (role === 'customer') {
+        emailField.value = 'customer@wanderwise.local';
+        passField.value = 'Travel@123';
+        document.getElementById('chip-customer').style.borderColor = '#2a4c35';
+      }
+      emailField.focus();
+    }
+
+    function togglePasswordVisibility() {
+      const passField = document.getElementById('login-password');
+      if (!passField) return;
+      if (passField.type === 'password') {
+        passField.type = 'text';
+      } else {
+        passField.type = 'password';
+      }
+    }
+  </script>
+</body>
+</html>

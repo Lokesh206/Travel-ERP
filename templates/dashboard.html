@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a2e21">
+  <title>{{ view|replace('_',' ')|title }} · Wanderwise Travel Desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=6">
+</head>
+<body class="app-page">
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark">w.</span> wanderwise</a>
+    <div class="workspace-label">WORKSPACE</div>
+    <nav class="nav-menu">
+      <a class="nav-link {{ 'active' if view == 'overview' }}" href="{{ url_for('dashboard', view='overview') }}"><span>◫</span> Overview</a>
+      <a class="nav-link {{ 'active' if view == 'packages' }}" href="{{ url_for('dashboard', view='packages') }}"><span>⌘</span> {% if g.user.role == 'admin' %}Manage packages{% else %}Explore trips{% endif %} <span class="nav-count">{{ stats.active_packages if stats.active_packages is defined else packages|length }}</span></a>
+      <a class="nav-link {{ 'active' if view == 'bookings' }}" href="{{ url_for('dashboard', view='bookings') }}"><span>▤</span> Bookings {% if g.user.role == 'admin' and stats.pending_bookings %}<span class="nav-count" style="background: #fbf1de; color: #9c7940;">{{ stats.pending_bookings }}</span>{% endif %}</a>
+      {% if g.user.role == 'agent' %}
+        <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Earnings &amp; wallet</a>
+        <a class="nav-link {{ 'active' if view == 'team' }}" href="{{ url_for('dashboard', view='team') }}"><span>♧</span> My travel circle</a>
+      {% endif %}
+      {% if g.user.role == 'admin' %}
+        <div class="workspace-label nav-spacer">ADMINISTRATION</div>
+        <a class="nav-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}"><span>♧</span> Travel partners <span class="nav-count">{{ agents|length }}</span></a>
+        <a class="nav-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}"><span>◈</span> Commission ladder</a>
+        <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Payouts queue {% if stats.pending_withdrawals %}<span class="nav-count" style="background: #faeae7; color: #a4594c;">{{ stats.pending_withdrawals }}</span>{% endif %}</a>
+        <a class="nav-link {{ 'active' if view == 'inquiries' }}" href="{{ url_for('dashboard', view='inquiries') }}"><span>✉</span> Contact inbox {% if stats.new_inquiries %}<span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">{{ stats.new_inquiries }}</span>{% endif %}</a>
+        <a class="nav-link {{ 'active' if view == 'reviews' }}" href="{{ url_for('dashboard', view='reviews') }}"><span>★</span> Traveler reviews</a>
+        <a class="nav-link {{ 'active' if view == 'audit' }}" href="{{ url_for('dashboard', view='audit') }}"><span>◷</span> Activity audit</a>
+        <div class="workspace-label nav-spacer">PUBLIC SITE</div>
+        <a class="nav-link" href="{{ url_for('public_home') }}" target="_blank" rel="noopener noreferrer"><span>↗</span> View website</a>
+      {% endif %}
+      <div class="workspace-label nav-spacer">DOCUMENTATION</div>
+      <a class="nav-link {{ 'active' if view == 'guide' }}" href="{{ url_for('dashboard', view='guide') }}"><span>📑</span> Architecture &amp; Demo Guide</a>
+      <div class="workspace-label nav-spacer">SESSION</div>
+      <a class="nav-link nav-logout-item" href="{{ url_for('logout') }}" title="Sign out of your account"><span>🚪</span> Sign Out</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="help-card"><span class="help-spark">✳</span><strong>Travel Desk Active</strong><p>Direct support on call &amp; chat.</p><a href="{{ url_for('public_home') }}#contact">Contact desk <span>↗</span></a></div>
+      <div class="profile-row">
+        <span class="avatar" style="background: {% if g.user.role == 'admin' %}#25422e{% elif g.user.role == 'agent' %}#7b5e32{% else %}#3b5a75{% endif %}; color: #fff;">{{ g.user.name[:1]|upper }}</span>
+        <div class="profile-copy">
+          <strong>{{ g.user.name }}</strong>
+          <span>{{ g.user.role|title }}{% if my_agent %} · L{{ my_agent.level }}{% endif %}</span>
+        </div>
+        <form method="post" action="{{ url_for('logout') }}" style="margin-left: auto;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="sidebar-signout-btn" type="submit" aria-label="Sign out" title="Sign out of Wanderwise">🚪 Sign Out</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="breadcrumb">
+        <span>Workspace</span> <span>/</span> <strong>{{ view|replace('_',' ')|title }}</strong>
+      </div>
+      <div class="topbar-right">
+        <a href="{{ url_for('dashboard', view='guide') }}" class="admin-guide-pill" title="View Architecture, Commission Engine & Live Credentials"><span>📑 Guide &amp; Credentials</span></a>
+        <span class="today-label" id="today-label"></span>
+        <span class="status-pill"><span class="live-dot"></span> All systems live</span>
+        <form method="post" action="{{ url_for('logout') }}" style="display:inline; margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="topbar-logout-btn" title="Sign out of your account">
+            <span>🚪 Sign Out</span>
+          </button>
+        </form>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }} page-flash">{{ message }} <button onclick="this.parentElement.remove()" aria-label="Dismiss">×</button></div>
+      {% endfor %}
+    {% endwith %}
+
+    <!-- =================================================================== -->
+    <!-- VIEW: OVERVIEW -->
+    <!-- =================================================================== -->
+    {% if view == 'overview' %}
+      {% if g.user.role == 'admin' %}
+        <!-- ADMIN COMMAND CENTER HEADER -->
+        <section class="admin-command-strip">
+          <div>
+            <span class="auth-badge-pill" style="margin-bottom: 8px;">👑 ADMINISTRATOR COMMAND CENTER</span>
+            <h1>Good morning, <em>{{ g.user.name.split()[0] }}.</em></h1>
+            <p>Complete control over <strong>{{ all_packages|length }} tour packages</strong>, booking operations, partner commissions, and customer inquiries.</p>
+          </div>
+          <div class="admin-quick-actions-bar">
+            <a class="admin-btn-pill primary" href="{{ url_for('dashboard', view='packages') }}#create-package-panel">
+              <span>+ Create Tour Package</span>
+            </a>
+            <a class="admin-btn-pill" href="{{ url_for('dashboard', view='bookings') }}">
+              <span>▤ View Bookings</span>
+            </a>
+            <a class="admin-btn-pill" href="{{ url_for('dashboard', view='wallet') }}">
+              <span>💰 Payouts ({{ stats.pending_withdrawals }})</span>
+            </a>
+            <a class="admin-btn-pill" href="{{ url_for('public_home') }}" target="_blank" rel="noopener noreferrer">
+              <span>🌐 Public Site ↗</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- ADMIN ALERTS BANNER IF PENDING ITEMS -->
+        {% if stats.pending_withdrawals > 0 or stats.new_inquiries > 0 or stats.pending_bookings > 0 %}
+          <div style="display: grid; gap: 10px; margin-bottom: 22px;">
+            {% if stats.pending_withdrawals > 0 %}
+              <div class="admin-alerts-banner">
+                <span>⚠️ <strong>Payout Requests Pending:</strong> {{ stats.pending_withdrawals }} partner withdrawal(s) awaiting your review and settlement.</span>
+                <a class="admin-alert-link" href="{{ url_for('dashboard', view='wallet') }}">Review Payouts ➔</a>
+              </div>
+            {% endif %}
+            {% if stats.new_inquiries > 0 %}
+              <div class="admin-alerts-banner info">
+                <span>✉️ <strong>New Guest Messages:</strong> {{ stats.new_inquiries }} new inquiry submitted via the website contact desk.</span>
+                <a class="admin-alert-link" href="{{ url_for('dashboard', view='inquiries') }}">Open Inbox ➔</a>
+              </div>
+            {% endif %}
+            {% if stats.pending_bookings > 0 %}
+              <div class="admin-alerts-banner" style="background: #f7faef; border-color: #dce7ce; color: #446830;">
+                <span>💳 <strong>Bookings Awaiting Payment:</strong> {{ stats.pending_bookings }} reservation request(s) awaiting demo payment confirmation.</span>
+                <a class="admin-alert-link" href="{{ url_for('dashboard', view='bookings') }}">Manage Bookings ➔</a>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <!-- EXECUTIVE KPI STATS GRID (6 STAT CARDS) -->
+        <section class="admin-kpi-grid">
+          <article class="admin-kpi-card">
+            <div class="admin-kpi-top">
+              <span>GROSS BOOKING VOLUME</span>
+              <span class="kpi-icon" style="background: #edf6ea; color: #2e5c38;">◈</span>
+            </div>
+            <strong>{{ (stats.revenue / 100)|inr }}</strong>
+            <div class="admin-kpi-sub">
+              <span>{{ stats.confirmed }} confirmed trips</span>
+            </div>
+          </article>
+
+          <article class="admin-kpi-card">
+            <div class="admin-kpi-top">
+              <span>TOTAL RESERVATIONS</span>
+              <span class="kpi-icon" style="background: #fbf2e0; color: #8c6728;">▤</span>
+            </div>
+            <strong>{{ stats.bookings }}</strong>
+            <div class="admin-kpi-sub">
+              <span>{{ stats.pending_bookings }} pending · {{ stats.completed_bookings }} completed</span>
+            </div>
+          </article>
+
+          <article class="admin-kpi-card">
+            <div class="admin-kpi-top">
+              <span>TOUR PACKAGES</span>
+              <span class="kpi-icon" style="background: #eaf1f7; color: #325a7a;">⌘</span>
+            </div>
+            <strong>{{ all_packages|length }}</strong>
+            <div class="admin-kpi-sub">
+              <span>{{ stats.active_packages }} active · {{ stats.available }} seats open</span>
+            </div>
+          </article>
+
+          <article class="admin-kpi-card">
+            <div class="admin-kpi-top">
+              <span>TRAVEL PARTNERS</span>
+              <span class="kpi-icon" style="background: #f4ecf7; color: #6e3a7a;">♧</span>
+            </div>
+            <strong>{{ stats.agents }}</strong>
+            <div class="admin-kpi-sub">
+              <span>4 Commission Levels</span>
+            </div>
+          </article>
+        </section>
+
+        <!-- ADMIN QUICK TAB BAR -->
+        <nav class="admin-tab-nav" aria-label="Admin quick tabs">
+          <a class="admin-tab-btn active" href="{{ url_for('dashboard', view='overview') }}">
+            <span>◫ Command Overview</span>
+          </a>
+          <a class="admin-tab-btn" href="{{ url_for('dashboard', view='packages') }}">
+            <span>⌘ Tour Packages</span>
+            <span class="tab-badge">{{ all_packages|length }}</span>
+          </a>
+          <a class="admin-tab-btn" href="{{ url_for('dashboard', view='bookings') }}">
+            <span>▤ Bookings Ledger</span>
+            <span class="tab-badge">{{ bookings|length }}</span>
+          </a>
+          <a class="admin-tab-btn" href="{{ url_for('dashboard', view='agents') }}">
+            <span>♧ Partners Network</span>
+            <span class="tab-badge">{{ agents|length }}</span>
+          </a>
+          <a class="admin-tab-btn" href="{{ url_for('dashboard', view='wallet') }}">
+            <span>💰 Payout Queue</span>
+            {% if stats.pending_withdrawals %}<span class="tab-badge" style="background: #e27d60; color: #fff;">{{ stats.pending_withdrawals }}</span>{% endif %}
+          </a>
+          <a class="admin-tab-btn" href="{{ url_for('dashboard', view='inquiries') }}">
+            <span>✉ Guest Inquiries</span>
+            {% if stats.new_inquiries %}<span class="tab-badge" style="background: #2e5c38; color: #fff;">{{ stats.new_inquiries }}</span>{% endif %}
+          </a>
+          <a class="admin-tab-btn" href="{{ url_for('dashboard', view='commissions') }}">
+            <span>⚙ Commission Ladder</span>
+          </a>
+          <a class="admin-tab-btn" href="{{ url_for('dashboard', view='audit') }}">
+            <span>◷ Audit Trail</span>
+          </a>
+          <a class="admin-tab-btn {{ 'active' if view == 'guide' }}" href="{{ url_for('dashboard', view='guide') }}">
+            <span>📑 Architecture &amp; Guide</span>
+          </a>
+        </nav>
+
+        <!-- ADMIN OVERVIEW CONTENT: RECENT BOOKINGS & PACKAGES -->
+        <section class="content-grid" style="grid-template-columns: 1.4fr 1fr; gap: 20px;">
+          <!-- Recent Bookings Table -->
+          <div class="panel table-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">RESERVATIONS MASTER</span>
+                <h2>Recent Bookings &amp; Controls</h2>
+              </div>
+              <a class="text-link" href="{{ url_for('dashboard', view='bookings') }}">View all {{ bookings|length }} bookings ↗</a>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>GUEST</th>
+                    <th>JOURNEY</th>
+                    <th>TOTAL</th>
+                    <th>STATUS</th>
+                    <th>ADMIN ACTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for booking in bookings[:6] %}
+                    <tr>
+                      <td>
+                        <strong>{{ booking.customer_name }}</strong>
+                        <span class="cell-sub">{{ booking.reference }} · {{ booking.travellers }} {{ 'guest' if booking.travellers == 1 else 'guests' }}</span>
+                      </td>
+                      <td>
+                        <strong>{{ booking.title }}</strong>
+                        <span class="cell-sub">{{ booking.destination }}</span>
+                      </td>
+                      <td>{{ (booking.total_paise / 100)|inr }}</td>
+                      <td><span class="status-badge status-{{ booking.status }}">{{ booking.status|title }}</span></td>
+                      <td class="action-cell">
+                        {% if booking.status == 'pending' %}
+                          <form method="post" action="{{ url_for('pay_booking', booking_id=booking.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button class="mini-action" title="Confirm booking and record payment">Confirm ✓</button>
+                          </form>
+                          <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline; margin-left: 4px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="status" value="cancelled">
+                            <button class="mini-action danger-action" title="Cancel booking">Cancel</button>
+                          </form>
+                        {% elif booking.status == 'confirmed' %}
+                          <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="status" value="completed">
+                            <button class="mini-action" title="Complete trip and credit agent commissions">Complete ↗</button>
+                          </form>
+                        {% else %}
+                          <span class="cell-sub">{{ booking.status|title }}</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% else %}
+                    <tr><td colspan="5" class="empty-cell">No bookings recorded yet.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right: Pending Payouts & Inquiries Quick Box -->
+          <div style="display: grid; gap: 20px;">
+            <!-- Pending Payouts Card -->
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="eyebrow">PAYOUT SETTLEMENTS</span>
+                  <h2>Withdrawal Queue</h2>
+                </div>
+                <a class="text-link" href="{{ url_for('dashboard', view='wallet') }}">Queue ({{ withdrawals|length }}) ↗</a>
+              </div>
+              <div class="activity-list">
+                {% for item in withdrawals[:4] %}
+                  <div class="activity-item">
+                    <span class="activity-marker {{ item.status }}"></span>
+                    <div>
+                      <strong>{{ item.agent_name }} ({{ item.code }})</strong>
+                      <p>#{{ item.id }} · {{ item.created_at }}</p>
+                    </div>
+                    <div style="text-align: right;">
+                      <strong style="color: #2e5c38;">{{ (item.amount_paise / 100)|inr }}</strong><br>
+                      {% if item.status == 'pending' %}
+                        <form method="post" action="{{ url_for('review_withdrawal', withdrawal_id=item.id) }}" style="display:inline;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <button name="action" value="approve" class="mini-action" style="padding: 2px 6px; font-size: 8px;">Approve</button>
+                        </form>
+                      {% else %}
+                        <span class="status-badge status-{{ item.status }}" style="font-size: 8px; padding: 2px 6px;">{{ item.status|title }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% else %}
+                  <p class="empty-note">No withdrawal requests pending.</p>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Guest Inquiries Quick Card -->
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <span class="eyebrow">WEBSITE DESK</span>
+                  <h2>Latest Inquiries</h2>
+                </div>
+                <a class="text-link" href="{{ url_for('dashboard', view='inquiries') }}">All ({{ inquiries|length }}) ↗</a>
+              </div>
+              <div class="activity-list">
+                {% for inq in inquiries[:3] %}
+                  <div class="activity-item">
+                    <span class="activity-marker {{ 'pending' if inq.status == 'new' else 'confirmed' }}"></span>
+                    <div style="min-width: 0; flex: 1;">
+                      <strong>{{ inq.name }} · {{ inq.subject }}</strong>
+                      <p style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ inq.message }}</p>
+                    </div>
+                    {% if inq.status == 'new' %}
+                      <form method="post" action="{{ url_for('resolve_inquiry', inquiry_id=inq.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button class="mini-action" style="padding: 3px 7px; font-size: 8px;">Resolve ✓</button>
+                      </form>
+                    {% else %}
+                      <span class="status-badge status-completed" style="font-size: 8px;">Resolved</span>
+                    {% endif %}
+                  </div>
+                {% else %}
+                  <p class="empty-note">No customer inquiries yet.</p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </section>
+
+      {% else %}
+        <!-- STANDARD OVERVIEW FOR AGENT & CUSTOMER -->
+        <section class="welcome-row">
+          <div>
+            <span class="eyebrow">YOUR TRAVEL WORKSPACE</span>
+            <h1>{{ 'A little more world, ' if g.user.role == 'customer' else 'Good things are ' }}<em>{{ 'a little more you.' if g.user.role == 'customer' else 'in motion.' }}</em></h1>
+            <p class="muted">{{ 'Somewhere wonderful is waiting. Where to next?' if g.user.role == 'customer' else 'Here’s the lay of the land. Plenty of good journeys ahead.' }}</p>
+          </div>
+          <a href="{{ url_for('dashboard', view='packages') }}" class="button button-green">{{ 'Find my next trip' if g.user.role == 'customer' else 'Explore the collection' }} <span>↗</span></a>
+        </section>
+
+        {% if g.user.role == 'agent' and my_agent %}
+          <section class="referral-strip">
+            <div class="referral-icon">↗</div>
+            <div>
+              <span class="eyebrow">YOUR TRAVEL PARTNER ID</span>
+              <strong>{{ my_agent.code }}</strong>
+              <span class="referral-note">Share your code when a traveller books to connect their journey to yours.</span>
+            </div>
+            <span class="level-badge">LEVEL {{ my_agent.level }}</span>
+          </section>
+        {% endif %}
+
+        <section class="stats-grid">
+          <article class="stat-card">
+            <div class="stat-top">
+              <span>MY BOOKINGS</span>
+              <span class="stat-icon peach">▤</span>
+            </div>
+            <strong>{{ stats.bookings }}</strong>
+            <span class="stat-caption">A journey in the making</span>
+            <div class="stat-decoration">↗</div>
+          </article>
+
+          {% if g.user.role == 'agent' %}
+            <article class="stat-card">
+              <div class="stat-top">
+                <span>WALLET BALANCE</span>
+                <span class="stat-icon mint">◉</span>
+              </div>
+              <strong>{{ (balance / 100)|inr }}</strong>
+              <span class="stat-caption">{{ (reserved / 100)|inr }} currently reserved</span>
+              <div class="stat-decoration">✳</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top">
+                <span>IN YOUR CIRCLE</span>
+                <span class="stat-icon lavender">♧</span>
+              </div>
+              <strong>{{ team|length }}</strong>
+              <span class="stat-caption">Travel partners down the line</span>
+              <div class="stat-decoration">↗</div>
+            </article>
+          {% else %}
+            <article class="stat-card">
+              <div class="stat-top">
+                <span>CONFIRMED TRIPS</span>
+                <span class="stat-icon mint">✳</span>
+              </div>
+              <strong>{{ stats.confirmed }}</strong>
+              <span class="stat-caption">The good part is getting closer</span>
+              <div class="stat-decoration">↗</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top">
+                <span>PLACES TO GO</span>
+                <span class="stat-icon lavender">⌘</span>
+              </div>
+              <strong>{{ stats.available }}</strong>
+              <span class="stat-caption">Seats open across all escapes</span>
+              <div class="stat-decoration">✳</div>
+            </article>
+          {% endif %}
+        </section>
+
+        <section class="content-grid">
+          <div class="panel feature-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">A GOOD PLACE TO START</span>
+                <h2>Out there, somewhere.</h2>
+              </div>
+              <a class="text-link" href="{{ url_for('dashboard', view='packages') }}">See all trips ↗</a>
+            </div>
+            <div class="destination-grid">
+              {% for package in packages[:3] %}
+                <a class="destination-card destination-{{ loop.index }}" href="{{ url_for('dashboard', view='packages') }}">
+                  <div class="destination-image" style="background: url('{{ url_for('static', filename=package.image_file or 'gallery-monument.jpg') }}') center/cover no-repeat;">
+                    <span class="destination-category">{{ package.category }}</span>
+                    <span class="destination-image-mark">✳</span>
+                  </div>
+                  <div class="destination-info">
+                    <div>
+                      <strong>{{ package.title }}</strong>
+                      <span>{{ package.duration }} · {{ package.available }} seats left</span>
+                    </div>
+                    <b>{{ (package.price_paise / 100)|inr }}</b>
+                  </div>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="panel side-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="eyebrow">THE LATEST</span>
+                <h2>Your bookings</h2>
+              </div>
+            </div>
+            <div class="activity-list">
+              {% for booking in bookings[:4] %}
+                <div class="activity-item">
+                  <span class="activity-marker {{ booking.status }}"></span>
+                  <div>
+                    <strong>{{ booking.title }}</strong>
+                    <p>{{ booking.travel_date }} · {{ booking.status|title }}</p>
+                  </div>
+                  <small>{{ (booking.total_paise / 100)|inr }}</small>
+                </div>
+              {% else %}
+                <p class="empty-note">Your next booking will find its way here.</p>
+              {% endfor %}
+            </div>
+            <a class="panel-bottom-link" href="{{ url_for('dashboard', view='bookings') }}">All bookings <span>→</span></a>
+          </div>
+        </section>
+      {% endif %}
+
+    <!-- =================================================================== -->
+    <!-- VIEW: PACKAGES (ALL PACKAGES & CONTROLS FOR ADMIN) -->
+    <!-- =================================================================== -->
+    {% elif view == 'packages' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">{% if g.user.role == 'admin' %}ADMIN TOUR PACKAGE CONTROLS{% else %}THOUGHTFULLY PUT TOGETHER{% endif %}</span>
+          <h1>{% if g.user.role == 'admin' %}Tour Packages <em>&amp; Escapes.</em>{% else %}A change of <em>scenery.</em>{% endif %}</h1>
+          <p class="muted">{% if g.user.role == 'admin' %}Add, manage, toggle visibility, and configure pricing and seats across India.{% else %}Good places. Good people. Really good stories to bring home.{% endif %}</p>
+        </div>
+        {% if g.user.role == 'admin' %}
+          <a class="button button-green" href="#create-package-panel">+ Add New Tour Package ↗</a>
+        {% endif %}
+      </section>
+
+      {% if g.user.role == 'admin' %}
+        <!-- Complete Tour Packages Management Table for Admin -->
+        <section class="panel table-panel" style="margin-bottom: 28px;">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">PACKAGE INVENTORY</span>
+              <h2>{{ all_packages|length }} Tour Packages</h2>
+            </div>
+            <input class="table-search" type="search" placeholder="Search packages, destinations…" data-table-search>
+          </div>
+          <div class="table-scroll">
+            <table class="admin-packages-table">
+              <thead>
+                <tr>
+                  <th>PACKAGE</th>
+                  <th>DESTINATION</th>
+                  <th>CATEGORY</th>
+                  <th>DURATION</th>
+                  <th>PRICE / SEATS</th>
+                  <th>STATUS</th>
+                  <th>ADMIN ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pkg in all_packages %}
+                  <tr>
+                    <td>
+                      <div class="admin-pkg-cell">
+                        <img class="admin-pkg-thumb" src="{{ url_for('static', filename=pkg.image_file or 'place-tajmahal.jpg') }}" alt="{{ pkg.title }}">
+                        <div>
+                          <strong>{{ pkg.title }}</strong>
+                          <span class="cell-sub">ID #{{ pkg.id }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ pkg.destination }}</td>
+                    <td><span class="destination-category" style="position:static; padding:3px 8px; font-size:9px;">{{ pkg.category }}</span></td>
+                    <td>{{ pkg.duration }}</td>
+                    <td>
+                      <strong>{{ (pkg.price_paise / 100)|inr }}</strong>
+                      <span class="cell-sub">{{ pkg.available }} / {{ pkg.capacity }} seats left</span>
+                    </td>
+                    <td>
+                      <span class="status-badge {{ pkg.status }}">{{ pkg.status|upper }}</span>
+                    </td>
+                    <td class="action-cell">
+                      <a class="mini-action" href="{{ url_for('trip_details', package_id=pkg.id) }}" target="_blank" rel="noopener noreferrer" title="View public itinerary page">
+                        Public View ↗
+                      </a>
+                      <form method="post" action="{{ url_for('toggle_package_status', package_id=pkg.id) }}" style="display:inline; margin-left: 4px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button class="mini-action {{ 'danger-action' if pkg.status == 'active' }}" title="Toggle Active/Archived status">
+                          {{ 'Archive' if pkg.status == 'active' else 'Activate' }}
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr><td colspan="7" class="empty-cell">No packages configured yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Comprehensive Create Package Form -->
+        <section class="panel" id="create-package-panel" style="margin-bottom: 28px;">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">CREATE NEW TOUR PACKAGE</span>
+              <h2>Add a Destination to the Collection</h2>
+            </div>
+          </div>
+          <form class="form-grid" method="post" action="{{ url_for('create_package') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <label>Trip Title
+              <input name="title" maxlength="100" placeholder="e.g. Somnath Coastal Heritage &amp; Aarti" required>
+            </label>
+            <label>Destination Location
+              <input name="destination" placeholder="e.g. Somnath, Gujarat" required>
+            </label>
+            <label>Category
+              <select name="category" required>
+                <option value="Heritage &amp; Wonders">Heritage &amp; Wonders</option>
+                <option value="Spiritual &amp; Pilgrimage">Spiritual &amp; Pilgrimage</option>
+                <option value="Modern Wonders &amp; Nature">Modern Wonders &amp; Nature</option>
+                <option value="Beach &amp; Coastal">Beach &amp; Coastal</option>
+                <option value="Himalayan Mountain">Himalayan Mountain</option>
+                <option value="Culture &amp; Backwaters">Culture &amp; Backwaters</option>
+              </select>
+            </label>
+            <label>Duration
+              <input name="duration" placeholder="e.g. 3 days · 2 nights" required>
+            </label>
+            <label>Price Per Person (₹)
+              <input name="price" type="number" step="0.01" min="0.01" placeholder="14500.00" required>
+            </label>
+            <label>Seat Capacity
+              <input name="capacity" type="number" min="1" max="10000" placeholder="30" required>
+            </label>
+            <label>Cover Image File
+              <select name="image_file">
+                <option value="place-tajmahal.jpg">place-tajmahal.jpg (Taj Mahal, Agra)</option>
+                <option value="place-goldentemple.jpg">place-goldentemple.jpg (Golden Temple, Amritsar)</option>
+                <option value="place-statueofunity.jpg">place-statueofunity.jpg (Statue of Unity, Gujarat)</option>
+                <option value="place-mysorepalace.jpg">place-mysorepalace.jpg (Mysore Palace, Mysuru)</option>
+                <option value="place-meenakshi.jpg">place-meenakshi.jpg (Meenakshi Temple, Madurai)</option>
+                <option value="place-tirupati.jpg">place-tirupati.jpg (Tirumala Tirupati Balaji)</option>
+                <option value="place-vaishnodevi.jpg">place-vaishnodevi.jpg (Vaishno Devi, Katra)</option>
+                <option value="place-badrinathkedarnath.jpg">place-badrinathkedarnath.jpg (Do Dham Yatra)</option>
+                <option value="place-somnath.jpg">place-somnath.jpg (Somnath Temple, Gujarat)</option>
+                <option value="place-kashivishwanath.jpg">place-kashivishwanath.jpg (Kashi Vishwanath, Varanasi)</option>
+                <option value="place-akshardham.jpg">place-akshardham.jpg (Akshardham, Delhi)</option>
+                <option value="place-hampi.jpg">place-hampi.jpg (Hampi Vijayanagara)</option>
+                <option value="gallery-coast.jpg">gallery-coast.jpg (Coastal Goa)</option>
+                <option value="gallery-himalaya.jpg">gallery-himalaya.jpg (Into the Himalayas)</option>
+                <option value="gallery-backwaters.jpg">gallery-backwaters.jpg (Backwaters Kerala)</option>
+                <option value="gallery-desert.jpg">gallery-desert.jpg (Desert Jaisalmer)</option>
+              </select>
+            </label>
+            <label>Official Portal URL (Optional)
+              <input name="official_url" type="url" placeholder="https://tajmahal.gov.in/">
+            </label>
+
+            <label class="form-full">Short Description
+              <textarea name="description" rows="2" placeholder="A brief evocative summary of the experience..." required></textarea>
+            </label>
+            <label class="form-full">Key Highlights &amp; Activities Preview
+              <input name="activities" placeholder="e.g. Sunrise guided tour, Royal chambers walk, Artisan craft workshop">
+            </label>
+
+            <label>Accommodation / Stay Type
+              <input name="stay_type" maxlength="160" placeholder="e.g. 5-Star Heritage Hotel">
+            </label>
+            <label>Meal Plan
+              <input name="meal_plan" maxlength="160" placeholder="e.g. Daily breakfast buffet &amp; dinner">
+            </label>
+            <label class="form-full">Transport Details
+              <input name="transport" maxlength="200" placeholder="e.g. Private luxury AC Sedan transfers &amp; local chauffeur">
+            </label>
+            <label class="form-full">Inclusions (One item per line)
+              <textarea name="inclusions" rows="3" placeholder="Priority monument tickets&#10;Licensed historian guide&#10;Private transfers"></textarea>
+            </label>
+            <label class="form-full">Day-by-Day Itinerary Outline
+              <textarea name="itinerary" rows="5" placeholder="Day 1 — Arrival and sunset visit&#10;Day 2 — Morning guided tour&#10;Day 3 — Breakfast and departure"></textarea>
+            </label>
+
+            <div class="form-full">
+              <button class="button button-dark" type="submit">+ Publish Package to Website ↗</button>
+            </div>
+          </form>
+        </section>
+      {% endif %}
+
+      <!-- Package Grid Cards for Travellers & Agents -->
+      <section class="trip-grid">
+        {% for package in packages %}
+          <article class="trip-card">
+            <div class="trip-cover" style="background: #1e3325 url('{{ url_for('static', filename=package.image_file or 'place-tajmahal.jpg') }}') center/cover no-repeat;">
+              <span class="destination-category">{{ package.category }}</span>
+              <span class="cover-ornament">✳</span>
+              <span class="trip-duration">{{ package.duration }}</span>
+            </div>
+            <div class="trip-body">
+              <span class="eyebrow">{{ package.destination }}</span>
+              <h3>{{ package.title }}</h3>
+              <p>{{ package.description }}</p>
+              <div class="trip-bottom">
+                <div>
+                  <strong>{{ (package.price_paise / 100)|inr }}</strong>
+                  <span> / person</span>
+                </div>
+                <span class="availability {{ 'sold-out' if package.available == 0 }}">{{ package.available }} seats left</span>
+              </div>
+              {% if g.user.role != 'admin' and package.available > 0 %}
+                <form method="post" action="{{ url_for('create_booking') }}" class="book-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <input type="hidden" name="package_id" value="{{ package.id }}">
+                  <label class="sr-only" for="date-{{ package.id }}">Travel date</label>
+                  <input id="date-{{ package.id }}" name="travel_date" type="date" min="{{ today }}" aria-label="Travel date" required>
+                  <label class="sr-only" for="people-{{ package.id }}">Travellers</label>
+                  <input id="people-{{ package.id }}" name="travellers" type="number" min="1" max="20" value="1" aria-label="Number of travellers" required>
+                  {% if g.user.role == 'customer' %}
+                    <input name="agent_code" placeholder="Referral code (optional)" aria-label="Optional agent referral code">
+                  {% endif %}
+                  <button class="button button-dark button-wide" type="submit">Book this trip ↗</button>
+                </form>
+              {% endif %}
+            </div>
+          </article>
+        {% else %}
+          <div class="panel empty-state">
+            <span>✳</span>
+            <h2>No trips just yet</h2>
+            <p>Add a package to get your collection started.</p>
+          </div>
+        {% endfor %}
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: BOOKINGS -->
+    <!-- =================================================================== -->
+    {% elif view == 'bookings' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">RESERVATIONS &amp; ITINERARIES</span>
+          <h1>The Booking <em>Master Ledger.</em></h1>
+          <p class="muted">Follow each trip as it progresses from reservation request to completed journey.</p>
+        </div>
+        <a class="button button-green" href="{{ url_for('dashboard', view='packages') }}">Explore collection ↗</a>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">TRAVEL LEDGER</span>
+            <h2>{{ bookings|length }} {{ 'Booking' if bookings|length == 1 else 'Bookings' }}</h2>
+          </div>
+          <input class="table-search" type="search" placeholder="Filter by name, ref, destination…" data-table-search>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>REF / DATE</th>
+                {% if g.user.role != 'customer' %}<th>TRAVELLER</th>{% endif %}
+                <th>JOURNEY</th>
+                <th>GUESTS</th>
+                <th>TOTAL</th>
+                <th>STATUS</th>
+                <th>ACTIONS &amp; WHAT'S NEXT</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for booking in bookings %}
+                <tr>
+                  <td>
+                    <strong>{{ booking.reference }}</strong>
+                    <span class="cell-sub">{{ booking.travel_date }}</span>
+                  </td>
+                  {% if g.user.role != 'customer' %}
+                    <td>
+                      <strong>{{ booking.customer_name }}</strong>
+                    </td>
+                  {% endif %}
+                  <td>
+                    <strong>{{ booking.title }}</strong>
+                    <span class="cell-sub">{{ booking.destination }}</span>
+                  </td>
+                  <td>{{ booking.travellers }} {{ 'guest' if booking.travellers == 1 else 'guests' }}</td>
+                  <td><strong>{{ (booking.total_paise / 100)|inr }}</strong></td>
+                  <td><span class="status-badge status-{{ booking.status }}">{{ booking.status|title }}</span></td>
+                  <td class="action-cell">
+                    {% if booking.status == 'pending' %}
+                      <form method="post" action="{{ url_for('pay_booking', booking_id=booking.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button class="mini-action" title="Record payment and confirm reservation">Record payment ↗</button>
+                      </form>
+                      {% if g.user.role == 'admin' %}
+                        <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline; margin-left: 4px;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="status" value="cancelled">
+                          <button class="mini-action danger-action">Cancel</button>
+                        </form>
+                      {% endif %}
+                    {% elif g.user.role == 'admin' and booking.status == 'confirmed' %}
+                      <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="status" value="completed">
+                        <button class="mini-action" title="Complete journey and credit commissions">Complete trip ↗</button>
+                      </form>
+                      <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline; margin-left: 4px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="status" value="cancelled">
+                        <button class="mini-action danger-action">Cancel</button>
+                      </form>
+                    {% elif g.user.role == 'customer' and booking.status == 'completed' and not booking.reviewed %}
+                      <form method="post" action="{{ url_for('submit_review', booking_id=booking.id) }}" class="booking-review-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <label class="sr-only" for="rating-{{ booking.id }}">Your rating</label>
+                        <select id="rating-{{ booking.id }}" name="rating" aria-label="Your rating">
+                          <option value="5">★★★★★ Excellent</option>
+                          <option value="4">★★★★☆ Very Good</option>
+                          <option value="3">★★★☆☆ Average</option>
+                          <option value="2">★★☆☆☆ Poor</option>
+                          <option value="1">★☆☆☆☆ Terrible</option>
+                        </select>
+                        <textarea id="review-{{ booking.id }}" name="body" minlength="20" maxlength="1000" placeholder="Share a note about your trip (20 characters min)" required></textarea>
+                        <button class="mini-action">Share review ↗</button>
+                      </form>
+                    {% elif g.user.role == 'customer' and booking.reviewed %}
+                      <span class="cell-sub">Review shared · thank you!</span>
+                    {% else %}
+                      <span class="cell-sub">{{ booking.status|title }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="7" class="empty-cell">No bookings recorded yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: WALLET / PAYOUTS -->
+    <!-- =================================================================== -->
+    {% elif view == 'wallet' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">{{ 'AGENT FINANCES' if g.user.role == 'agent' else 'PAYOUT OPERATIONS &amp; SETTLEMENTS' }}</span>
+          <h1>{{ 'Good journeys. ' if g.user.role == 'agent' else 'The money ' }}<em>{{ 'good returns.' if g.user.role == 'agent' else 'side of travel.' }}</em></h1>
+          <p class="muted">{{ 'A transparent view of your commissions, balance and payouts.' if g.user.role == 'agent' else 'Review withdrawal requests and approve partner settlements.' }}</p>
+        </div>
+      </section>
+
+      {% if g.user.role == 'agent' %}
+        <section class="wallet-hero">
+          <div>
+            <span class="eyebrow eyebrow-light">AVAILABLE TO WITHDRAW</span>
+            <strong>{{ (available_balance / 100)|inr }}</strong>
+            <span>Wallet total {{ (balance / 100)|inr }} <span class="wallet-dot">·</span> {{ (reserved / 100)|inr }} reserved</span>
+          </div>
+          <div class="wallet-hero-mark">✳</div>
+        </section>
+        <section class="content-grid wallet-grid">
+          <div class="panel">
+            <div class="panel-heading"><div><span class="eyebrow">YOUR WALLET</span><h2>Every credit, accounted for.</h2></div></div>
+            <div class="activity-list">
+              {% for tx in transactions %}
+                <div class="activity-item">
+                  <span class="transaction-mark {{ 'credit' if tx.amount_paise > 0 else 'debit' }}">{{ '+' if tx.amount_paise > 0 else '−' }}</span>
+                  <div>
+                    <strong>{{ tx.kind|title }}{% if tx.kind == 'commission' %} from a completed trip{% endif %}</strong>
+                    <p>{{ tx.reference }} · {{ tx.created_at }}</p>
+                  </div>
+                  <small class="{{ 'positive' if tx.amount_paise > 0 }}">{{ (tx.amount_paise / 100)|inr }}</small>
+                </div>
+              {% else %}
+                <p class="empty-note">Commission lands here when a referred trip is completed.</p>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-heading"><div><span class="eyebrow">CASHING OUT</span><h2>Request a payout</h2></div></div>
+            <p class="muted small-copy">Requests are reviewed by the travel desk. Demo app only — no real payment is made.</p>
+            <form method="post" action="{{ url_for('request_withdrawal') }}" class="stack-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <label>Amount to withdraw (₹)
+                <input name="amount" type="number" step="0.01" min="0.01" max="{{ '%.2f'|format(available_balance / 100) }}" required>
+              </label>
+              <button class="button button-dark button-wide" type="submit">Request a payout ↗</button>
+            </form>
+            <div class="request-history">
+              <span class="eyebrow">REQUEST HISTORY</span>
+              {% for withdrawal in withdrawals[:5] %}
+                <div class="request-row">
+                  <span>{{ withdrawal.created_at }}</span>
+                  <strong>{{ (withdrawal.amount_paise / 100)|inr }}</strong>
+                  <span class="status-badge status-{{ withdrawal.status }}">{{ withdrawal.status|title }}</span>
+                </div>
+              {% else %}
+                <p class="empty-note">No requests yet.</p>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+      {% elif g.user.role == 'admin' %}
+        <section class="panel table-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">REVIEW QUEUE</span>
+              <h2>{{ withdrawals|length }} Payout Requests</h2>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>TRAVEL PARTNER</th>
+                  <th>REFERENCE</th>
+                  <th>AMOUNT</th>
+                  <th>REQUESTED DATE</th>
+                  <th>STATUS</th>
+                  <th>ADMIN REVIEW ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in withdrawals %}
+                  <tr>
+                    <td>
+                      <strong>{{ item.agent_name }}</strong>
+                      <span class="cell-sub">{{ item.code }}</span>
+                    </td>
+                    <td>#{{ item.id }}</td>
+                    <td><strong>{{ (item.amount_paise / 100)|inr }}</strong></td>
+                    <td>{{ item.created_at }}</td>
+                    <td><span class="status-badge status-{{ item.status }}">{{ item.status|title }}</span></td>
+                    <td class="action-cell">
+                      {% if item.status in ('pending','approved') %}
+                        <form method="post" action="{{ url_for('review_withdrawal', withdrawal_id=item.id) }}" class="inline-actions">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          {% if item.status == 'pending' %}
+                            <button name="action" value="approve" class="mini-action">Approve ✓</button>
+                            <button name="action" value="reject" class="mini-action danger-action">Reject ✕</button>
+                          {% else %}
+                            <button name="action" value="complete" class="mini-action">Record Settlement ↗</button>
+                          {% endif %}
+                        </form>
+                      {% else %}
+                        <span class="cell-sub">Settled</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr><td colspan="6" class="empty-cell">The payout queue is clear. All caught up.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endif %}
+
+    <!-- =================================================================== -->
+    <!-- VIEW: AGENTS / PARTNERS -->
+    <!-- =================================================================== -->
+    {% elif view == 'agents' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">FOUR LEVELS. ONE TRAVEL CIRCLE.</span>
+          <h1>People Who <em>Make It Happen.</em></h1>
+          <p class="muted">A clear line of sight across all partner codes, tiers, and referral networks.</p>
+        </div>
+      </section>
+      <section class="agent-grid">
+        {% for agent in agents %}
+          <article class="panel agent-card">
+            <div class="agent-card-top">
+              <span class="avatar avatar-large">{{ agent.name[:1] }}</span>
+              <span class="level-badge">LEVEL {{ agent.level }}</span>
+            </div>
+            <h3>{{ agent.name }}</h3>
+            <span class="agent-code">{{ agent.code }}</span>
+            <p>{{ agent.email }}</p>
+            <div class="agent-card-foot">
+              <span>REFERRALS IN TEAM</span>
+              <strong>{{ agent.team_size }}</strong>
+            </div>
+          </article>
+        {% else %}
+          <div class="panel empty-state"><p>No partners found.</p></div>
+        {% endfor %}
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: COMMISSIONS -->
+    <!-- =================================================================== -->
+    {% elif view == 'commissions' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">CLEAR RULES. TRUSTED REWARDS.</span>
+          <h1>Commission <em>Ladder.</em></h1>
+          <p class="muted">Set the rates for each referral level. Rates are automatically credited to the wallet when a confirmed booking is completed.</p>
+        </div>
+      </section>
+      <section class="content-grid commission-grid">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="eyebrow">YOUR COMMISSION LADDER</span>
+              <h2>Share of each completed trip</h2>
+            </div>
+          </div>
+          <form method="post" action="{{ url_for('update_commissions') }}" class="commission-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            {% for rule in rules %}
+              <label class="commission-row">
+                <span class="level-badge">LEVEL {{ rule.level }}</span>
+                <span>{{ ['Travel circle starter','Growing together','Trusted guide','Circle founder'][rule.level - 1] }}</span>
+                <span class="percent-field">
+                  <input name="level_{{ rule.level }}" type="number" min="0" max="100" step="0.01" value="{{ '%.2f'|format(rule.rate_bps / 100) }}" required>
+                  <b>%</b>
+                </span>
+              </label>
+            {% endfor %}
+            <div class="commission-note">Commissions are credited atomic upon completing a trip. Changes here apply to upcoming completions.</div>
+            <button class="button button-dark" type="submit">Save commission rules ↗</button>
+          </form>
+        </div>
+
+        <div class="panel illustration-panel">
+          <span class="illustration-spark">✳</span>
+          <span class="eyebrow">HOW IT ADDS UP</span>
+          <h2>Every step of the journey counts.</h2>
+          <p>When an admin marks a referred booking complete, each eligible agent in the referral chain earns their configured percentage.</p>
+          <div class="commission-example">
+            <span>EXAMPLE · ₹25,000 BOOKING</span>
+            {% for rule in rules %}
+              <div>
+                <span>Level {{ rule.level }}</span>
+                <strong>{{ (2500000 * rule.rate_bps / 10000 / 100)|inr }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: TEAM (AGENT DOWNLINE) -->
+    <!-- =================================================================== -->
+    {% elif view == 'team' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">YOUR PEOPLE, YOUR JOURNEY</span>
+          <h1>Good things <em>travel together.</em></h1>
+          <p class="muted">Your referral circle, a few steps at a time.</p>
+        </div>
+      </section>
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <div><span class="eyebrow">YOUR DOWNLINE</span><h2>{{ team|length }} travel partners</h2></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>NAME</th><th>PARTNER ID</th><th>LEVEL</th><th>CONNECTED</th></tr></thead>
+            <tbody>
+              {% for person in team %}
+                <tr>
+                  <td><strong>{{ person.name }}</strong></td>
+                  <td>{{ person.code }}</td>
+                  <td><span class="level-badge">LEVEL {{ person.level }}</span></td>
+                  <td>Step {{ person.depth }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="4" class="empty-cell">Your travel circle is just getting started. Share your partner ID: <strong>{{ my_agent.code if my_agent else '' }}</strong></td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: INQUIRIES -->
+    <!-- =================================================================== -->
+    {% elif view == 'inquiries' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">CUSTOMER SUPPORT &amp; INQUIRIES</span>
+          <h1>The Travel Desk <em>Inbox.</em></h1>
+          <p class="muted">Messages submitted from the public website contact form and live chat.</p>
+        </div>
+      </section>
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">INBOX</span>
+            <h2>{{ inquiries|length }} Messages</h2>
+          </div>
+          <input class="table-search" type="search" placeholder="Search inquiries…" data-table-search>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>FROM</th>
+                <th>TOPIC</th>
+                <th>MESSAGE</th>
+                <th>RECEIVED</th>
+                <th>STATUS</th>
+                <th>ADMIN ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inquiry in inquiries %}
+                <tr>
+                  <td>
+                    <strong>{{ inquiry.name }}</strong>
+                    <span class="cell-sub">{{ inquiry.email }}</span>
+                  </td>
+                  <td><strong>{{ inquiry.subject }}</strong></td>
+                  <td class="inquiry-message">{{ inquiry.message }}</td>
+                  <td>{{ inquiry.created_at }}</td>
+                  <td><span class="status-badge status-{{ 'pending' if inquiry.status == 'new' else 'completed' }}">{{ inquiry.status|title }}</span></td>
+                  <td class="action-cell">
+                    <a class="mini-action" href="mailto:{{ inquiry.email }}?subject=Re: {{ inquiry.subject }} - Wanderwise Travel Desk" title="Reply via email">
+                      Email Reply ✉
+                    </a>
+                    {% if inquiry.status == 'new' %}
+                      <form method="post" action="{{ url_for('resolve_inquiry', inquiry_id=inquiry.id) }}" style="display:inline; margin-left: 4px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button class="mini-action" title="Mark this inquiry resolved">Resolve ✓</button>
+                      </form>
+                    {% else %}
+                      <span class="cell-sub">Resolved</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="6" class="empty-cell">No messages yet. New website enquiries will arrive here.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: REVIEWS -->
+    <!-- =================================================================== -->
+    {% elif view == 'reviews' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">CUSTOMER STORIES &amp; REVIEWS</span>
+          <h1>Verified Traveler <em>Feedback.</em></h1>
+          <p class="muted">Customer reviews submitted for journeys marked completed.</p>
+        </div>
+      </section>
+      <section class="review-grid admin-review-grid">
+        {% for review in public_reviews %}
+          <article class="review-card">
+            <div class="review-stars" aria-label="{{ review.rating }} out of 5 stars">
+              {% for star in range(review.rating) %}★{% endfor %}
+              {% for star in range(5 - review.rating) %}<span>★</span>{% endfor %}
+            </div>
+            <blockquote>“{{ review.body }}”</blockquote>
+            <div class="review-byline">
+              <span class="avatar">{{ review.name[:1]|upper }}</span>
+              <div>
+                <strong>{{ review.name }}</strong>
+                <span>{{ review.package_title }} · {{ review.created_at }}</span>
+              </div>
+            </div>
+          </article>
+        {% else %}
+          <div class="panel empty-state">
+            <span>✳</span>
+            <h2>No traveler reviews yet</h2>
+            <p>Verified reviews will appear here once travellers complete their trips.</p>
+          </div>
+        {% endfor %}
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: AUDIT -->
+    <!-- =================================================================== -->
+    {% elif view == 'audit' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">TRANSPARENCY &amp; SECURITY</span>
+          <h1>System Audit <em>Trail.</em></h1>
+          <p class="muted">A transparent historical record of all administrative, booking, and wallet actions.</p>
+        </div>
+      </section>
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <div><span class="eyebrow">SECURITY LEDGER</span><h2>{{ logs|length }} Audit Records</h2></div>
+          <input class="table-search" type="search" placeholder="Search audit logs…" data-table-search>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>ACTIVITY</th><th>ACTOR</th><th>RECORD</th><th>TIMESTAMP</th></tr></thead>
+            <tbody>
+              {% for log in logs %}
+                <tr>
+                  <td><strong>{{ log.action }}</strong></td>
+                  <td>{{ log.actor or 'System' }}</td>
+                  <td><span class="cell-sub">{{ log.record_type }} · #{{ log.record_id }}</span></td>
+                  <td>{{ log.created_at }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="4" class="empty-cell">No activity recorded yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: GUIDE (SYSTEM ARCHITECTURE, COMMISSION ENGINE & CREDENTIALS) -->
+    <!-- =================================================================== -->
+    {% elif view == 'guide' %}
+      <section class="guide-hero">
+        <div>
+          <span class="auth-badge-pill" style="margin-bottom: 8px;">📑 TECHNICAL SPECIFICATION &amp; DEMONSTRATION</span>
+          <h1>System Architecture <em>&amp; Live Operational Guide.</em></h1>
+          <p>Complete enterprise documentation of the Wanderwise Travel ERP: verified sample credentials for all roles, multi-tier commission calculation engine with live calculator, database architecture, and module walkthrough.</p>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <a class="button button-white" href="#credentials-section">🔑 Credentials</a>
+          <a class="button button-white" href="#calculator-section">🧮 Calculator</a>
+          <a class="button button-white" href="#architecture-section">🏛️ Architecture</a>
+          <a class="button button-white" href="#walkthrough-section">🎥 Walkthrough</a>
+        </div>
+      </section>
+
+      <!-- 1. SAMPLE LOGIN CREDENTIALS -->
+      <section class="panel" id="credentials-section" style="margin-bottom: 28px;">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">ACTIVE SYSTEM ACCOUNTS</span>
+            <h2>1. Sample Login Credentials (All Roles)</h2>
+          </div>
+          <span class="guide-badge">ALL DATA LIVE &amp; AUTHENTIC</span>
+        </div>
+        <p class="muted" style="margin: 0 0 18px 0; font-size: 13px;">The system includes dedicated pre-configured accounts spanning the entire travel commerce hierarchy. You can switch between roles or use these credentials directly at the login portal.</p>
+        
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ROLE &amp; TIER</th>
+                <th>OFFICER / PARTNER</th>
+                <th>LOGIN EMAIL</th>
+                <th>PASSWORD</th>
+                <th>NETWORK CODE</th>
+                <th>COMMISSION TIER</th>
+                <th>CURRENT BALANCE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="status-badge" style="background:#25422e; color:#fff;">👑 Administrator</span></td>
+                <td><strong>Aarav Mehta</strong><br><small style="color:#666;">Head of Travel Operations</small></td>
+                <td><code style="background:#edf6ea; padding:2px 6px; border-radius:4px; font-weight:700;">admin@wanderwise.local</code></td>
+                <td><code>Admin@123</code></td>
+                <td><span class="cell-sub">HQ-ADMIN-01</span></td>
+                <td>Executive HQ Access</td>
+                <td><strong>Enterprise Master</strong></td>
+              </tr>
+              <tr>
+                <td><span class="status-badge" style="background:#4a3260; color:#fff;">💼 Partner (Tier 4 Apex)</span></td>
+                <td><strong>Priya Sharma</strong><br><small style="color:#666;">Apex Travel Holidays (Mumbai)</small></td>
+                <td><code style="background:#edf6ea; padding:2px 6px; border-radius:4px; font-weight:700;">agent@wanderwise.local</code></td>
+                <td><code>Agent@123</code></td>
+                <td><strong style="color:#25422e;">WW-1001</strong></td>
+                <td>Level 4 (0.5% Apex Override)</td>
+                <td><strong style="color:#2e5c38;">₹45,000.00</strong></td>
+              </tr>
+              <tr>
+                <td><span class="status-badge" style="background:#6d4327; color:#fff;">💼 Partner (Tier 3 Senior)</span></td>
+                <td><strong>Rohan Das</strong><br><small style="color:#666;">Odyssey India Tours (New Delhi)</small></td>
+                <td><code style="background:#edf6ea; padding:2px 6px; border-radius:4px; font-weight:700;">rohan@wanderwise.local</code></td>
+                <td><code>Agent@123</code></td>
+                <td><strong style="color:#25422e;">WW-1002</strong></td>
+                <td>Level 3 (1.0% Upline Override)</td>
+                <td><strong style="color:#2e5c38;">₹28,500.00</strong></td>
+              </tr>
+              <tr>
+                <td><span class="status-badge" style="background:#2a5068; color:#fff;">💼 Partner (Tier 2 Associate)</span></td>
+                <td><strong>Nisha Rao</strong><br><small style="color:#666;">Deccan Voyages (Bengaluru)</small></td>
+                <td><code style="background:#edf6ea; padding:2px 6px; border-radius:4px; font-weight:700;">nisha@wanderwise.local</code></td>
+                <td><code>Agent@123</code></td>
+                <td><strong style="color:#25422e;">WW-1003</strong></td>
+                <td>Level 2 (2.0% Direct Parent)</td>
+                <td><strong style="color:#2e5c38;">₹19,500.00</strong></td>
+              </tr>
+              <tr>
+                <td><span class="status-badge" style="background:#3d6148; color:#fff;">💼 Partner (Tier 1 Junior)</span></td>
+                <td><strong>Kabir Singh</strong><br><small style="color:#666;">Heritage Trails Punjab (Amritsar)</small></td>
+                <td><code style="background:#edf6ea; padding:2px 6px; border-radius:4px; font-weight:700;">kabir@wanderwise.local</code></td>
+                <td><code>Agent@123</code></td>
+                <td><strong style="color:#25422e;">WW-1004</strong></td>
+                <td>Level 1 (5.0% Direct Booking)</td>
+                <td><strong style="color:#2e5c38;">₹14,200.00</strong></td>
+              </tr>
+              <tr>
+                <td><span class="status-badge" style="background:#34495e; color:#fff;">✈️ Verified Customer</span></td>
+                <td><strong>Maya Kapoor</strong><br><small style="color:#666;">Traveller (Mumbai)</small></td>
+                <td><code style="background:#edf6ea; padding:2px 6px; border-radius:4px; font-weight:700;">customer@wanderwise.local</code></td>
+                <td><code>Travel@123</code></td>
+                <td><span class="cell-sub">Standard Guest</span></td>
+                <td>Verified Guest Account</td>
+                <td>Active Itineraries</td>
+              </tr>
+              <tr>
+                <td><span class="status-badge" style="background:#34495e; color:#fff;">✈️ Verified Customer</span></td>
+                <td><strong>Vikramaditya Singhania</strong><br><small style="color:#666;">Traveller (Jaipur)</small></td>
+                <td><code style="background:#edf6ea; padding:2px 6px; border-radius:4px; font-weight:700;">vikram@wanderwise.local</code></td>
+                <td><code>Vikram@123</code></td>
+                <td><span class="cell-sub">Standard Guest</span></td>
+                <td>Verified Guest Account</td>
+                <td>Completed Journeys</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. SCREENSHOTS & DEMONSTRATION WALKTHROUGH -->
+      <section class="panel" id="walkthrough-section" style="margin-bottom: 28px;">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">MODULE-BY-MODULE TOUR</span>
+            <h2>2. Visual Demonstration &amp; Operational Walkthrough</h2>
+          </div>
+          <span class="guide-badge">7 CORE ENTERPRISE MODULES</span>
+        </div>
+        <p class="muted" style="margin: 0 0 18px 0; font-size: 13px;">A walkthrough of key workflows and live operational screens across the Travel ERP platform:</p>
+
+        <div class="walkthrough-grid">
+          <article class="walkthrough-card">
+            <div class="walkthrough-number">1</div>
+            <h3>Executive Command Center &amp; Live KPIs</h3>
+            <p>Real-time analytics aggregating gross booking volume (₹), confirmed travelers, available tour package inventory, and travel agent network counts with instant urgency alert banners.</p>
+            <div class="walkthrough-tags">
+              <span class="walkthrough-tag">Live Analytics</span>
+              <span class="walkthrough-tag">INR Gross Volume</span>
+              <span class="walkthrough-tag">Urgent Alerts</span>
+            </div>
+          </article>
+
+          <article class="walkthrough-card">
+            <div class="walkthrough-number">2</div>
+            <h3>Tour Packages Inventory &amp; Controls</h3>
+            <p>Complete catalogue across India's premier landmarks (Taj Mahal, Golden Temple, Statue of Unity, Mysore Palace, Meenakshi, Tirumala). Features 1-click status toggle (Active/Archived) and comprehensive itinerary creator.</p>
+            <div class="walkthrough-tags">
+              <span class="walkthrough-tag">16 Packages</span>
+              <span class="walkthrough-tag">Govt Portal URLs</span>
+              <span class="walkthrough-tag">Seat Allocation</span>
+            </div>
+          </article>
+
+          <article class="walkthrough-card">
+            <div class="walkthrough-number">3</div>
+            <h3>Master Reservations Ledger Lifecycle</h3>
+            <p>Full lifecycle tracking: Pending Reservation → Payment Confirmation → Completed Journey → Multi-Level Commission Payout. Includes 1-click actions for payment recording and trip completion.</p>
+            <div class="walkthrough-tags">
+              <span class="walkthrough-tag">PNR / Ref Codes</span>
+              <span class="walkthrough-tag">Passenger Counts</span>
+              <span class="walkthrough-tag">Audit Tracking</span>
+            </div>
+          </article>
+
+          <article class="walkthrough-card">
+            <div class="walkthrough-number">4</div>
+            <h3>Multi-Level Partner Network (MLM)</h3>
+            <p>Hierarchical agent network (Level 4 down to Level 1) tracking parent-child downlines, unique partner referral codes (WW-1001 to WW-1006), team sizes, and downline volume performance.</p>
+            <div class="walkthrough-tags">
+              <span class="walkthrough-tag">4 Tiers</span>
+              <span class="walkthrough-tag">Recursive Downline</span>
+              <span class="walkthrough-tag">Referral Attribution</span>
+            </div>
+          </article>
+
+          <article class="walkthrough-card">
+            <div class="walkthrough-number">5</div>
+            <h3>Double-Entry Wallet Ledger &amp; Payouts Queue</h3>
+            <p>Automated commission accrual on trip completion, available balance versus reserved withdrawal holdback, and administrator review queue with 1-click Approve, Reject, and Bank UTR settlement recording.</p>
+            <div class="walkthrough-tags">
+              <span class="walkthrough-tag">Zero Float Loss</span>
+              <span class="walkthrough-tag">NEFT / UPI</span>
+              <span class="walkthrough-tag">Bank UTR Numbers</span>
+            </div>
+          </article>
+
+          <article class="walkthrough-card">
+            <div class="walkthrough-number">6</div>
+            <h3>Public Marketplace &amp; Auto-Marquee Gallery</h3>
+            <p>Visitor-facing portal featuring landmark photography marquee loop, filterable package cards with verified official portal links, transparent booking policy checklist cards, and verified customer reviews.</p>
+            <div class="walkthrough-tags">
+              <span class="walkthrough-tag">Marquee Track</span>
+              <span class="walkthrough-tag">Policy Checkbox</span>
+              <span class="walkthrough-tag">5-Star Reviews</span>
+            </div>
+          </article>
+
+          <article class="walkthrough-card">
+            <div class="walkthrough-number">7</div>
+            <h3>Customer Inquiries Desk &amp; Audit Trail</h3>
+            <p>Inbound travel queries routed to the admin inbox with direct 1-click mailto reply and resolution status, combined with an immutable cryptographic audit log recording all user and admin actions.</p>
+            <div class="walkthrough-tags">
+              <span class="walkthrough-tag">Inquiry Desk</span>
+              <span class="walkthrough-tag">Direct Mailto</span>
+              <span class="walkthrough-tag">Security Trail</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3. ARCHITECTURE & COMMISSION CALCULATION LOGIC -->
+      <section class="panel" id="architecture-section" style="margin-bottom: 28px;">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">ENGINEERING SPECIFICATION</span>
+            <h2>3. System Architecture &amp; Commission Calculation Logic</h2>
+          </div>
+          <span class="guide-badge">4-TIER HIERARCHICAL REVENUE ENGINE</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+          <!-- 3A. Architecture Layers -->
+          <div>
+            <h3 style="font-size: 16px; margin: 0 0 12px; color: #1a2e21;">A. System Architecture Layers</h3>
+            <div class="arch-layers-grid">
+              <div class="arch-layer-card">
+                <div class="arch-layer-icon">🖥️</div>
+                <div class="arch-layer-content">
+                  <h4>1. Presentation Layer (Jinja2 &amp; Modern CSS)</h4>
+                  <p>Server-rendered responsive UI with DM Sans &amp; Manrope typography, glassmorphism, dynamic table filtering, and auto-scrolling landmark photo marquee.</p>
+                </div>
+              </div>
+              <div class="arch-layer-card">
+                <div class="arch-layer-icon">⚙️</div>
+                <div class="arch-layer-content">
+                  <h4>2. Application &amp; Security Layer (Flask &amp; Python)</h4>
+                  <p>Stateless HTTP routing, cryptographically secure CSRF tokens on all POST requests, role-based access control decorators (@roles_required), and scrypt password hashing.</p>
+                </div>
+              </div>
+              <div class="arch-layer-card">
+                <div class="arch-layer-icon">🗄️</div>
+                <div class="arch-layer-content">
+                  <h4>3. Persistence &amp; Ledger Layer (SQLite3 WAL)</h4>
+                  <p>ACID-compliant relational database with foreign key constraints, recursive CTE queries for downline trees, and an immutable double-entry wallet ledger for commission credits and withdrawal debits.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3B. Multi-Tier Commission Logic -->
+          <div>
+            <h3 style="font-size: 16px; margin: 0 0 12px; color: #1a2e21;">B. Commission Calculation Logic</h3>
+            <div style="background: #fafbf9; border: 1px solid #dce4da; border-radius: 12px; padding: 18px; font-size: 13px; line-height: 1.6; color: #3a4b3d;">
+              <p style="margin: 0 0 10px;">When a journey status transitions to <strong>Completed</strong>, the system executes a recursive 4-level commission settlement algorithm traversing the upline referral hierarchy:</p>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 12px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #25422e; text-align: left;">
+                    <th style="padding: 6px 4px;">TIER LEVEL</th>
+                    <th style="padding: 6px 4px;">AGENT POSITION</th>
+                    <th style="padding: 6px 4px;">RATE (BPS)</th>
+                    <th style="padding: 6px 4px;">PERCENTAGE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid #e2e8df;">
+                    <td style="padding: 6px 4px;"><strong>Level 1</strong></td>
+                    <td style="padding: 6px 4px;">Direct Booking Agent</td>
+                    <td style="padding: 6px 4px;">500 bps</td>
+                    <td style="padding: 6px 4px;"><strong style="color: #2e5c38;">5.0%</strong></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #e2e8df;">
+                    <td style="padding: 6px 4px;"><strong>Level 2</strong></td>
+                    <td style="padding: 6px 4px;">Direct Parent / L1 Upline</td>
+                    <td style="padding: 6px 4px;">200 bps</td>
+                    <td style="padding: 6px 4px;"><strong style="color: #2e5c38;">2.0%</strong></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #e2e8df;">
+                    <td style="padding: 6px 4px;"><strong>Level 3</strong></td>
+                    <td style="padding: 6px 4px;">Senior Partner / L2 Upline</td>
+                    <td style="padding: 6px 4px;">100 bps</td>
+                    <td style="padding: 6px 4px;"><strong style="color: #2e5c38;">1.0%</strong></td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid #e2e8df;">
+                    <td style="padding: 6px 4px;"><strong>Level 4</strong></td>
+                    <td style="padding: 6px 4px;">Apex Principal / L3 Upline</td>
+                    <td style="padding: 6px 4px;">50 bps</td>
+                    <td style="padding: 6px 4px;"><strong style="color: #2e5c38;">0.5%</strong></td>
+                  </tr>
+                  <tr style="background: #eef7eb;">
+                    <td style="padding: 6px 4px;"><strong>Platform</strong></td>
+                    <td style="padding: 6px 4px;">Wanderwise Gross Retained Margin</td>
+                    <td style="padding: 6px 4px;">9,150 bps</td>
+                    <td style="padding: 6px 4px;"><strong style="color: #25422e;">91.5%</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p style="margin: 0; font-size: 11px; color: #627566;">* Formula: <code>Commission (₹) = (Booking Amount in Paise × Rate BPS // 10000) / 100</code></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. LIVE INTERACTIVE COMMISSION CALCULATOR -->
+        <div class="calc-container" id="calculator-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span class="eyebrow" style="color: #2d6b3c;">LIVE INTERACTIVE ENGINE</span>
+              <h3 style="margin: 4px 0 0; font-size: 18px; color: #1a2e21;">Try the Real-Time Commission Calculator</h3>
+            </div>
+            <span style="font-size: 12px; color: #55685a;">Change the trip value below to see instant multi-tier distribution:</span>
+          </div>
+
+          <div class="calc-input-row">
+            <label for="calc-trip-amount">Trip Total Amount (₹):</label>
+            <input type="number" id="calc-trip-amount" value="57000" min="1000" step="1000" oninput="updateLiveCalculation()">
+            <span style="color: #666; font-size: 13px;">e.g. 2 guests for Kedarnath &amp; Badrinath Do Dham Yatra (₹28,500 × 2 = ₹57,000)</span>
+          </div>
+
+          <div class="calc-results-grid">
+            <div class="calc-result-card highlight">
+              <div class="tier-title">Tier 1: Direct Agent (5.0%)</div>
+              <div class="tier-amount" id="res-t1">₹2,850</div>
+              <div class="tier-rate">Kabir Singh (WW-1004)</div>
+            </div>
+            <div class="calc-result-card">
+              <div class="tier-title">Tier 2: Upline Parent (2.0%)</div>
+              <div class="tier-amount" id="res-t2">₹1,140</div>
+              <div class="tier-rate">Nisha Rao (WW-1003)</div>
+            </div>
+            <div class="calc-result-card">
+              <div class="tier-title">Tier 3: Senior Partner (1.0%)</div>
+              <div class="tier-amount" id="res-t3">₹570</div>
+              <div class="tier-rate">Rohan Das (WW-1002)</div>
+            </div>
+            <div class="calc-result-card">
+              <div class="tier-title">Tier 4: Apex Principal (0.5%)</div>
+              <div class="tier-amount" id="res-t4">₹285</div>
+              <div class="tier-rate">Priya Sharma (WW-1001)</div>
+            </div>
+            <div class="calc-result-card" style="background: #25422e; color: #fff;">
+              <div class="tier-title" style="color: #cce8c5;">Platform Net (91.5%)</div>
+              <div class="tier-amount" id="res-platform" style="color: #fff;">₹52,155</div>
+              <div class="tier-rate" style="color: #e5c07b;">Vendor &amp; Platform Ops</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    {% else %}
+      <section class="panel empty-state">
+        <span>✳</span>
+        <h2>Page not found</h2>
+        <p>That section isn’t available on this itinerary.</p>
+        <a class="button button-dark" href="{{ url_for('dashboard') }}">Back to overview ↗</a>
+      </section>
+    {% endif %}
+
+    <footer class="app-footer">
+      <span>✳ &nbsp;Wanderwise Travel ERP · Enterprise Administrator Portal</span>
+      <span>Verified Bookings, Tour Packages &amp; Commission Ledger</span>
+    </footer>
+  </main>
+
+  <script>
+    const today = document.getElementById('today-label');
+    if (today) today.textContent = new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date());
+
+    const localDate = new Date();
+    const dateField = document.querySelectorAll('input[type="date"][min]');
+    dateField.forEach((field) => { if (!field.min) field.min = localDate.toISOString().slice(0, 10); });
+
+    document.querySelectorAll('[data-table-search]').forEach((input) => input.addEventListener('input', () => {
+      const query = input.value.toLowerCase();
+      input.closest('.panel').querySelectorAll('tbody tr').forEach((row) => {
+        row.hidden = !row.innerText.toLowerCase().includes(query);
+      });
+    }));
+
+    function updateLiveCalculation() {
+      const input = document.getElementById('calc-trip-amount');
+      if (!input) return;
+      const val = parseFloat(input.value) || 0;
+      const fmt = (num) => '₹' + Math.round(num).toLocaleString('en-IN');
+      const t1 = val * 0.05;
+      const t2 = val * 0.02;
+      const t3 = val * 0.01;
+      const t4 = val * 0.005;
+      const totalComm = t1 + t2 + t3 + t4;
+      const plat = val - totalComm;
+
+      const elT1 = document.getElementById('res-t1');
+      const elT2 = document.getElementById('res-t2');
+      const elT3 = document.getElementById('res-t3');
+      const elT4 = document.getElementById('res-t4');
+      const elPlat = document.getElementById('res-platform');
+
+      if (elT1) elT1.textContent = fmt(t1);
+      if (elT2) elT2.textContent = fmt(t2);
+      if (elT3) elT3.textContent = fmt(t3);
+      if (elT4) elT4.textContent = fmt(t4);
+      if (elPlat) elPlat.textContent = fmt(plat);
+    }
+  </script>
+</body>
+</html>

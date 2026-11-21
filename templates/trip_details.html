@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f0">
+  <meta name="description" content="{{ package.title }} — trip duration, stays, meals, activities and online booking.">
+  <title>{{ package.title }} · Wanderwise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=4">
+</head>
+<body class="website-page trip-details-page">
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('public_home') }}"><span class="brand-mark">w.</span> wanderwise</a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="{{ url_for('public_home') }}#trips">Our trips</a>
+      <a href="{{ url_for('public_home') }}#gallery">Tourist places</a>
+      <a href="{{ url_for('public_home') }}#reviews">Traveller stories</a>
+      <a href="{{ url_for('public_home') }}#contact">Contact</a>
+    </nav>
+    <div class="site-actions">
+      {% if g.user %}
+        <a class="site-login-link" href="{{ url_for('dashboard') }}">My dashboard ({{ g.user.name.split()[0] }}) ↗</a>
+        <a class="site-logout-link" href="{{ url_for('logout') }}" title="Sign out of Wanderwise">Log out 🚪</a>
+      {% else %}
+        <a class="site-login-link" href="{{ url_for('login') }}">Sign in</a>
+        <a class="button button-dark site-top-cta" href="{{ url_for('register') }}">Join us <span>↗</span></a>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="trip-detail-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}<div class="site-flash flash-{{ category }}">{{ message }}</div>{% endfor %}
+    {% endwith %}
+
+    <a class="trip-back-link" href="{{ url_for('public_home') }}#trips">← Back to all trips & places</a>
+
+    <section class="trip-detail-hero">
+      <img src="{{ url_for('static', filename=package.image_file or 'gallery-monument.jpg') }}" alt="{{ package.title }}" fetchpriority="high">
+      <div class="trip-detail-overlay">
+        <span class="eyebrow eyebrow-light">{{ package.destination }} · {{ package.category }}</span>
+        <h1>{{ package.title }}</h1>
+        <p>{{ package.description }}</p>
+        {% if package.official_url %}
+          <div>
+            <a class="official-verified-banner" href="{{ package.official_url }}" target="_blank" rel="noopener noreferrer">
+              🏛️ Official Monument / Shrine Portal: {{ package.official_url }} ↗
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="trip-detail-layout">
+      <div class="trip-detail-content">
+
+        <!-- Fact Strip: Duration (No. of days), Stays, Meals, Transport -->
+        <section class="trip-facts" aria-label="Trip overview key facts">
+          <div>
+            <span class="eyebrow">NO. OF DAYS / DURATION</span>
+            <strong>{{ package.duration }}</strong>
+          </div>
+          <div>
+            <span class="eyebrow">STAYS & ACCOMMODATION</span>
+            <strong>{{ package.stay_type }}</strong>
+          </div>
+          <div>
+            <span class="eyebrow">MEALS & DINING</span>
+            <strong>{{ package.meal_plan }}</strong>
+          </div>
+          <div>
+            <span class="eyebrow">TRANSPORT & TRANSFERS</span>
+            <strong>{{ package.transport }}</strong>
+          </div>
+        </section>
+
+        <!-- Activities Section -->
+        {% if package.activities %}
+          <section class="trip-info-panel activities-panel">
+            <span class="eyebrow" style="color: #b5894f; font-weight: 700;">ACTIVITIES & SIGHTSEEING</span>
+            <h2>Curated Experiences & Highlights</h2>
+            <div class="activities-grid">
+              {% for act in package.activities.split(', ') %}
+                <div class="activity-chip">
+                  <span class="activity-chip-icon">✦</span>
+                  <span>{{ act }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+
+        <!-- Inclusions Section -->
+        <section class="trip-info-panel">
+          <span class="eyebrow">WHAT’S INCLUDED</span>
+          <h2>The Thoughtful Details</h2>
+          <p class="trip-preline">{{ package.inclusions }}</p>
+          <p class="trip-confirmation-note">All monument entries, priority temple darshan passes, and private guide arrangements are handled by the Wanderwise travel desk.</p>
+        </section>
+
+        <!-- Day-by-Day Itinerary Section -->
+        <section class="trip-info-panel">
+          <span class="eyebrow">YOUR JOURNEY</span>
+          <h2>Day-by-Day Experience Outline</h2>
+          <p class="trip-preline">{{ package.itinerary }}</p>
+        </section>
+
+        <!-- Good to Know Section -->
+        <section class="trip-info-panel">
+          <span class="eyebrow">GOOD TO KNOW</span>
+          <h2>Guidelines & Helpful Tips</h2>
+          <ul class="trip-good-to-know">
+            <li><strong>Darshan / Shrine Etiquette:</strong> Please follow traditional modest dress guidelines when visiting temples and religious shrines. Head coverings are customary at Gurudwaras.</li>
+            <li><strong>Official Portals:</strong> Current ticketing timings and special pooja slots are also updated on the official government/trust portal:
+              {% if package.official_url %}
+                <a href="{{ package.official_url }}" target="_blank" rel="noopener noreferrer" style="color: #49684c; font-weight: 600;">{{ package.official_url }} ↗</a>
+              {% else %}
+                <a href="{{ url_for('public_home') }}#contact">Contact our desk</a>
+              {% endif %}
+            </li>
+            <li><strong>Identification:</strong> Carry valid government photo IDs (Aadhaar, Passport, or Voter ID) for seamless hotel check-ins and monument security gates.</li>
+            <li><strong>Flexibility:</strong> Departure dates and custom vehicle upgrades are arranged on request to suit your travel schedule.</li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- Booking Panel ("and then booking a") -->
+      <aside class="trip-booking-panel" id="booking">
+        <span class="eyebrow">RESERVE THIS ESCAPE</span>
+        <p class="trip-booking-price" id="base-price" data-price-paise="{{ package.price_paise }}">
+          {{ (package.price_paise / 100)|inr }} <span>/ person</span>
+        </p>
+        <p class="trip-availability {{ 'sold-out' if package.available == 0 }}">
+          ● {{ package.available }} {{ 'seats' if package.available != 1 else 'seat' }} currently available
+        </p>
+
+        {% if package.available > 0 and g.user and g.user.role != 'admin' %}
+          <form method="post" action="{{ url_for('create_booking') }}" class="trip-booking-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="package_id" value="{{ package.id }}">
+            <input type="hidden" name="return_to" value="{{ url_for('trip_details', package_id=package.id) }}#booking">
+
+            <label>
+              Preferred travel date
+              <input name="travel_date" type="date" min="{{ today }}" required>
+            </label>
+
+            <label>
+              Number of travellers
+              <input name="travellers" id="travellers-input" type="number" min="1" max="{{ package.available if package.available < 20 else 20 }}" value="1" required>
+            </label>
+
+            <div class="booking-live-price">
+              <span>Estimated Total:</span>
+              <strong id="live-total">{{ (package.price_paise / 100)|inr }}</strong>
+            </div>
+
+            {% if g.user.role == 'customer' %}
+              <label>
+                Agent referral code <span>(optional)</span>
+                <input name="agent_code" maxlength="24" placeholder="e.g. WW-1001">
+              </label>
+            {% endif %}
+
+            <button class="button button-dark button-wide" type="submit">
+              Confirm & Request Booking <span>↗</span>
+            </button>
+          </form>
+
+        {% elif package.available > 0 and not g.user %}
+          <div class="booking-live-price">
+            <span>Starting from:</span>
+            <strong>{{ (package.price_paise / 100)|inr }} / person</strong>
+          </div>
+          <a class="button button-dark button-wide" href="{{ url_for('login', next=url_for('trip_details', package_id=package.id) ~ '#booking') }}">
+            Sign in to request this trip <span>↗</span>
+          </a>
+          <a class="button button-secondary button-wide" style="margin-top: 8px; text-align: center;" href="{{ url_for('register') }}">
+            New traveller? Create account <span>↗</span>
+          </a>
+
+        {% elif package.available == 0 %}
+          <span class="button button-disabled button-wide">Currently fully booked</span>
+        {% else %}
+          <a class="button button-dark button-wide" href="{{ url_for('dashboard', view='packages') }}">
+            Return to trip management <span>↗</span>
+          </a>
+        {% endif %}
+
+        <!-- Direct WhatsApp booking assistance -->
+        <a class="button button-whatsapp button-wide" href="https://wa.me/919108367516?text=Hello%20Wanderwise%2C%20I%20am%20interested%20in%20booking%20the%20trip%20'{{ package.title|urlencode }}'%20({{ package.duration }}).%20Please%20guide%20me." target="_blank" rel="noopener noreferrer">
+          💬 Instant WhatsApp Booking ↗
+        </a>
+
+        <p class="trip-booking-disclaimer">
+          Reservations are directly saved in the system. The travel desk will confirm your preferred dates, stay details, and schedule.
+        </p>
+        <a class="trip-contact-link" href="{{ url_for('public_home') }}#contact">Have special requests? Contact our desk ↗</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="trip-detail-footer">
+    <a href="{{ url_for('public_home') }}">wanderwise</a>
+    <span>Taj Mahal · Golden Temple · Statue of Unity · Sacred Shrines</span>
+    <a href="{{ url_for('public_home') }}#policies">Booking & refund info</a>
+  </footer>
+
+  <script>
+    const travellersInput = document.getElementById('travellers-input');
+    const liveTotal = document.getElementById('live-total');
+    const basePriceElem = document.getElementById('base-price');
+
+    if (travellersInput && liveTotal && basePriceElem) {
+      const pricePaise = parseInt(basePriceElem.getAttribute('data-price-paise'), 10) || 0;
+      travellersInput.addEventListener('input', () => {
+        let count = parseInt(travellersInput.value, 10);
+        if (isNaN(count) || count < 1) count = 1;
+        const total = (pricePaise * count) / 100;
+        liveTotal.textContent = '₹' + total.toLocaleString('en-IN');
+      });
+    }
+  </script>
+</body>
+</html>
