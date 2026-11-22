@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     guest_name TEXT,
     guest_email TEXT,
     guest_phone TEXT,
+    transport_mode TEXT DEFAULT 'Private AC Sedan / SUV',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS sent_emails (
@@ -228,6 +229,7 @@ def send_booking_email(booking: dict, email_type: str) -> None:
                 <tr><td style="color: #6a7c6f; padding: 5px 0;">Tour Duration:</td><td style="font-weight: 700; text-align: right;">{booking.get('duration', 'Tour Duration')}</td></tr>
                 <tr><td style="color: #6a7c6f; padding: 5px 0;">Party Size:</td><td style="font-weight: 700; text-align: right;">{booking['travellers']} Guest(s)</td></tr>
                 <tr><td style="color: #6a7c6f; padding: 5px 0;">Total Amount:</td><td style="font-weight: 700; color: #193826; font-size: 15px; text-align: right;">₹{booking['total_paise']/100:,.0f}</td></tr>
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Transport Mode:</td><td style="font-weight: 700; color: #193826; text-align: right;">{booking.get('transport_mode', 'Private AC Sedan / SUV')}</td></tr>
                 <tr><td style="color: #6a7c6f; padding: 5px 0;">Payment Method:</td><td style="font-weight: 600; text-align: right;">{booking.get('payment_method', 'Online')}</td></tr>
                 {payment_line}
               </table>
@@ -297,7 +299,7 @@ def initialize_db() -> None:
 
         # Ensure new columns exist on bookings table
         b_cols = [r[1] for r in db.execute("PRAGMA table_info(bookings)").fetchall()]
-        for col in ["payment_method", "payment_ref", "return_date", "guest_name", "guest_email", "guest_phone"]:
+        for col in ["payment_method", "payment_ref", "return_date", "guest_name", "guest_email", "guest_phone", "transport_mode"]:
             if col not in b_cols:
                 db.execute(f"ALTER TABLE bookings ADD COLUMN {col} TEXT")
 
@@ -815,6 +817,7 @@ def create_booking() -> Any:
     guest_name = request.form.get("guest_name", "").strip()
     guest_email = request.form.get("guest_email", "").strip().lower()
     guest_phone = request.form.get("guest_phone", "").strip()
+    transport_mode = request.form.get("transport_mode", "Private AC Sedan / SUV").strip()
 
     if not package_id or not travellers or not 1 <= travellers <= 20 or not travel_date:
         flash("Choose a date and enter between 1 and 20 travellers.", "error")
@@ -874,7 +877,13 @@ def create_booking() -> Any:
             if reservation.rowcount != 1:
                 raise ValueError("Those seats have just been booked. Please choose another date or package.")
             reference = f"WW-{secrets.token_hex(4).upper()}"
-            total_amount = package["price_paise"] * travellers
+            transport_delta = 0
+            if "flight" in transport_mode.lower():
+                transport_delta = 450000
+            elif "volvo" in transport_mode.lower():
+                transport_delta = -100000
+
+            total_amount = max(50000, (package["price_paise"] + transport_delta) * travellers)
 
             # Determine payment status and payment reference
             if payment_method_input == "upi":
@@ -897,11 +906,11 @@ def create_booking() -> Any:
 
             cursor = g.db.execute(
                 """INSERT INTO bookings(reference,customer_id,agent_id,package_id,travel_date,return_date,
-                   travellers,total_paise,status,payment_method,payment_ref,guest_name,guest_email,guest_phone)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   travellers,total_paise,status,payment_method,payment_ref,guest_name,guest_email,guest_phone,transport_mode)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (reference, customer_id, agent["id"] if agent else None, package_id,
                  travel_date, return_date, travellers, total_amount, status, method_name, payment_ref,
-                 guest_name, guest_email, guest_phone),
+                 guest_name, guest_email, guest_phone, transport_mode),
             )
             booking_id = cursor.lastrowid
 
@@ -922,6 +931,7 @@ def create_booking() -> Any:
                 "guest_name": guest_name,
                 "guest_email": guest_email,
                 "guest_phone": guest_phone,
+                "transport_mode": transport_mode,
                 "agent_id": agent["id"] if agent else None,
             }
             send_booking_email(booking_record, "booking_confirmed" if status == "confirmed" else "booking_reserved")

@@ -810,3 +810,103 @@
     justify-content: center !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   10. Transportation Selector & Enhanced Payment Touch Styling
+   -------------------------------------------------------------------------- */
+.transport-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.transport-card {
+  display: flex;
+  position: relative;
+  border: 1.5px solid #d4ded6;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.transport-card:hover {
+  border-color: #234830;
+  background: #fcfefc;
+}
+
+.transport-card.active {
+  border-color: #234830;
+  background: #f0f7ef;
+  box-shadow: 0 0 0 1px #234830;
+}
+
+.transport-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tr-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.tr-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a3d24;
+}
+
+.tr-desc {
+  font-size: 9.5px;
+  color: #6a7c6f;
+  line-height: 1.25;
+}
+
+.tr-price-tag {
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.tr-price-tag.included {
+  color: #1e6331;
+}
+
+.tr-price-tag.upgrade {
+  color: #c27803;
+}
+
+.tr-price-tag.saver {
+  color: #047857;
+}
+
+@media (max-width: 600px) {
+  .transport-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Prevent Collisions on Mobile Screens */
+@media (max-width: 768px) {
+  /* Eliminate absolute mobile-brand overlap on auth forms */
+  .mobile-brand {
+    display: none !important;
+  }
+
+  /* Prevent banner text crashing into action links */
+  .admin-alerts-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  /* Hide topbar logout button on mobile to prevent header collision; mobile drawer and bottom bar both have clean signout buttons */
+  .topbar-logout-btn {
+    display: none !important;
+  }
+}

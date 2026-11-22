@@ -869,10 +869,19 @@
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 14px; align-items: center;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; align-items: center;">
             <div>
               <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Number of Guests</label>
               <input type="number" name="travellers" id="agent-guests-input" min="1" max="20" value="2" required style="height: 40px; width: 100%;" oninput="onAgentGuestsChange()">
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Transportation Mode</label>
+              <select name="transport_mode" id="agent-transport-select" style="height: 40px; width: 100%; border-radius: 6px; border: 1px solid #d4ded6;" onchange="onAgentGuestsChange()">
+                <option value="Private AC Sedan / SUV" data-delta="0">🚗 Private AC Sedan / SUV (Included ₹0)</option>
+                <option value="Vande Bharat Express / AC Rail" data-delta="0">🚆 Vande Bharat / AC Rail (Included ₹0)</option>
+                <option value="Flight Express Add-on" data-delta="4500">✈️ Flight Express Add-on (+₹4,500/pax)</option>
+                <option value="Luxury Volvo AC Sleeper" data-delta="-1000">🚌 Luxury Volvo AC Sleeper (Save ₹1,000/pax)</option>
+              </select>
             </div>
             <div>
               <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Payment Option</label>
@@ -956,6 +965,7 @@
                   <td>
                     <strong>{{ booking.title }}</strong>
                     <span class="cell-sub">{{ booking.destination }}</span>
+                    {% if booking.transport_mode %}<span class="cell-sub" style="font-size: 10px; color: #1e4526; font-weight: 600;">🚗 {{ booking.transport_mode }}</span>{% endif %}
                   </td>
                   <td>{{ booking.travellers }} {{ 'guest' if booking.travellers == 1 else 'guests' }}</td>
                   <td><strong>{{ (booking.total_paise / 100)|inr }}</strong></td>
@@ -1963,11 +1973,13 @@
       const sel = document.getElementById('agent-pkg-select');
       const guestsInput = document.getElementById('agent-guests-input');
       const totalDisplay = document.getElementById('agent-total-display');
+      const trSel = document.getElementById('agent-transport-select');
       if (!sel || !guestsInput || !totalDisplay) return;
       const opt = sel.options[sel.selectedIndex];
       const price = parseFloat(opt.getAttribute('data-price')) || 0;
+      const delta = trSel ? (parseFloat(trSel.options[trSel.selectedIndex].getAttribute('data-delta')) || 0) : 0;
       const guests = parseInt(guestsInput.value, 10) || 1;
-      const total = price * guests;
+      const total = Math.max(500, (price + delta) * guests);
       totalDisplay.textContent = '₹' + Math.round(total).toLocaleString('en-IN');
     }
 
