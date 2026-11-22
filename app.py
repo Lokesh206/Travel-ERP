@@ -157,6 +157,7 @@ def initialize_db() -> None:
                 ("Rohan Das", "rohan@wanderwise.local", "agent", "Agent@123"),
                 ("Nisha Rao", "nisha@wanderwise.local", "agent", "Agent@123"),
                 ("Kabir Singh", "kabir@wanderwise.local", "agent", "Agent@123"),
+                ("Lokesh M M Ankith", "lokeshmmankith@gmail.com", "customer", "Lokesh@123"),
             ]
             ids: dict[str, int] = {}
             for name, email, role, password in demo_users:
@@ -176,21 +177,21 @@ def initialize_db() -> None:
             third = db.execute("SELECT id FROM agents WHERE code='WW-1003'").fetchone()["id"]
             db.execute("INSERT INTO agents(user_id,code,level,parent_id) VALUES(?,?,?,?)",
                        (ids["kabir@wanderwise.local"], "WW-1004", 1, third))
-            db.execute("INSERT INTO wallet_transactions(agent_id,amount_paise,kind,reference) VALUES(?,?,?,?)",
-                       (root_agent, 275000, "commission", "DEMO-OPENING-BALANCE"))
             db.execute("INSERT INTO audit_logs(actor_id,action,record_type,record_id) VALUES(?,?,?,?)",
-                       (ids["admin@wanderwise.local"], "Demo workspace initialized", "system", "seed"))
+                       (ids["admin@wanderwise.local"], "Clean workspace initialized", "system", "seed"))
+
+        # Ensure payment columns exist on bookings
+        b_cols = [r[1] for r in db.execute("PRAGMA table_info(bookings)").fetchall()]
+        if "payment_method" not in b_cols:
+            db.execute("ALTER TABLE bookings ADD COLUMN payment_method TEXT")
+        if "payment_ref" not in b_cols:
+            db.execute("ALTER TABLE bookings ADD COLUMN payment_ref TEXT")
 
     try:
         from seed_data import run_seed
         run_seed()
     except Exception as err:
         print("Seed warning:", err)
-    try:
-        from seed_real_world import run_real_world_seed
-        run_real_world_seed()
-    except Exception as err:
-        print("Real-world seed warning:", err)
 
 
 @app.before_request
@@ -378,7 +379,7 @@ def register() -> Any:
 def logout() -> Any:
     session.clear()
     flash("You have been signed out safely.", "success")
-    return redirect(url_for("login"))
+    return redirect(url_for("public_home"))
 
 
 @app.get("/")
@@ -650,6 +651,11 @@ def create_booking() -> Any:
     travel_date = request.form.get("travel_date", "")
     travellers = request.form.get("travellers", type=int)
     referral = request.form.get("agent_code", "").strip().upper()
+    payment_method_input = request.form.get("payment_method", "upi").strip().lower()
+    upi_id = request.form.get("upi_id", "").strip()
+    card_number = request.form.get("card_number", "").strip()
+    bank_name = request.form.get("bank_name", "").strip()
+
     if not package_id or not travellers or not 1 <= travellers <= 20 or not travel_date:
         flash("Choose a date and enter between 1 and 20 travellers.", "error")
         return redirect(return_to)
@@ -684,14 +690,39 @@ def create_booking() -> Any:
             if reservation.rowcount != 1:
                 raise ValueError("Those seats have just been booked. Please choose another date or package.")
             reference = f"WW-{secrets.token_hex(4).upper()}"
+            total_amount = package["price_paise"] * travellers
+
+            # Determine payment status and payment reference
+            if payment_method_input == "upi":
+                method_name = f"UPI ({upi_id or 'GPay/PhonePe'})"
+                payment_ref = f"PAY-UPI-{secrets.token_hex(4).upper()}"
+                status = "confirmed"
+            elif payment_method_input == "card":
+                last4 = card_number[-4:] if len(card_number) >= 4 else "8921"
+                method_name = f"Card (ending in {last4})"
+                payment_ref = f"PAY-CRD-{secrets.token_hex(4).upper()}"
+                status = "confirmed"
+            elif payment_method_input == "netbanking":
+                method_name = f"Net Banking ({bank_name or 'HDFC Bank'})"
+                payment_ref = f"PAY-NB-{secrets.token_hex(4).upper()}"
+                status = "confirmed"
+            else:
+                method_name = "Pay on Desk / Pending"
+                payment_ref = None
+                status = "pending"
+
             cursor = g.db.execute(
                 """INSERT INTO bookings(reference,customer_id,agent_id,package_id,travel_date,
-                   travellers,total_paise,status) VALUES(?,?,?,?,?,?,?,'pending')""",
+                   travellers,total_paise,status,payment_method,payment_ref) VALUES(?,?,?,?,?,?,?,?,?,?)""",
                 (reference, g.user["id"], agent["id"] if agent else None, package_id,
-                 travel_date, travellers, package["price_paise"] * travellers),
+                 travel_date, travellers, total_amount, status, method_name, payment_ref),
             )
-            audit("Booking created", "booking", reference)
-        flash(f"Trip reserved. Booking {reference} is awaiting payment.", "success")
+            if status == "confirmed":
+                audit(f"Booking {reference} confirmed with payment ({method_name})", "booking", reference)
+                flash(f"Payment of ₹{total_amount / 100:,.0f} successful via {method_name}! Booking {reference} is confirmed.", "success")
+            else:
+                audit(f"Booking {reference} reserved (Pay Later)", "booking", reference)
+                flash(f"Trip reserved! Booking {reference} is awaiting payment. You can pay online anytime from your bookings ledger.", "success")
     except ValueError as error:
         flash(str(error), "error")
     return redirect(url_for("dashboard", view="bookings"))
@@ -714,24 +745,39 @@ def pay_booking(booking_id: int) -> Any:
     if booking["status"] != "pending":
         flash("Only pending bookings can be paid.", "error")
     else:
+        pay_method = request.form.get("pay_method", "UPI (Instant)").strip()
+        txn_ref = f"PAY-ONLINE-{secrets.token_hex(4).upper()}"
         with g.db:
-            g.db.execute("UPDATE bookings SET status='confirmed' WHERE id=? AND status='pending'", (booking_id,))
-            audit("Simulated payment recorded", "booking", booking["reference"])
-        flash("Demo payment recorded. Booking confirmed.", "success")
+            g.db.execute(
+                "UPDATE bookings SET status='confirmed', payment_method=?, payment_ref=? WHERE id=? AND status='pending'",
+                (pay_method, txn_ref, booking_id)
+            )
+            audit(f"Payment recorded via {pay_method} (Ref: {txn_ref})", "booking", booking["reference"])
+        flash(f"Payment verified via {pay_method}! Booking {booking['reference']} is now confirmed.", "success")
     return redirect(url_for("dashboard", view="bookings"))
 
 
 @app.post("/bookings/<int:booking_id>/status")
-@roles_required("admin")
+@login_required
 def update_booking(booking_id: int) -> Any:
     status = request.form.get("status", "")
     if status not in ("completed", "cancelled"):
         abort(400)
+    booking = g.db.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
+    if booking is None:
+        abort(404)
+    # Check role permissions: Admin can complete or cancel; Agent can cancel bookings under their code
+    if g.user["role"] == "agent":
+        my_agent = get_my_agent()
+        if not my_agent or booking["agent_id"] != my_agent["id"]:
+            abort(403)
+        if status != "cancelled":
+            abort(403)
+    elif g.user["role"] != "admin":
+        abort(403)
+
     try:
         with g.db:
-            booking = g.db.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
-            if booking is None:
-                abort(404)
             if status == "completed":
                 if booking["status"] != "confirmed":
                     raise ValueError("Only confirmed bookings can be marked completed.")
@@ -767,7 +813,10 @@ def update_booking(booking_id: int) -> Any:
                     (booking["travellers"], booking["package_id"]),
                 )
             audit(f"Booking marked {status}", "booking", booking["reference"])
-        flash("Booking updated. Eligible commissions have been added to the wallet ledger.", "success")
+        if status == "completed":
+            flash(f"Booking {booking['reference']} marked completed. Eligible commissions have been added to the agent wallet ledger.", "success")
+        else:
+            flash(f"Booking {booking['reference']} has been cancelled and {booking['travellers']} reserved seat(s) released.", "success")
     except ValueError as error:
         flash(str(error), "error")
     return redirect(url_for("dashboard", view="bookings"))

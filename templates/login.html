@@ -68,7 +68,7 @@
               <span>⚡ ONE-CLICK QUICK DEMO LOGIN</span>
               <small style="color: #687e6c;">Click role to pre-fill</small>
             </div>
-            <div class="demo-chips-grid">
+            <div class="demo-chips-grid" style="grid-template-columns: repeat(4, 1fr);">
               <button type="button" class="demo-chip-btn" onclick="quickFillRole('admin')" id="chip-admin" title="Log in as Administrator">
                 <span>👑 Admin</span>
                 <small>Full Control</small>
@@ -77,7 +77,11 @@
                 <span>💼 Partner</span>
                 <small>Agent Circle</small>
               </button>
-              <button type="button" class="demo-chip-btn" onclick="quickFillRole('customer')" id="chip-customer" title="Log in as Traveller">
+              <button type="button" class="demo-chip-btn" onclick="quickFillRole('lokesh')" id="chip-lokesh" title="Log in as Customer Lokesh">
+                <span>👤 Lokesh</span>
+                <small>Customer</small>
+              </button>
+              <button type="button" class="demo-chip-btn" onclick="quickFillRole('customer')" id="chip-customer" title="Log in as Guest Traveller">
                 <span>✈️ Traveller</span>
                 <small>Bookings</small>
               </button>
@@ -85,13 +89,13 @@
             <details style="margin-top: 10px; font-size: 11px; background: rgba(255,255,255,0.7); border: 1px solid #dbe4d8; border-radius: 8px; padding: 8px 12px; color: #2e4433;">
               <summary style="cursor: pointer; font-weight: 700; color: #1a2e21;">🔑 View All Sample Login Credentials &amp; Tiers</summary>
               <div style="margin-top: 8px; line-height: 1.6;">
-                <div>👑 <strong>Administrator:</strong> <code>admin@wanderwise.local</code> / <code>Admin@123</code></div>
-                <div>💼 <strong>Principal Partner (Tier 4):</strong> <code>agent@wanderwise.local</code> / <code>Agent@123</code> (WW-1001)</div>
-                <div>💼 <strong>Senior Partner (Tier 3):</strong> <code>rohan@wanderwise.local</code> / <code>Agent@123</code> (WW-1002)</div>
-                <div>💼 <strong>Associate Partner (Tier 2):</strong> <code>nisha@wanderwise.local</code> / <code>Agent@123</code> (WW-1003)</div>
-                <div>💼 <strong>Junior Partner (Tier 1):</strong> <code>kabir@wanderwise.local</code> / <code>Agent@123</code> (WW-1004)</div>
-                <div>✈️ <strong>Verified Customer:</strong> <code>customer@wanderwise.local</code> / <code>Travel@123</code> (Maya Kapoor)</div>
-                <div>✈️ <strong>Verified Customer:</strong> <code>vikram@wanderwise.local</code> / <code>Vikram@123</code> (Vikramaditya S.)</div>
+                <div>👤 <strong>Customer (Lokesh):</strong> <code>lokeshmmankith@gmail.com</code> / <code>Lokesh@123</code> (Lokesh M M Ankith)</div>
+                <div>👑 <strong>Administrator:</strong> <code>admin@wanderwise.local</code> / <code>Admin@123</code> (Aarav Mehta - Executive HQ)</div>
+                <div>💼 <strong>Principal Partner (Tier 4):</strong> <code>agent@wanderwise.local</code> / <code>Agent@123</code> (Priya Sharma · WW-1001)</div>
+                <div>💼 <strong>Senior Partner (Tier 3):</strong> <code>rohan@wanderwise.local</code> / <code>Agent@123</code> (Rohan Das · WW-1002)</div>
+                <div>💼 <strong>Associate Partner (Tier 2):</strong> <code>nisha@wanderwise.local</code> / <code>Agent@123</code> (Nisha Rao · WW-1003)</div>
+                <div>💼 <strong>Junior Partner (Tier 1):</strong> <code>kabir@wanderwise.local</code> / <code>Agent@123</code> (Kabir Singh · WW-1004)</div>
+                <div>✈️ <strong>Guest Traveller:</strong> <code>customer@wanderwise.local</code> / <code>Travel@123</code> (Maya Kapoor)</div>
               </div>
             </details>
           </div>
@@ -194,6 +198,10 @@
         emailField.value = 'agent@wanderwise.local';
         passField.value = 'Agent@123';
         document.getElementById('chip-agent').style.borderColor = '#2a4c35';
+      } else if (role === 'lokesh') {
+        emailField.value = 'lokeshmmankith@gmail.com';
+        passField.value = 'Lokesh@123';
+        document.getElementById('chip-lokesh').style.borderColor = '#2a4c35';
       } else if (role === 'customer') {
         emailField.value = 'customer@wanderwise.local';
         passField.value = 'Travel@123';

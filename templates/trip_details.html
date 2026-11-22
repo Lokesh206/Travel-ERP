@@ -167,8 +167,83 @@
               </label>
             {% endif %}
 
-            <button class="button button-dark button-wide" type="submit">
-              Confirm & Request Booking <span>↗</span>
+            <!-- Interactive Payment Method Selection -->
+            <div class="booking-payment-options">
+              <span class="payment-section-title">Select Payment Option</span>
+              
+              <div class="payment-methods-grid">
+                <label class="pay-method-card active" id="card-opt-upi">
+                  <input type="radio" name="payment_method" value="upi" checked onchange="handlePaymentChange('upi')">
+                  <div class="pay-method-info">
+                    <strong>⚡ Instant UPI</strong>
+                    <small>GPay, PhonePe, Paytm</small>
+                  </div>
+                </label>
+
+                <label class="pay-method-card" id="card-opt-card">
+                  <input type="radio" name="payment_method" value="card" onchange="handlePaymentChange('card')">
+                  <div class="pay-method-info">
+                    <strong>💳 Card</strong>
+                    <small>Visa, MC, RuPay</small>
+                  </div>
+                </label>
+
+                <label class="pay-method-card" id="card-opt-netbanking">
+                  <input type="radio" name="payment_method" value="netbanking" onchange="handlePaymentChange('netbanking')">
+                  <div class="pay-method-info">
+                    <strong>🏦 Net Banking</strong>
+                    <small>HDFC, ICICI, SBI</small>
+                  </div>
+                </label>
+
+                <label class="pay-method-card" id="card-opt-pay_later">
+                  <input type="radio" name="payment_method" value="pay_later" onchange="handlePaymentChange('pay_later')">
+                  <div class="pay-method-info">
+                    <strong>⏳ Pay on Desk</strong>
+                    <small>Reserve now, pay later</small>
+                  </div>
+                </label>
+              </div>
+
+              <!-- UPI Input Field -->
+              <div class="payment-subfield" id="subfield-upi">
+                <label style="font-size: 11px; font-weight: 700; color: #37443a; margin-bottom: 4px; display: block;">UPI ID / Virtual Payment Address (VPA)</label>
+                <input type="text" name="upi_id" placeholder="e.g. name@okhdfcbank" value="{% if g.user %}{{ g.user.name.split()[0].lower() }}@okaxis{% endif %}" style="height: 38px; font-size: 12px; width: 100%;">
+                <small style="color: #2e5c38; font-size: 10px; margin-top: 4px; display: block;">🔒 Instant confirmation &amp; digital travel voucher issued upon payment.</small>
+              </div>
+
+              <!-- Card Input Field -->
+              <div class="payment-subfield" id="subfield-card" style="display: none;">
+                <label style="font-size: 11px; font-weight: 700; color: #37443a; margin-bottom: 4px; display: block;">Card Number</label>
+                <input type="text" name="card_number" placeholder="4532 •••• •••• 8921" value="4532 8921 7740 8921" maxlength="19" style="height: 38px; font-size: 12px; width: 100%; margin-bottom: 6px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <input type="text" placeholder="Exp (MM/YY)" value="12/28" style="height: 34px; font-size: 11px;">
+                  <input type="password" placeholder="CVV" value="892" maxlength="4" style="height: 34px; font-size: 11px;">
+                </div>
+              </div>
+
+              <!-- Net Banking Input Field -->
+              <div class="payment-subfield" id="subfield-netbanking" style="display: none;">
+                <label style="font-size: 11px; font-weight: 700; color: #37443a; margin-bottom: 4px; display: block;">Select Net Banking Bank</label>
+                <select name="bank_name" style="height: 38px; font-size: 12px; width: 100%;">
+                  <option value="HDFC Bank">HDFC Bank</option>
+                  <option value="State Bank of India">State Bank of India (SBI)</option>
+                  <option value="ICICI Bank">ICICI Bank</option>
+                  <option value="Axis Bank">Axis Bank</option>
+                  <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                </select>
+              </div>
+
+              <!-- Pay Later Info -->
+              <div class="payment-subfield" id="subfield-pay_later" style="display: none;">
+                <p style="font-size: 11px; color: #8c6728; background: #fdf7ec; border: 1px solid #f4e1be; border-radius: 6px; padding: 8px; margin: 0;">
+                  Seats reserved immediately in pending status. You can complete payment anytime from your dashboard before departure.
+                </p>
+              </div>
+            </div>
+
+            <button class="button button-dark button-wide" id="pay-confirm-btn" type="submit">
+              Pay {{ (package.price_paise / 100)|inr }} &amp; Confirm Booking ↗
             </button>
           </form>
 
@@ -215,6 +290,31 @@
     const travellersInput = document.getElementById('travellers-input');
     const liveTotal = document.getElementById('live-total');
     const basePriceElem = document.getElementById('base-price');
+    let currentMethod = 'upi';
+
+    function handlePaymentChange(method) {
+      currentMethod = method;
+      document.querySelectorAll('.pay-method-card').forEach(c => c.classList.remove('active'));
+      const activeCard = document.getElementById('card-opt-' + method);
+      if (activeCard) activeCard.classList.add('active');
+
+      ['upi', 'card', 'netbanking', 'pay_later'].forEach(m => {
+        const sub = document.getElementById('subfield-' + m);
+        if (sub) sub.style.display = (m === method) ? 'block' : 'none';
+      });
+
+      updatePayButton();
+    }
+
+    function updatePayButton() {
+      const btn = document.getElementById('pay-confirm-btn');
+      if (!btn || !liveTotal) return;
+      if (currentMethod === 'pay_later') {
+        btn.innerHTML = 'Confirm Reservation (Pay Later) ↗';
+      } else {
+        btn.innerHTML = 'Pay ' + liveTotal.textContent + ' &amp; Confirm Booking ↗';
+      }
+    }
 
     if (travellersInput && liveTotal && basePriceElem) {
       const pricePaise = parseInt(basePriceElem.getAttribute('data-price-paise'), 10) || 0;
@@ -222,7 +322,8 @@
         let count = parseInt(travellersInput.value, 10);
         if (isNaN(count) || count < 1) count = 1;
         const total = (pricePaise * count) / 100;
-        liveTotal.textContent = '₹' + total.toLocaleString('en-IN');
+        liveTotal.textContent = '₹' + Math.round(total).toLocaleString('en-IN');
+        updatePayButton();
       });
     }
   </script>

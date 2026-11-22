@@ -2313,3 +2313,75 @@
   color: #fff;
   border-color: #a33e32;
 }
+
+/* ==========================================================================
+   INTERACTIVE BOOKING PAYMENT OPTIONS STYLING
+   ========================================================================== */
+.booking-payment-options {
+  margin: 16px 0 18px 0;
+  padding: 14px;
+  background: #fbfcfb;
+  border: 1px solid #dfe5dc;
+  border-radius: 10px;
+}
+
+.payment-section-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #284332;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.payment-methods-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pay-method-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #dce3da;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.pay-method-card:hover {
+  border-color: #284332;
+  background: #f7faf6;
+}
+
+.pay-method-card input[type="radio"] {
+  width: auto;
+  height: auto;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.pay-method-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.pay-method-info strong {
+  font-size: 11px;
+  color: #1a2e21;
+}
+
+.pay-method-info small {
+  font-size: 9px;
+  color: #69786c;
+}
+
+.payment-subfield {
+  padding-top: 10px;
+  border-top: 1px dashed #dce3da;
+}

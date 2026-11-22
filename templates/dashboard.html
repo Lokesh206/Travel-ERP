@@ -681,7 +681,14 @@
                   {% if g.user.role == 'customer' %}
                     <input name="agent_code" placeholder="Referral code (optional)" aria-label="Optional agent referral code">
                   {% endif %}
-                  <button class="button button-dark button-wide" type="submit">Book this trip ↗</button>
+                  <label class="sr-only" for="pay-opt-{{ package.id }}">Payment Option</label>
+                  <select id="pay-opt-{{ package.id }}" name="payment_method" aria-label="Payment Option" style="height: 36px; font-size: 11px; margin-bottom: 6px; border-radius: 6px; border: 1px solid #dce4da; width: 100%; background: #fff; color: #202a25;">
+                    <option value="upi">⚡ Pay via UPI (GPay/PhonePe) - Instant Confirm</option>
+                    <option value="card">💳 Pay via Card (Visa/MasterCard/RuPay)</option>
+                    <option value="netbanking">🏦 Pay via Net Banking (All Indian Banks)</option>
+                    <option value="pay_later">⏳ Reserve Now (Pay on Desk Later)</option>
+                  </select>
+                  <button class="button button-dark button-wide" type="submit">Book with Payment ↗</button>
                 </form>
               {% endif %}
             </div>
@@ -725,6 +732,7 @@
                 <th>JOURNEY</th>
                 <th>GUESTS</th>
                 <th>TOTAL</th>
+                <th>PAYMENT &amp; REF</th>
                 <th>STATUS</th>
                 <th>ACTIONS &amp; WHAT'S NEXT</th>
               </tr>
@@ -747,31 +755,61 @@
                   </td>
                   <td>{{ booking.travellers }} {{ 'guest' if booking.travellers == 1 else 'guests' }}</td>
                   <td><strong>{{ (booking.total_paise / 100)|inr }}</strong></td>
+                  <td>
+                    {% if booking.payment_ref %}
+                      <strong style="color: #1b5e20; font-size: 11px;">✓ {{ booking.payment_method or 'Paid Online' }}</strong>
+                      <span class="cell-sub" style="font-family: monospace; font-size: 10px; color: #2e7d32;">{{ booking.payment_ref }}</span>
+                    {% elif booking.status in ('confirmed', 'completed') %}
+                      <span class="status-badge status-confirmed">PAID</span>
+                    {% else %}
+                      <span class="status-badge" style="background:#fff3e0; color:#e65100; font-size: 10px; font-weight: 700;">PAY LATER</span>
+                    {% endif %}
+                  </td>
                   <td><span class="status-badge status-{{ booking.status }}">{{ booking.status|title }}</span></td>
                   <td class="action-cell">
                     {% if booking.status == 'pending' %}
-                      <form method="post" action="{{ url_for('pay_booking', booking_id=booking.id) }}" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button class="mini-action" title="Record payment and confirm reservation">Record payment ↗</button>
-                      </form>
-                      {% if g.user.role == 'admin' %}
+                      {% if g.user.role == 'customer' %}
+                        <form method="post" action="{{ url_for('pay_booking', booking_id=booking.id) }}" style="display:inline;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="pay_method" value="UPI Instant">
+                          <button class="mini-action" title="Pay and confirm reservation">Pay Online (UPI) ↗</button>
+                        </form>
+                      {% elif g.user.role == 'admin' %}
+                        <form method="post" action="{{ url_for('pay_booking', booking_id=booking.id) }}" style="display:inline;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <button class="mini-action" title="Record payment and confirm reservation">Record payment ↗</button>
+                        </form>
                         <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline; margin-left: 4px;">
                           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                           <input type="hidden" name="status" value="cancelled">
                           <button class="mini-action danger-action">Cancel</button>
                         </form>
+                      {% elif g.user.role == 'agent' %}
+                        <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="status" value="cancelled">
+                          <button class="mini-action danger-action" title="Cancel client reservation">Cancel booking ✕</button>
+                        </form>
                       {% endif %}
-                    {% elif g.user.role == 'admin' and booking.status == 'confirmed' %}
-                      <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="status" value="completed">
-                        <button class="mini-action" title="Complete journey and credit commissions">Complete trip ↗</button>
-                      </form>
-                      <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline; margin-left: 4px;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="status" value="cancelled">
-                        <button class="mini-action danger-action">Cancel</button>
-                      </form>
+                    {% elif booking.status == 'confirmed' %}
+                      {% if g.user.role == 'admin' %}
+                        <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="status" value="completed">
+                          <button class="mini-action" title="Complete journey and credit commissions">Complete trip ↗</button>
+                        </form>
+                        <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline; margin-left: 4px;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="status" value="cancelled">
+                          <button class="mini-action danger-action">Cancel</button>
+                        </form>
+                      {% elif g.user.role == 'agent' %}
+                        <form method="post" action="{{ url_for('update_booking', booking_id=booking.id) }}" style="display:inline;">
+                          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                          <input type="hidden" name="status" value="cancelled">
+                          <button class="mini-action danger-action" title="Cancel booking manually">Cancel booking ✕</button>
+                        </form>
+                      {% endif %}
                     {% elif g.user.role == 'customer' and booking.status == 'completed' and not booking.reviewed %}
                       <form method="post" action="{{ url_for('submit_review', booking_id=booking.id) }}" class="booking-review-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -794,7 +832,7 @@
                   </td>
                 </tr>
               {% else %}
-                <tr><td colspan="7" class="empty-cell">No bookings recorded yet.</td></tr>
+                <tr><td colspan="{{ 8 if g.user.role != 'customer' else 7 }}" class="empty-cell">No bookings recorded yet. Real bookings will appear here once placed.</td></tr>
               {% endfor %}
             </tbody>
           </table>
