@@ -1,0 +1,23 @@
+{
+  "short_name": "Wanderwise",
+  "name": "Wanderwise Travel ERP · Indian Tourism & Heritage Operations",
+  "description": "Unified travel commerce and back-office agency operations platform for Indian tourist landmarks and pilgrimages.",
+  "icons": [
+    {
+      "src": "/static/gallery-monument.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/login-bg-india.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#1a2e21",
+  "theme_color": "#1a2e21",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/"
+}

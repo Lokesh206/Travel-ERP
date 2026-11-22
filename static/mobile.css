@@ -1,0 +1,812 @@
+/* ==========================================================================
+   Wanderwise Travel ERP · Mobile & Desktop Adaptive Architecture (mobile.css)
+   Seamless native app-like experience on smartphones & tablets;
+   Rich enterprise command center on laptops & high-res desktops.
+   ========================================================================== */
+
+:root {
+  --mobile-bottom-nav-height: 64px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* --------------------------------------------------------------------------
+   1. Universal Mobile Touch & Usability Enhancements (Screens <= 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* Prevent horizontal viewport overflow */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Eliminate annoying 300ms tap delay & grey tap flashes on iOS/Android */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* CRITICAL: Inputs must be >= 16px to prevent iOS Safari auto-zooming */
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+
+  /* Ensure comfortable finger-tap targets (min 42-44px) */
+  button, .button, .nav-link, .demo-chip-btn, .admin-btn-pill {
+    min-height: 44px;
+  }
+
+  /* Smooth momentum scrolling for all touch areas */
+  .table-panel, .admin-table-wrap, .gallery-marquee-viewport, .marquee-viewport {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Dashboard: Mobile App Bottom Navigation Bar
+   -------------------------------------------------------------------------- */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(var(--mobile-bottom-nav-height) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid #e0e5de;
+    box-shadow: 0 -4px 22px rgba(18, 38, 26, 0.08);
+    z-index: 1000;
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  .mobile-nav-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    color: #5c6c60;
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    transition: color 0.15s ease, transform 0.1s ease;
+    gap: 3px;
+    position: relative;
+  }
+
+  .mobile-nav-tab:active {
+    transform: scale(0.94);
+  }
+
+  .mobile-nav-tab .tab-icon {
+    font-size: 19px;
+    line-height: 1;
+  }
+
+  .mobile-nav-tab.active {
+    color: #1a4224;
+  }
+
+  .mobile-nav-tab.active .tab-icon {
+    transform: translateY(-1px);
+  }
+
+  .mobile-nav-tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: calc(var(--safe-bottom) + 3px);
+    width: 22px;
+    height: 3px;
+    background: #255431;
+    border-radius: 3px;
+  }
+
+  .mobile-nav-tab .tab-badge {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 18px);
+    background: #d9534f;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  /* Extra bottom padding on main content so bottom bar doesn't obscure content */
+  .main-content {
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--safe-bottom) + 24px) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. Dashboard: Mobile Topbar & Off-Canvas Slide Drawer
+   -------------------------------------------------------------------------- */
+.mobile-topbar-toggle {
+  display: none;
+}
+
+.mobile-drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 25, 18, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1100;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.mobile-drawer-backdrop.is-open {
+  display: block;
+  opacity: 1;
+}
+
+.mobile-drawer-panel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(320px, 85vw);
+  background: #ffffff;
+  z-index: 1101;
+  transform: translateX(-100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-drawer-backdrop.is-open .mobile-drawer-panel {
+  transform: translateX(0);
+}
+
+.mobile-drawer-header {
+  padding: 20px 18px 16px;
+  background: #182e20;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-drawer-header .brand {
+  color: #fff !important;
+  font-size: 17px;
+}
+
+.mobile-drawer-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: 0;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.mobile-drawer-user {
+  padding: 16px 18px;
+  background: #f4f8f4;
+  border-bottom: 1px solid #e1e8e2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-drawer-user .user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.mobile-drawer-user .user-info strong {
+  display: block;
+  font-size: 13px;
+  color: #172d1f;
+}
+
+.mobile-drawer-user .user-info span {
+  font-size: 11px;
+  color: #5c6e62;
+}
+
+.mobile-drawer-nav {
+  padding: 12px 14px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.mobile-drawer-section-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #839486;
+  padding: 12px 10px 4px;
+  text-transform: uppercase;
+}
+
+.mobile-drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #283e2f;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.mobile-drawer-link:hover, .mobile-drawer-link.active {
+  background: #eef6ee;
+  color: #1c4b27;
+  font-weight: 700;
+}
+
+.mobile-drawer-link .link-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+}
+
+.mobile-drawer-link .link-count {
+  margin-left: auto;
+  font-size: 10px;
+  background: #e1ede2;
+  color: #245431;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.mobile-drawer-footer {
+  padding: 16px 18px calc(16px + var(--safe-bottom));
+  border-top: 1px solid #e7eee8;
+  background: #fafbfa;
+}
+
+.mobile-drawer-signout-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 8px;
+  border: 1px solid #dce4dd;
+  background: #fff;
+  color: #b03a2e;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  /* Replace topbar with mobile-friendly topbar */
+  .topbar {
+    height: 54px !important;
+    padding: 0 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .mobile-topbar-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #d8e2d7;
+    background: #ffffff;
+    color: #1b3d27;
+    font-size: 18px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+
+  .topbar-left-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  .breadcrumb {
+    font-size: 12px !important;
+  }
+
+  .breadcrumb span:first-child, .breadcrumb span:nth-child(2) {
+    display: none;
+  }
+
+  .admin-guide-pill {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .today-label, .status-pill {
+    display: none !important;
+  }
+
+  /* Hide default sidebar on mobile — replaced by bottom nav + slide drawer */
+  .sidebar {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 12px 14px 20px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Dashboard: Mobile-Optimized KPI Cards & Statistics
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .admin-command-strip {
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .admin-command-strip h1 {
+    font-size: 24px !important;
+  }
+
+  .admin-quick-actions-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-top: 14px !important;
+  }
+
+  .admin-btn-pill {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+    font-size: 11px !important;
+    padding: 8px 10px !important;
+  }
+
+  /* 2-Column KPI grid on mobile phones */
+  .admin-kpi-grid, .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .admin-kpi-card, .stat-card {
+    padding: 12px 14px !important;
+    border-radius: 10px !important;
+  }
+
+  .admin-kpi-card strong, .stat-card strong {
+    font-size: 20px !important;
+    margin: 4px 0 !important;
+  }
+
+  .admin-kpi-top span:first-child, .stat-top span:first-child {
+    font-size: 9px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .admin-kpi-sub {
+    font-size: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-kpi-grid, .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Dashboard: Responsive Tables with Horizontal Swipe Hint & Card Styling
+   -------------------------------------------------------------------------- */
+.mobile-table-hint {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-table-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: #f3f7f3;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #3b5f42;
+    margin-bottom: 8px;
+  }
+
+  .table-panel {
+    border-radius: 10px !important;
+    padding: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .table-panel .panel-heading {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .table-search {
+    width: 100% !important;
+  }
+
+  /* Smooth horizontal scroll wrapper for wide tables */
+  .admin-table-wrap, .table-wrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 8px;
+    border: 1px solid #e7eee8;
+  }
+
+  /* Minimum width on tables so columns don't compress into vertical stacks */
+  table {
+    min-width: 680px !important;
+    font-size: 11px !important;
+  }
+
+  th, td {
+    padding: 10px 10px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Keep important cells visible with good spacing */
+  td strong {
+    font-size: 12px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Public Website (public_home.html) Mobile Polish
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .site-header {
+    height: 56px !important;
+    padding: 0 14px !important;
+    position: sticky !important;
+    top: 0 !important;
+    background: rgba(246, 245, 240, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    z-index: 900 !important;
+  }
+
+  .site-nav {
+    display: none !important;
+  }
+
+  .site-actions {
+    margin-left: auto !important;
+    margin-right: 8px !important;
+    gap: 8px !important;
+  }
+
+  .site-login-link {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+  }
+
+  .site-top-cta {
+    min-height: 34px !important;
+    padding: 0 11px !important;
+    font-size: 11px !important;
+  }
+
+  /* Mobile Hero */
+  .site-hero {
+    padding: 28px 16px 36px !important;
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(38px, 11vw, 54px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -2px !important;
+  }
+
+  .hero-copy p {
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+  }
+
+  .hero-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .hero-actions .button, .hero-actions .hero-secondary {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  /* Search Filter Form on Mobile: Stacked cleanly */
+  .trip-search {
+    margin: -10px 14px 20px !important;
+    padding: 14px !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .search-divider {
+    display: none !important;
+  }
+
+  .trip-search label {
+    width: 100% !important;
+  }
+
+  .trip-search .button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  /* Tourist Places Marquee on Mobile */
+  .tourist-gallery-section {
+    padding: 32px 14px !important;
+  }
+
+  .section-heading h2 {
+    font-size: 26px !important;
+  }
+
+  .gallery-marquee-card {
+    flex: 0 0 280px !important;
+    width: 280px !important;
+  }
+
+  .gallery-card-photo {
+    height: 180px !important;
+  }
+
+  /* Public Trips Grid: Single column for mobile screens */
+  .public-trip-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .public-trip-card {
+    border-radius: 12px !important;
+  }
+
+  /* Policies Section ("The Important Details") on Mobile */
+  .top-important-details-section {
+    padding: 28px 14px !important;
+  }
+
+  .top-policies-header-wrap {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .top-policies-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .top-policy-card {
+    padding: 12px 14px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. Login & Register Screen (login.html) Mobile Polish
+   -------------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  .auth-page {
+    padding: 0 !important;
+    background: #182e20 !important;
+    min-height: 100vh !important;
+    display: block !important;
+  }
+
+  .auth-shell {
+    width: 100% !important;
+    min-height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Show a compact artistic hero banner on mobile with the India art */
+  .auth-art {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    padding: 28px 20px 20px !important;
+    min-height: 200px !important;
+    background: linear-gradient(180deg, rgba(16, 31, 22, 0.45) 0%, rgba(12, 22, 16, 0.92) 100%),
+                url('/static/login-bg-india.jpg') center center / cover no-repeat !important;
+  }
+
+  .auth-art-header {
+    margin-bottom: auto !important;
+  }
+
+  .auth-art-copy h1 {
+    font-size: 26px !important;
+    margin: 8px 0 4px !important;
+    letter-spacing: -1px !important;
+  }
+
+  .auth-art-copy p, .auth-highlights-list, .art-footer {
+    display: none !important;
+  }
+
+  .auth-form-side {
+    padding: 24px 20px 36px !important;
+    background: #ffffff !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin-top: -16px !important;
+    z-index: 5 !important;
+    flex: 1 !important;
+  }
+
+  .auth-form-wrap {
+    width: 100% !important;
+    max-width: 420px !important;
+    margin: 0 auto !important;
+  }
+
+  .auth-form-header h2 {
+    font-size: 22px !important;
+    margin: 4px 0 6px !important;
+  }
+
+  .demo-chips-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .demo-chip-btn {
+    padding: 8px 4px !important;
+    min-height: 48px !important;
+  }
+
+  .demo-chip-btn span {
+    font-size: 12px !important;
+  }
+
+  .demo-chip-btn small {
+    font-size: 9px !important;
+  }
+
+  .auth-input-group input, .auth-input-group select {
+    height: 46px !important;
+    font-size: 16px !important;
+  }
+
+  .auth-submit-btn {
+    min-height: 48px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. Trip Details & Booking Flow (trip_details.html) Mobile Polish
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .trip-detail-main {
+    padding: 16px 14px 40px !important;
+  }
+
+  .trip-detail-hero {
+    height: 240px !important;
+    border-radius: 12px !important;
+  }
+
+  .trip-detail-overlay h1 {
+    font-size: 24px !important;
+    letter-spacing: -1px !important;
+  }
+
+  .trip-facts {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .trip-facts strong {
+    font-size: 12px !important;
+  }
+
+  /* Booking panel */
+  .trip-booking-panel {
+    padding: 16px !important;
+    border-radius: 12px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .payment-method-selector {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  /* UPI QR code scales gracefully on mobile */
+  #subfield-upi svg {
+    max-width: 130px !important;
+    height: auto !important;
+  }
+
+  .upi-chip {
+    flex: 1 1 calc(50% - 6px);
+    text-align: center;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   9. Printable Voucher (booking_voucher.html) Mobile Polish
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .voucher-container {
+    margin: 12px auto !important;
+    padding: 18px 14px !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    border: 1px solid #e1e8e2 !important;
+  }
+
+  .voucher-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .voucher-grid-2col {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .voucher-floating-action-bar {
+    position: sticky !important;
+    bottom: 12px !important;
+    margin-top: 16px !important;
+    width: 100% !important;
+  }
+
+  .voucher-print-btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    justify-content: center !important;
+  }
+}

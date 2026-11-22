@@ -2,16 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f5f0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
+  <meta name="theme-color" content="#1a2e21">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="{{ package.title }} — trip duration, stays, meals, activities and online booking.">
   <title>{{ package.title }} · Wanderwise</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=4">
-  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=4">
-  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=6">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=2">
 </head>
 <body class="website-page trip-details-page">
   <header class="site-header">
