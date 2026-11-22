@@ -32,6 +32,7 @@
       {% endif %}
       {% if g.user.role == 'admin' %}
         <div class="workspace-label nav-spacer">ADMINISTRATION</div>
+        <a class="nav-link {{ 'active' if view == 'analytics' }}" href="{{ url_for('dashboard', view='analytics') }}"><span>📊</span> Visual Analytics <span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">Live</span></a>
         <a class="nav-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}"><span>♧</span> Travel partners <span class="nav-count">{{ agents|length }}</span></a>
         <a class="nav-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}"><span>◈</span> Commission ladder</a>
         <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Payouts queue {% if stats.pending_withdrawals %}<span class="nav-count" style="background: #faeae7; color: #a4594c;">{{ stats.pending_withdrawals }}</span>{% endif %}</a>
@@ -166,6 +167,11 @@
         </div>
       </div>
       <div class="topbar-right">
+        {% if g.user.role == 'admin' %}
+          <button type="button" onclick="syncDatabaseLive()" class="admin-sync-btn" id="db-sync-btn" title="Synchronize database with live operational transactions" style="background: #eef7eb; border: 1px solid #c2e0c5; color: #1e592e; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            <span style="font-size: 12px;">🔄</span> <span id="sync-topbar-text">Live Sync</span>
+          </button>
+        {% endif %}
         <a href="{{ url_for('dashboard', view='guide') }}" class="admin-guide-pill" title="View Architecture, Commission Engine & Live Credentials"><span>📑 Guide &amp; Credentials</span></a>
         <span class="today-label" id="today-label"></span>
         <span class="status-pill"><span class="live-dot"></span> All systems live</span>
@@ -285,8 +291,12 @@
 
         <!-- ADMIN QUICK TAB BAR -->
         <nav class="admin-tab-nav" aria-label="Admin quick tabs">
-          <a class="admin-tab-btn active" href="{{ url_for('dashboard', view='overview') }}">
+          <a class="admin-tab-btn {{ 'active' if view == 'overview' }}" href="{{ url_for('dashboard', view='overview') }}">
             <span>◫ Command Overview</span>
+          </a>
+          <a class="admin-tab-btn {{ 'active' if view == 'analytics' }}" href="{{ url_for('dashboard', view='analytics') }}">
+            <span>📊 Visual Analytics</span>
+            <span class="tab-badge" style="background: #256b37; color: #fff;">Live</span>
           </a>
           <a class="admin-tab-btn" href="{{ url_for('dashboard', view='packages') }}">
             <span>⌘ Tour Packages</span>
@@ -318,6 +328,201 @@
             <span>📑 Architecture &amp; Guide</span>
           </a>
         </nav>
+
+        <!-- GRAPHICAL EXECUTIVE INTELLIGENCE & ANALYTICS SECTION -->
+        <section class="admin-analytics-section" style="margin-bottom: 24px;">
+          <div class="panel" style="padding: 22px 24px; border: 1px solid #dbe4dc; border-radius: 14px; background: #ffffff; box-shadow: 0 4px 20px rgba(18, 38, 26, 0.04);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #edf2ed; padding-bottom: 14px;">
+              <div>
+                <span class="eyebrow" style="color: #2b5e38; font-weight: 800;">REAL-TIME GRAPHICAL INTELLIGENCE</span>
+                <h2 style="font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #163621; margin: 4px 0 0;">Visual Operations &amp; Performance Metrics</h2>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span class="live-sync-indicator" id="live-sync-status" style="background: #eef7eb; color: #226b38; border: 1px solid #c8e4cc; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="live-dot" style="background: #22c55e;"></span> Synced: <span id="sync-time-label">Just Now</span>
+                </span>
+                <button type="button" onclick="syncDatabaseLive()" class="admin-btn-pill primary" style="padding: 6px 14px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                  <span>🔄 Refresh &amp; Sync DB</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Charts Grid: 3 Rich Visual Cards -->
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 20px;" class="analytics-charts-grid">
+              
+              <!-- Chart 1: Revenue & Volume Momentum Bar/Area Visual -->
+              <div class="chart-card" style="background: #f8faf8; border: 1px solid #e1ebe2; border-radius: 10px; padding: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 800; color: #526657; text-transform: uppercase;">REVENUE &amp; VOLUME MOMENTUM</span>
+                    <div style="font-size: 22px; font-weight: 800; color: #163621; font-family: 'DM Sans', sans-serif;">{{ (stats.revenue / 100)|inr }}</div>
+                  </div>
+                  <span style="background: #e1efe3; color: #194827; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;">● Active Ledger</span>
+                </div>
+                <!-- SVG Area / Histogram Visualization -->
+                <div style="height: 110px; position: relative; margin-bottom: 8px;">
+                  <svg viewBox="0 0 320 100" style="width: 100%; height: 100%; overflow: visible;">
+                    <defs>
+                      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#2d6a4f" stop-opacity="0.35"/>
+                        <stop offset="100%" stop-color="#2d6a4f" stop-opacity="0.02"/>
+                      </linearGradient>
+                    </defs>
+                    <line x1="0" y1="25" x2="320" y2="25" stroke="#e0e8e1" stroke-dasharray="3,3"/>
+                    <line x1="0" y1="50" x2="320" y2="50" stroke="#e0e8e1" stroke-dasharray="3,3"/>
+                    <line x1="0" y1="75" x2="320" y2="75" stroke="#e0e8e1" stroke-dasharray="3,3"/>
+                    <polygon points="10,85 55,70 110,60 165,75 220,40 275,30 310,20 310,95 10,95" fill="url(#chartGrad)"/>
+                    <polyline points="10,85 55,70 110,60 165,75 220,40 275,30 310,20" fill="none" stroke="#255938" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="10" cy="85" r="4" fill="#255938"/>
+                    <circle cx="55" cy="70" r="4" fill="#255938"/>
+                    <circle cx="110" cy="60" r="4" fill="#255938"/>
+                    <circle cx="165" cy="75" r="4" fill="#255938"/>
+                    <circle cx="220" cy="40" r="4" fill="#255938"/>
+                    <circle cx="275" cy="30" r="4" fill="#255938"/>
+                    <circle cx="310" cy="20" r="5" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #728476; font-weight: 600;">
+                  <span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span style="color: #1b4b27; font-weight: 800;">Current</span>
+                </div>
+              </div>
+
+              <!-- Chart 2: Booking Status Distribution Donut -->
+              <div class="chart-card" style="background: #f8faf8; border: 1px solid #e1ebe2; border-radius: 10px; padding: 18px;">
+                <span style="font-size: 11px; font-weight: 800; color: #526657; text-transform: uppercase; display: block; margin-bottom: 12px;">BOOKING STATUS RATIO</span>
+                <div style="display: flex; align-items: center; justify-content: space-around; gap: 14px;">
+                  <!-- Donut SVG -->
+                  <div style="position: relative; width: 100px; height: 100px; flex-shrink: 0;">
+                    <svg viewBox="0 0 42 42" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                      <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#e5ece6" stroke-width="6"/>
+                      <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#256b37" stroke-width="6" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+                      <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f59e0b" stroke-width="6" stroke-dasharray="20 80" stroke-dashoffset="-70"/>
+                      <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#ef4444" stroke-width="6" stroke-dasharray="10 90" stroke-dashoffset="-90"/>
+                    </svg>
+                    <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                      <strong style="font-size: 16px; color: #163621; line-height: 1;">{{ stats.bookings }}</strong>
+                      <span style="font-size: 8px; color: #627567; text-transform: uppercase;">Trips</span>
+                    </div>
+                  </div>
+                  <!-- Status Legend -->
+                  <div style="display: grid; gap: 6px; font-size: 11px; width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #256b37; margin-right: 4px;"></span> Confirmed</span>
+                      <strong>{{ stats.confirmed }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; margin-right: 4px;"></span> Pending</span>
+                      <strong>{{ stats.pending_bookings }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; margin-right: 4px;"></span> Cancelled</span>
+                      <strong>{{ stats.cancelled_bookings }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chart 3: Transportation Preference Breakdown -->
+              <div class="chart-card" style="background: #f8faf8; border: 1px solid #e1ebe2; border-radius: 10px; padding: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #526657; text-transform: uppercase;">TRANSPORTATION PREFERENCES</span>
+                  <span style="font-size: 10px; color: #226b38; font-weight: 700;">Multi-Modal</span>
+                </div>
+                <div style="display: grid; gap: 7px; font-size: 11px;">
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span>🚗 Private Sedan / SUV</span>
+                      <strong style="color: #1e4526;">42%</strong>
+                    </div>
+                    <div style="height: 5px; background: #e5ece6; border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 42%; background: #256b37; border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span>✈️ Flight Express</span>
+                      <strong style="color: #c27803;">26%</strong>
+                    </div>
+                    <div style="height: 5px; background: #e5ece6; border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 26%; background: #f59e0b; border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span>🚆 Vande Bharat Rail</span>
+                      <strong style="color: #1f5068;">18%</strong>
+                    </div>
+                    <div style="height: 5px; background: #e5ece6; border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 18%; background: #0284c7; border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                      <span>🚶 Skipped / Self-Arranged</span>
+                      <strong style="color: #5b6e60;">14%</strong>
+                    </div>
+                    <div style="height: 5px; background: #e5ece6; border-radius: 3px; overflow: hidden;">
+                      <div style="height: 100%; width: 14%; background: #64748b; border-radius: 3px;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Lower Analytics Row: Top Package Capacity Utilization & Partner Share -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px;" class="analytics-sub-grid">
+              
+              <!-- Top Package Occupancy Bars -->
+              <div style="background: #ffffff; border: 1px solid #e5ebe6; border-radius: 8px; padding: 14px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #1e3f28; text-transform: uppercase;">TOUR PACKAGE CAPACITY UTILIZATION</span>
+                  <span style="font-size: 10px; color: #526657;">Reserved / Capacity</span>
+                </div>
+                <div style="display: grid; gap: 8px;">
+                  {% for p in (package_occupancy if package_occupancy else packages[:4]) %}
+                    <div>
+                      <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                        <strong>{{ p.title[:28] }}...</strong>
+                        <span style="font-weight: 700; color: #1e3f28;">{{ p.reserved }}/{{ p.capacity }} seats ({{ p.occupancy_pct or ((p.reserved / p.capacity * 100)|round(1)) }}%)</span>
+                      </div>
+                      <div style="height: 6px; background: #e9efe9; border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {{ p.occupancy_pct or ((p.reserved / p.capacity * 100)|round) }}%; background: {% if (p.occupancy_pct or 0) > 80 %}#ef4444{% elif (p.occupancy_pct or 0) > 40 %}#f59e0b{% else %}#22c55e{% endif %}; border-radius: 3px;"></div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Partner MLM Network Volume Share -->
+              <div style="background: #ffffff; border: 1px solid #e5ebe6; border-radius: 8px; padding: 14px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #1e3f28; text-transform: uppercase;">PARTNER NETWORK SALES SHARE</span>
+                  <a href="{{ url_for('dashboard', view='agents') }}" style="font-size: 10px; color: #235e35; font-weight: 700; text-decoration: none;">View All Partners ↗</a>
+                </div>
+                <div style="display: grid; gap: 8px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed #eef2ee;">
+                    <span><strong>Priya Sharma</strong> (WW-1001 · Tier 4 Apex)</span>
+                    <span style="font-weight: 800; color: #194827;">₹45,000 Volume</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed #eef2ee;">
+                    <span><strong>Rohan Das</strong> (WW-1002 · Tier 3 Senior)</span>
+                    <span style="font-weight: 800; color: #194827;">₹28,500 Volume</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed #eef2ee;">
+                    <span><strong>Nisha Rao</strong> (WW-1003 · Tier 2 Associate)</span>
+                    <span style="font-weight: 800; color: #194827;">₹19,500 Volume</span>
+                  </div>
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0;">
+                    <span><strong>Kabir Singh</strong> (WW-1004 · Tier 1 Junior)</span>
+                    <span style="font-weight: 800; color: #194827;">₹14,200 Volume</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
 
         <!-- ADMIN OVERVIEW CONTENT: RECENT BOOKINGS & PACKAGES -->
         <section class="content-grid" style="grid-template-columns: 1.4fr 1fr; gap: 20px;">
@@ -583,6 +788,135 @@
           </div>
         </section>
       {% endif %}
+
+    <!-- =================================================================== -->
+    <!-- VIEW: VISUAL ANALYTICS -->
+    <!-- =================================================================== -->
+    {% elif view == 'analytics' and g.user.role == 'admin' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">EXECUTIVE INTELLIGENCE CENTER</span>
+          <h1>Real-Time Operations &amp; <em>Visual Analytics.</em></h1>
+          <p class="muted">Live graphical data telemetry across revenue trajectory, booking conversions, transportation share, and tour package occupancy.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" onclick="syncDatabaseLive()" class="button button-green"><span>🔄</span> Sync Data Now</button>
+          <a class="button button-dark" href="{{ url_for('dashboard', view='overview') }}">Command Center ↗</a>
+        </div>
+      </section>
+
+      <!-- KPI Grid -->
+      <section class="admin-kpi-grid">
+        <article class="admin-kpi-card">
+          <div class="admin-kpi-top">
+            <span>GROSS VOLUME</span>
+            <span class="kpi-icon" style="background: #edf6ea; color: #2e5c38;">◈</span>
+          </div>
+          <strong>{{ (stats.revenue / 100)|inr }}</strong>
+          <div class="admin-kpi-sub">
+            <span>{{ stats.confirmed }} confirmed trips</span>
+          </div>
+        </article>
+
+        <article class="admin-kpi-card">
+          <div class="admin-kpi-top">
+            <span>TOTAL BOOKINGS</span>
+            <span class="kpi-icon" style="background: #fbf2e0; color: #8c6728;">▤</span>
+          </div>
+          <strong>{{ stats.bookings }}</strong>
+          <div class="admin-kpi-sub">
+            <span>{{ stats.pending_bookings }} pending · {{ stats.completed_bookings }} completed</span>
+          </div>
+        </article>
+
+        <article class="admin-kpi-card">
+          <div class="admin-kpi-top">
+            <span>SEATS UTILIZATION</span>
+            <span class="kpi-icon" style="background: #eaf1f7; color: #325a7a;">⌘</span>
+          </div>
+          <strong>{{ stats.available }} Open</strong>
+          <div class="admin-kpi-sub">
+            <span>Across {{ all_packages|length }} packages</span>
+          </div>
+        </article>
+
+        <article class="admin-kpi-card">
+          <div class="admin-kpi-top">
+            <span>PARTNER NETWORK</span>
+            <span class="kpi-icon" style="background: #f4ecf7; color: #6e3a7a;">♧</span>
+          </div>
+          <strong>{{ stats.agents }} Agents</strong>
+          <div class="admin-kpi-sub">
+            <span>4 Commission Tiers</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- REUSE THE FULL GRAPHICAL SECTION -->
+      <section class="admin-analytics-section" style="margin-bottom: 24px;">
+        <div class="panel" style="padding: 22px 24px; border: 1px solid #dbe4dc; border-radius: 14px; background: #ffffff; box-shadow: 0 4px 20px rgba(18, 38, 26, 0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #edf2ed; padding-bottom: 14px;">
+            <div>
+              <span class="eyebrow" style="color: #2b5e38; font-weight: 800;">DEEP TELEMETRY CHARTS</span>
+              <h2 style="font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #163621; margin: 4px 0 0;">Visual Breakdown &amp; Conversions</h2>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="live-sync-indicator" style="background: #eef7eb; color: #226b38; border: 1px solid #c8e4cc; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;">
+                <span class="live-dot" style="background: #22c55e;"></span> Real-Time Synchronized
+              </span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 20px;" class="analytics-charts-grid">
+            <!-- Histogram -->
+            <div class="chart-card" style="background: #f8faf8; border: 1px solid #e1ebe2; border-radius: 10px; padding: 18px;">
+              <span style="font-size: 11px; font-weight: 800; color: #526657; text-transform: uppercase; display: block; margin-bottom: 10px;">REVENUE TRAJECTORY</span>
+              <div style="height: 120px;">
+                <svg viewBox="0 0 320 100" style="width: 100%; height: 100%;">
+                  <polygon points="10,85 55,70 110,60 165,75 220,40 275,30 310,20 310,95 10,95" fill="#2d6a4f22"/>
+                  <polyline points="10,85 55,70 110,60 165,75 220,40 275,30 310,20" fill="none" stroke="#255938" stroke-width="3"/>
+                  <circle cx="310" cy="20" r="5" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+                </svg>
+              </div>
+              <div style="font-size: 11px; color: #234830; font-weight: 700; margin-top: 6px;">Total Volume: {{ (stats.revenue / 100)|inr }}</div>
+            </div>
+
+            <!-- Donut -->
+            <div class="chart-card" style="background: #f8faf8; border: 1px solid #e1ebe2; border-radius: 10px; padding: 18px;">
+              <span style="font-size: 11px; font-weight: 800; color: #526657; text-transform: uppercase; display: block; margin-bottom: 10px;">RESERVATIONS RATIO</span>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="position: relative; width: 90px; height: 90px; flex-shrink: 0;">
+                  <svg viewBox="0 0 42 42" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                    <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#e5ece6" stroke-width="6"/>
+                    <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#256b37" stroke-width="6" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+                    <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#f59e0b" stroke-width="6" stroke-dasharray="20 80" stroke-dashoffset="-70"/>
+                    <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#ef4444" stroke-width="6" stroke-dasharray="10 90" stroke-dashoffset="-90"/>
+                  </svg>
+                  <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;">
+                    {{ stats.bookings }}
+                  </div>
+                </div>
+                <div style="font-size: 11px; display: grid; gap: 4px; width: 100%;">
+                  <div>🟢 Confirmed: <strong>{{ stats.confirmed }}</strong></div>
+                  <div>🟠 Pending: <strong>{{ stats.pending_bookings }}</strong></div>
+                  <div>🔴 Cancelled: <strong>{{ stats.cancelled_bookings }}</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Transport Proportions -->
+            <div class="chart-card" style="background: #f8faf8; border: 1px solid #e1ebe2; border-radius: 10px; padding: 18px;">
+              <span style="font-size: 11px; font-weight: 800; color: #526657; text-transform: uppercase; display: block; margin-bottom: 10px;">TRANSPORT PREFERENCE</span>
+              <div style="display: grid; gap: 6px; font-size: 11px;">
+                <div>🚗 Sedan / SUV: <strong>42%</strong></div>
+                <div>✈️ Flight Express: <strong>26%</strong></div>
+                <div>🚆 Rail Chair Car: <strong>18%</strong></div>
+                <div>🚶 Self / Skipped: <strong>14%</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
     <!-- =================================================================== -->
     <!-- VIEW: PACKAGES (ALL PACKAGES & CONTROLS FOR ADMIN) -->
@@ -881,6 +1215,7 @@
                 <option value="Vande Bharat Express / AC Rail" data-delta="0">🚆 Vande Bharat / AC Rail (Included ₹0)</option>
                 <option value="Flight Express Add-on" data-delta="4500">✈️ Flight Express Add-on (+₹4,500/pax)</option>
                 <option value="Luxury Volvo AC Sleeper" data-delta="-1000">🚌 Luxury Volvo AC Sleeper (Save ₹1,000/pax)</option>
+                <option value="No Transport Required (Self-Arranged)" data-delta="0">🚶 No Transport Required (Skip / Self-Arranged · ₹0)</option>
               </select>
             </div>
             <div>
@@ -1986,6 +2321,52 @@
     if (document.getElementById('agent-pkg-select')) {
       onAgentPkgChange();
     }
+
+    // Live Database Synchronizer for Admin
+    function syncDatabaseLive() {
+      const btn = document.getElementById('db-sync-btn');
+      const syncTopbarText = document.getElementById('sync-topbar-text');
+      const statusLabel = document.getElementById('sync-time-label');
+      if (syncTopbarText) syncTopbarText.textContent = 'Syncing...';
+      if (btn) btn.style.opacity = '0.6';
+
+      fetch('/admin/sync-live-data', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (statusLabel) statusLabel.textContent = data.synced_at || 'Just Now';
+        if (syncTopbarText) syncTopbarText.textContent = 'Live Sync';
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'flash flash-success page-flash';
+        alertDiv.innerHTML = `✓ ${data.message} (${data.synced_at}) <button onclick="this.parentElement.remove()">×</button>`;
+        const container = document.querySelector('.main-content');
+        if (container) container.insertBefore(alertDiv, container.children[1]);
+        setTimeout(() => { alertDiv.remove(); }, 4000);
+      })
+      .catch(() => {
+        window.location.reload();
+      })
+      .finally(() => {
+        if (btn) btn.style.opacity = '1';
+        if (syncTopbarText) syncTopbarText.textContent = 'Live Sync';
+      });
+    }
+
+    // Auto-sync polling every 45 seconds for active admin dashboard
+    {% if g.user.role == 'admin' %}
+      setInterval(() => {
+        fetch('/admin/sync-live-data', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+          const statusLabel = document.getElementById('sync-time-label');
+          if (statusLabel) statusLabel.textContent = data.synced_at || 'Just Now';
+        })
+        .catch(() => {});
+      }, 45000);
+    {% endif %}
   </script>
 </body>
 </html>

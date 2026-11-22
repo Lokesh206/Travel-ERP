@@ -458,7 +458,13 @@
             </div>
             <div class="detail-row">
               <span class="detail-label">Transportation Mode:</span>
-              <span class="detail-val" style="color: #145924; font-weight: 700;">{{ booking.transport_mode or 'Private AC Sedan / SUV Transfers' }}</span>
+              <span class="detail-val" style="color: {% if 'No Transport' in (booking.transport_mode or '') or 'Self' in (booking.transport_mode or '') %}#526657{% else %}#145924{% endif %}; font-weight: 700;">
+                {% if 'No Transport' in (booking.transport_mode or '') or 'Self' in (booking.transport_mode or '') %}
+                  🚶 Self-Arranged / No Transport Required
+                {% else %}
+                  {{ booking.transport_mode or 'Private AC Sedan / SUV Transfers' }}
+                {% endif %}
+              </span>
             </div>
           </div>
         </div>

@@ -910,3 +910,18 @@
     display: none !important;
   }
 }
+
+/* Graphical Analytics Mobile Responsiveness */
+@media (max-width: 900px) {
+  .analytics-charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .analytics-sub-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.skip-transport-pill:hover {
+  background: #deecdf !important;
+  border-color: #234830 !important;
+}

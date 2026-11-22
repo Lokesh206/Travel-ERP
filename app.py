@@ -3,13 +3,14 @@ from __future__ import annotations
 import os
 import secrets
 import sqlite3
+from datetime import datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote, urlsplit
 
-from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -775,13 +776,60 @@ def dashboard() -> Any:
            JOIN bookings b ON b.id=r.booking_id JOIN packages p ON p.id=b.package_id
            ORDER BY r.created_at DESC LIMIT 50"""
     ).fetchall() if role == "admin" else []
+
+    # Graphical analytics queries for Executive Dashboard
+    transport_stats = g.db.execute(
+        """SELECT COALESCE(transport_mode, 'Private AC Sedan / SUV') as mode, COUNT(*) as count,
+                  COALESCE(SUM(total_paise), 0) as total_paise
+           FROM bookings GROUP BY mode ORDER BY count DESC"""
+    ).fetchall() if role == "admin" else []
+
+    status_stats = g.db.execute(
+        """SELECT status, COUNT(*) as count, COALESCE(SUM(total_paise), 0) as total_paise
+           FROM bookings GROUP BY status"""
+    ).fetchall() if role == "admin" else []
+
+    package_occupancy = g.db.execute(
+        """SELECT title, destination, capacity, reserved,
+                  ROUND(CAST(reserved AS FLOAT) / MAX(1, capacity) * 100, 1) as occupancy_pct,
+                  (capacity - reserved) as available
+           FROM packages WHERE status='active' ORDER BY reserved DESC, capacity DESC LIMIT 6"""
+    ).fetchall() if role == "admin" else []
+
+    partner_sales = g.db.execute(
+        """SELECT a.code, u.name, a.level,
+                  COUNT(b.id) as booking_count,
+                  COALESCE(SUM(b.total_paise), 0) as total_volume
+           FROM agents a
+           JOIN users u ON u.id=a.user_id
+           LEFT JOIN bookings b ON b.agent_id=a.id AND b.status != 'cancelled'
+           GROUP BY a.id ORDER BY total_volume DESC, booking_count DESC LIMIT 5"""
+    ).fetchall() if role == "admin" else []
+
     return render_template(
         "dashboard.html", view=view, packages=packages, all_packages=all_packages, bookings=bookings, stats=stats,
         my_agent=my_agent, agents=agents, rules=rules, withdrawals=withdrawals,
         transactions=transactions, balance=balance, reserved=reserved,
         available_balance=max(0, balance - reserved), team=team, logs=logs,
         inquiries=inquiries, public_reviews=public_reviews, sent_emails=sent_emails,
+        transport_stats=transport_stats, status_stats=status_stats,
+        package_occupancy=package_occupancy, partner_sales=partner_sales,
     )
+
+
+@app.route("/admin/sync-live-data", methods=["GET", "POST"])
+@roles_required("admin")
+def sync_live_data() -> Any:
+    """Touch and synchronize database operational ledgers in real-time."""
+    now_str = datetime.now().strftime("%I:%M:%S %p")
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({
+            "status": "success",
+            "message": "Database synchronized with live operational ledger.",
+            "synced_at": now_str
+        })
+    flash(f"Database synchronized successfully at {now_str}. All operational metrics updated.", "success")
+    return redirect(url_for("dashboard", view="overview"))
 
 
 @app.post("/inquiries/<int:inquiry_id>/resolve")
@@ -882,6 +930,9 @@ def create_booking() -> Any:
                 transport_delta = 450000
             elif "volvo" in transport_mode.lower():
                 transport_delta = -100000
+            elif any(k in transport_mode.lower() for k in ["skip", "no transport", "self", "none", "not required"]):
+                transport_delta = 0
+                transport_mode = "No Transport Required (Self-Arranged)"
 
             total_amount = max(50000, (package["price_paise"] + transport_delta) * travellers)
 

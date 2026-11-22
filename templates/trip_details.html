@@ -187,9 +187,14 @@
 
             <!-- Transportation Mode Selection Grid -->
             <div class="transport-selection-block" style="margin-bottom: 14px;">
-              <label style="font-size: 11px; font-weight: 700; color: #1e3f28; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">
-                🚗 Transportation &amp; Transfer Mode
-              </label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="font-size: 11px; font-weight: 700; color: #1e3f28; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0;">
+                  🚗 Transportation &amp; Transfers
+                </label>
+                <button type="button" onclick="skipTransport()" class="skip-transport-pill" id="skip-transport-btn" style="background: #eef3ef; border: 1px solid #c9d8cb; color: #234830; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
+                  🚶 Skip Transport (₹0)
+                </button>
+              </div>
               <div class="transport-grid">
                 <label class="transport-card active" id="tr-card-sedan">
                   <input type="radio" name="transport_mode" value="Private AC Sedan / SUV" checked onchange="selectTransport('Private AC Sedan / SUV', 0, this)">
@@ -224,6 +229,15 @@
                     <div class="tr-title">🚌 Luxury Volvo AC Sleeper</div>
                     <div class="tr-desc">Multi-Axle reclining coach + hotel transfers</div>
                     <div class="tr-price-tag saver">Save ₹1,000 / person</div>
+                  </div>
+                </label>
+
+                <label class="transport-card" id="tr-card-skip">
+                  <input type="radio" name="transport_mode" id="tr-input-skip" value="No Transport Required (Self-Arranged)" onchange="selectTransport('No Transport Required (Self-Arranged)', 0, this)">
+                  <div class="tr-info">
+                    <div class="tr-title">🚶 No Transport (Skip)</div>
+                    <div class="tr-desc">I will arrange my own transport / Local arrival</div>
+                    <div class="tr-price-tag" style="color: #4b6b50;">Skip Transport (₹0)</div>
                   </div>
                 </label>
               </div>
@@ -546,20 +560,34 @@
       if (fareTravellerLabel) fareTravellerLabel.textContent = `${count} ${count === 1 ? 'Traveller' : 'Travellers'}`;
 
       if (fareTransportLabel && fareTransportDisplay) {
-        fareTransportLabel.textContent = `Transport (${currentTransportName}):`;
-        if (currentTransportDelta > 0) {
-          fareTransportDisplay.textContent = `+₹${Math.round(totalTransport).toLocaleString('en-IN')}`;
-          fareTransportDisplay.style.color = '#c27803';
-        } else if (currentTransportDelta < 0) {
-          fareTransportDisplay.textContent = `-₹${Math.round(Math.abs(totalTransport)).toLocaleString('en-IN')}`;
-          fareTransportDisplay.style.color = '#15803d';
+        if (currentTransportName.includes('No Transport') || currentTransportName.includes('Skip') || currentTransportName.includes('Self')) {
+          fareTransportLabel.textContent = 'Transport:';
+          fareTransportDisplay.textContent = 'Skipped / Self-Arranged (₹0)';
+          fareTransportDisplay.style.color = '#526657';
         } else {
-          fareTransportDisplay.textContent = 'Included (₹0)';
-          fareTransportDisplay.style.color = '#1e3f28';
+          fareTransportLabel.textContent = `Transport (${currentTransportName}):`;
+          if (currentTransportDelta > 0) {
+            fareTransportDisplay.textContent = `+₹${Math.round(totalTransport).toLocaleString('en-IN')}`;
+            fareTransportDisplay.style.color = '#c27803';
+          } else if (currentTransportDelta < 0) {
+            fareTransportDisplay.textContent = `-₹${Math.round(Math.abs(totalTransport)).toLocaleString('en-IN')}`;
+            fareTransportDisplay.style.color = '#15803d';
+          } else {
+            fareTransportDisplay.textContent = 'Included (₹0)';
+            fareTransportDisplay.style.color = '#1e3f28';
+          }
         }
       }
 
       updatePayButton();
+    }
+
+    function skipTransport() {
+      const radio = document.getElementById('tr-input-skip');
+      if (radio) {
+        radio.checked = true;
+        selectTransport('No Transport Required (Self-Arranged)', 0, radio);
+      }
     }
 
     function setUpiId(vpa) {
