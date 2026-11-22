@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Pending: Pay at desk / reserve
+    [*] --> Confirmed: Online payment
+    Pending --> Confirmed: Payment successful
+    Pending --> Cancelled: Customer / agent / admin
+    Confirmed --> Completed: Admin completes trip
+    Confirmed --> Cancelled: Agent / admin cancellation
+    Completed --> [*]
+    Cancelled --> [*]

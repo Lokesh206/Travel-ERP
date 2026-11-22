@@ -1,0 +1,15 @@
+flowchart TD
+    Req["HTTP request"] --> Session["Session validation"]
+    Session --> CSRF["CSRF token validation"]
+    CSRF --> Role["Role and permission check"]
+    Role --> Input["Validate input"]
+    Input --> Tx["Begin database transaction"]
+    Tx --> Check["Check capacity / state"]
+    Check --> Update["Update records"]
+    Update --> FK["Foreign keys & constraints"]
+    FK --> Commit["Commit transaction"]
+    Commit --> Response["Return response"]
+    Check --> Rollback["Rollback on error"]
+    Update --> Rollback
+    FK --> Rollback
+    Rollback --> Error["Safe error response"]

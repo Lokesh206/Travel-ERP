@@ -31,12 +31,11 @@ The system separates functionality across 3 distinct operational roles:
 
 | Operational Role | Representative Account | Login Email | Password | Scope & Specific Functions |
 | :--- | :--- | :--- | :--- | :--- |
-| **👑 Administrator** | **Aarav Mehta** (*HQ Operations*) | `admin@wanderwise.local` | `Admin@123` | **Full ERP Access**: Executive Cockpit, package creation & visibility, master booking ledger across all users, MLM partner tree, commission rules, payout approval, dispatched emails audit, system logs. |
+| **👑 Administrator (Single Admin)** | **Aarav Mehta** (*HQ Operations*) | `admin@wanderwise.local` | `Admin@123` | **Full ERP Access**: Executive Cockpit, package creation & visibility, master booking ledger across all users, MLM partner tree, commission rules, payout approval, dispatched emails audit, system logs. |
 | **💼 Agent (Partner)** | **Priya Sharma** (*Apex Holidays*) | `agent@wanderwise.local` | `Agent@123` | **Partner Portal**: Referral code `WW-1001`, **Book for Client ↗** (registers client bookings under partner code), manual client cancellation with seat release, earnings wallet & payout requests. |
-| **✈️ Traveler (Customer)** | **Lokesh M M Ankith** (*Explorer*) | `lokeshmmankith@gmail.com` | `Lokesh@123` | **Traveler Portal**: Direct trip booking with instant UPI QR code / card / net banking, personal booking ledger, printable official soft-copy vouchers & itinerary reports. |
-| **✈️ Traveler (Customer)** | **Maya Kapoor** (*Explorer*) | `customer@wanderwise.local` | `Travel@123` | **Traveler Portal**: Alternative guest profile for testing reviews and completed journeys. |
+| **✈️ Traveler (Direct Customer)** | **Lokesh M M Ankith** (*Explorer*) | `lokeshmmankith@gmail.com` | `Lokesh@123` | **Traveler Portal**: Direct trip booking with instant UPI QR code / card / net banking, personal booking ledger, printable official soft-copy vouchers & itinerary reports. |
 
-*(On the sign-in screen, the **Traveler Portal** button provides interactive profile options to select **Lokesh M M Ankith** or **Maya Kapoor** with 1-click).*
+*(On the sign-in screen, the **👑 Admin**, **💼 Agent**, and **✈️ Traveler** buttons provide 1-click direct credential pre-fill with email and password without modal drawers).*
 
 ---
 
@@ -289,6 +288,8 @@ Travel-ERP/
     ├── dashboard.html      # Complete Executive Command Center & Architecture Guide
     └── error.html          # User-friendly error boundary
 ```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for system, request-flow, booking-lifecycle, and relational diagrams.
 
 ---
 

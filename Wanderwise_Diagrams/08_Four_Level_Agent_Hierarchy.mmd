@@ -1,0 +1,14 @@
+flowchart TD
+    L0["Booking / Customer acquisition"]
+    A1["L1 Agent<br/>Direct referral"]
+    A2["L2 Agent<br/>L1 sponsor"]
+    A3["L3 Agent<br/>L2 sponsor"]
+    A4["L4 Agent<br/>L3 sponsor"]
+    L0 --> A1
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A1 --> W1["L1 wallet credit"]
+    A2 --> W2["L2 wallet credit"]
+    A3 --> W3["L3 wallet credit"]
+    A4 --> W4["L4 wallet credit"]

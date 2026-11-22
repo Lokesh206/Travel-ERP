@@ -1,0 +1,81 @@
+flowchart TB
+    U["USER TYPES<br/>Visitor | Customer | Agent | Admin"]
+    subgraph CLIENT["CLIENT / PRESENTATION"]
+      Browser["Browser"]
+      Public["Public Pages<br/>Home | Search | Package Details"]
+      Dash["Dashboards<br/>Customer | Agent | Admin"]
+      Forms["Forms<br/>Login | Register | Booking | Contact"]
+      Assets["Static Assets<br/>CSS | JS | Images"]
+    end
+    subgraph APP["FLASK APPLICATION"]
+      Routes["Routes & Controllers<br/>URL routing and request handling"]
+      Auth["Authentication<br/>Password verification & session"]
+      RBAC["Authorization<br/>Role-based access control"]
+      CSRF["CSRF validation"]
+      Validation["Input validation & sanitization"]
+      subgraph DOMAIN["DOMAIN / BUSINESS LOGIC"]
+        Catalog["Catalog Service<br/>Package search and filtering"]
+        Booking["Booking Service<br/>Reservation creation & status"]
+        Capacity["Inventory Service<br/>Seat/capacity locking"]
+        Payment["Payment State<br/>Method | reference | status"]
+        Commission["Commission Service<br/>Upline L1-L4 calculations"]
+        Wallet["Wallet Service<br/>Ledger and balance"]
+        Payout["Withdrawal Service<br/>Request | review | payout"]
+        Mail["Email Service<br/>Confirmation and audit log"]
+        Reviews["Review Service"]
+        Inquiry["Inquiry Service"]
+        Audit["Audit Service"]
+      end
+    end
+    subgraph DATA["DATA LAYER"]
+      DB[("SQLite Database")]
+      Users["users | agents"]
+      Packages["packages | package_details"]
+      Bookings["bookings"]
+      Finance["commission_rules<br/>wallet_transactions<br/>withdrawals"]
+      Other["reviews | sent_emails<br/>contact_inquiries | audit_logs"]
+    end
+    subgraph OPS["OPERATIONAL / CONFIGURATION"]
+      Config["Environment config<br/>Secret | HTTPS | DB path"]
+      Seed["Seed package data"]
+      Demo["Demo operational data"]
+      Runtime["Python 3.10+ / Flask 3.x<br/>run.bat or python app.py"]
+    end
+    U --> Browser
+    Browser --> Public
+    Browser --> Dash
+    Browser --> Forms
+    Browser --> Assets
+    Public --> Routes
+    Dash --> Routes
+    Forms --> Routes
+    Routes --> Auth
+    Routes --> CSRF
+    Auth --> RBAC
+    RBAC --> Validation
+    CSRF --> Validation
+    Validation --> DOMAIN
+    Catalog --> DB
+    Booking --> Capacity
+    Capacity --> DB
+    Booking --> Payment
+    Booking --> Bookings
+    Booking --> Mail
+    Booking --> Commission
+    Commission --> Wallet
+    Commission --> Finance
+    Wallet --> DB
+    Payout --> DB
+    Mail --> DB
+    Reviews --> DB
+    Inquiry --> DB
+    Audit --> DB
+    Users --> DB
+    Packages --> DB
+    Bookings --> DB
+    Finance --> DB
+    Other --> DB
+    Config --> Runtime
+    Seed --> DB
+    Demo --> DB
+    Runtime --> APP

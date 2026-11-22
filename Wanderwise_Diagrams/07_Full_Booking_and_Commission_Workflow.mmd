@@ -1,0 +1,27 @@
+flowchart TD
+    A["Customer / Agent selects package"] --> B["Check package status and dates"]
+    B --> C{"Capacity available?"}
+    C -- No --> D["Reject or offer alternatives"]
+    C -- Yes --> E["Atomically reserve traveller seats"]
+    E --> F["Create booking record"]
+    F --> G{"Payment / reservation type"}
+    G -- Online --> H["Record payment reference and confirm"]
+    G -- Pay later --> I["Create pending booking"]
+    H --> J["Send confirmation / log email"]
+    I --> K["Notify customer of pending status"]
+    J --> L["Trip happens"]
+    K --> L
+    L --> M["Admin marks booking completed"]
+    M --> N["Identify booking agent and upline"]
+    N --> O["Traverse upline hierarchy L1-L4"]
+    O --> P["Read commission rates"]
+    P --> Q["Calculate eligible commissions"]
+    Q --> R["Insert wallet ledger entries"]
+    R --> S["Agent wallet balance updated"]
+    S --> T["Agent requests withdrawal"]
+    T --> V["Admin reviews request"]
+    V --> W{"Approved?"}
+    W -- Yes --> X["Payout and mark completed"]
+    W -- No --> Y["Reject withdrawal"]
+    X --> Z["Audit transaction"]
+    Y --> Z

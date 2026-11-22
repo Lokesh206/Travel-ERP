@@ -1,0 +1,65 @@
+flowchart TB
+    subgraph U["USER LAYER"]
+        V["Public Visitor"]
+        C["Customer"]
+        A["Travel Agent"]
+        AD["Administrator"]
+    end
+    subgraph P["PRESENTATION TIER"]
+        UI["Public Marketplace<br/>Jinja2 Templates"]
+        WD["Role-Based Workspace<br/>Jinja2 Dashboard"]
+        AS["HTML5 / CSS3 / Images"]
+    end
+    subgraph F["FLASK APPLICATION TIER"]
+        R["HTTP Route Controllers<br/>app.py"]
+        S["Secure Session Cookies"]
+        AU["Authentication<br/>Scrypt"]
+        SE["CSRF Protection<br/>Login & Role Guards"]
+        subgraph B["BUSINESS SERVICES"]
+            M["Package Discovery"]
+            BK["Booking & Payment State"]
+            I["Atomic Seat Allocation"]
+            CO["4-Level Commission Engine"]
+            W["Wallet & Payout"]
+            E["Transactional Email Audit"]
+            IN["Inquiry Management"]
+            AL["Audit Logging"]
+        end
+    end
+    subgraph D["PERSISTENCE TIER"]
+        DB[("SQLite3 Database")]
+        T1["Users & Agents"]
+        T2["Packages & Package Details"]
+        T3["Bookings"]
+        T4["Wallet Transactions<br/>Withdrawals<br/>Commission Rules"]
+        T5["Reviews<br/>Emails<br/>Inquiries<br/>Audit Logs"]
+    end
+    V --> UI
+    C --> WD
+    A --> WD
+    AD --> WD
+    UI --> AS
+    WD --> AS
+    UI --> R
+    WD --> R
+    R --> S
+    R --> AU
+    R --> SE
+    S --> AU
+    SE --> B
+    M --> DB
+    BK --> I
+    I --> DB
+    BK --> E
+    BK --> T3
+    CO --> W
+    CO --> T4
+    W --> DB
+    E --> DB
+    IN --> DB
+    AL --> DB
+    T1 --> DB
+    T2 --> DB
+    T3 --> DB
+    T4 --> DB
+    T5 --> DB

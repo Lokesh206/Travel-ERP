@@ -1,0 +1,101 @@
+erDiagram
+    USERS ||--o| AGENTS : profile
+    USERS ||--o{ BOOKINGS : places
+    USERS ||--o{ REVIEWS : writes
+    USERS ||--o{ AUDIT_LOGS : performs
+    AGENTS ||--o{ AGENTS : parent
+    AGENTS ||--o{ BOOKINGS : refers
+    AGENTS ||--o{ WALLET_TRANSACTIONS : ledger
+    AGENTS ||--o{ WITHDRAWALS : requests
+    PACKAGES ||--|| PACKAGE_DETAILS : details
+    PACKAGES ||--o{ BOOKINGS : reserved
+    BOOKINGS ||--o| REVIEWS : review
+    BOOKINGS ||--o{ SENT_EMAILS : email
+    USERS {
+        int id PK
+        string name
+        string email UK
+        string password_hash
+        string role
+    }
+    AGENTS {
+        int id PK
+        int user_id FK
+        string code UK
+        int level
+        int parent_id FK
+    }
+    PACKAGES {
+        int id PK
+        string title
+        string destination
+        string category
+        int price_paise
+        int capacity
+        int reserved
+        string status
+    }
+    PACKAGE_DETAILS {
+        int package_id PK,FK
+        string stay_type
+        string meal_plan
+        string transport
+        string inclusions
+        string itinerary
+    }
+    BOOKINGS {
+        int id PK
+        string reference UK
+        int customer_id FK
+        int agent_id FK
+        int package_id FK
+        string travel_date
+        string return_date
+        int travellers
+        int total_paise
+        string status
+    }
+    WALLET_TRANSACTIONS {
+        int id PK
+        int agent_id FK
+        int amount_paise
+        string kind
+        string reference
+    }
+    WITHDRAWALS {
+        int id PK
+        int agent_id FK
+        int amount_paise
+        string status
+        int reviewed_by FK
+    }
+    COMMISSION_RULES {
+        int level PK
+        int rate_bps
+    }
+    REVIEWS {
+        int booking_id PK
+        int customer_id FK
+        int rating
+        string body
+    }
+    SENT_EMAILS {
+        int id PK
+        int booking_id FK
+        string recipient_email
+        string email_type
+        string status
+    }
+    CONTACT_INQUIRIES {
+        int id PK
+        string email
+        string subject
+        string status
+    }
+    AUDIT_LOGS {
+        int id PK
+        int actor_id FK
+        string action
+        string record_type
+        int record_id
+    }

@@ -1,0 +1,19 @@
+sequenceDiagram
+    actor User
+    participant Browser
+    participant Flask as Flask Application
+    participant Guard as Auth / CSRF / RBAC
+    participant DB as SQLite Database
+    User->>Browser: Open page or login
+    Browser->>Flask: HTTP GET / POST
+    Flask->>Flask: Open DB connection
+    Flask->>Guard: Load session & validate
+    alt Unauthorized or invalid request
+        Guard-->>Browser: Redirect / 403 / 400
+    else Authorized
+        Guard->>Flask: Invoke route handler
+        Flask->>DB: Query / transaction
+        DB-->>Flask: Rows / result
+        Flask-->>Browser: Render HTML / redirect
+    end
+    Flask->>Flask: Close DB connection

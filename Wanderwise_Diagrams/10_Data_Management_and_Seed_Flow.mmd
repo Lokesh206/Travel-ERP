@@ -1,0 +1,13 @@
+flowchart LR
+    Admin["Admin / Developer"]
+    Seed1["seed_data.py<br/>Package catalog"]
+    Seed2["seed_real_world.py<br/>Demo operations"]
+    Config["Config / environment<br/>database path"]
+    DB[("SQLite3 Database")]
+    App["Flask app"]
+    Admin --> Seed1
+    Admin --> Seed2
+    Seed1 --> DB
+    Seed2 --> DB
+    Config --> DB
+    App --> DB

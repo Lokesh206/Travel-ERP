@@ -1,0 +1,16 @@
+flowchart LR
+    User["User / Browser"]
+    Server["Python Runtime<br/>Python 3.10+"]
+    Flask["Flask 3.x<br/>Application"]
+    Templates["Jinja2 Templates"]
+    Static["Static Assets<br/>CSS / Images / JS"]
+    Database[("SQLite3<br/>travel_erp.sqlite3")]
+    Seed["seed_data.py"]
+    SeedReal["seed_real_world.py"]
+    User --> Server
+    Server --> Flask
+    Flask --> Templates
+    Flask --> Static
+    Flask --> Database
+    Seed --> Database
+    SeedReal --> Database
