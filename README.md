@@ -25,47 +25,55 @@ It bridges visitor-facing travel discovery with complete back-office ERP operati
 
 ---
 
-## 🔑 Verified Live Sample Credentials
+## 🔑 Verified Live Sample Credentials & Role Functions
 
-The system includes pre-configured, authentic accounts for all operational tiers with zero fake bookings pre-seeded:
+The system separates functionality across 3 distinct operational roles:
 
-| Role & Tier | Representative Name & Agency | Login Email | Password | Partner Code | Tier / Function |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **👤 Real Customer** | **Lokesh M M Ankith** (*Verified Customer*) | `lokeshmmankith@gmail.com` | `Lokesh@123` | *Guest* | **Direct User Booking & Payment** |
-| **👑 Administrator** | **Aarav Mehta** (*Head of Operations*) | `admin@wanderwise.local` | `Admin@123` | `HQ-ADMIN-01` | Executive HQ Controls & Master Ledger |
-| **💼 Principal Partner** | **Priya Sharma** (*Apex Travel Holidays*) | `agent@wanderwise.local` | `Agent@123` | `WW-1001` | **Tier 4** (0.5% Apex Override) |
-| **💼 Senior Partner** | **Rohan Das** (*Odyssey India Tours*) | `rohan@wanderwise.local` | `Agent@123` | `WW-1002` | **Tier 3** (1.0% Senior Override) |
-| **💼 Associate Partner** | **Nisha Rao** (*Deccan Voyages*) | `nisha@wanderwise.local` | `Agent@123` | `WW-1003` | **Tier 2** (2.0% Upline Override) |
-| **💼 Junior Partner** | **Kabir Singh** (*Heritage Trails Punjab*) | `kabir@wanderwise.local` | `Agent@123` | `WW-1004` | **Tier 1** (5.0% Direct Booking) |
-| **✈️ Verified Customer** | **Maya Kapoor** (*Traveller - Mumbai*) | `customer@wanderwise.local` | `Travel@123` | *Guest* | Active Itineraries & Reviews |
+| Operational Role | Representative Account | Login Email | Password | Scope & Specific Functions |
+| :--- | :--- | :--- | :--- | :--- |
+| **👑 Administrator** | **Aarav Mehta** (*HQ Operations*) | `admin@wanderwise.local` | `Admin@123` | **Full ERP Access**: Executive Cockpit, package creation & visibility, master booking ledger across all users, MLM partner tree, commission rules, payout approval, dispatched emails audit, system logs. |
+| **💼 Agent (Partner)** | **Priya Sharma** (*Apex Holidays*) | `agent@wanderwise.local` | `Agent@123` | **Partner Portal**: Referral code `WW-1001`, **Book for Client ↗** (registers client bookings under partner code), manual client cancellation with seat release, earnings wallet & payout requests. |
+| **✈️ Traveler (Customer)** | **Lokesh M M Ankith** (*Explorer*) | `lokeshmmankith@gmail.com` | `Lokesh@123` | **Traveler Portal**: Direct trip booking with instant UPI QR code / card / net banking, personal booking ledger, printable official soft-copy vouchers & itinerary reports. |
+| **✈️ Traveler (Customer)** | **Maya Kapoor** (*Explorer*) | `customer@wanderwise.local` | `Travel@123` | **Traveler Portal**: Alternative guest profile for testing reviews and completed journeys. |
 
-*(On the sign-in screen, use the **1-Click Quick Demo Login** buttons: 👑 Admin, 💼 Partner, 👤 Lokesh, or ✈️ Traveller to pre-fill credentials instantly).*
+*(On the sign-in screen, the **Traveler Portal** button provides interactive profile options to select **Lokesh M M Ankith** or **Maya Kapoor** with 1-click).*
 
 ---
 
-## 💳 Real-World Booking, Payment Options & Agent Controls
+## 💳 Real-World Features, Schedule Dates & Communications
 
-### 1. 100% Real Live Data (Zero Fake Pre-seeded Bookings)
+### 1. 100% Real Live Data (Zero Dummy Bookings Baseline)
 - The database starts with **0 dummy bookings**, **0 dummy transactions**, and **0 dummy withdrawals**.
-- When a user (such as Lokesh) reserves a trip, **only that authentic booking is registered** in the database.
-- If booked directly by the customer, it appears only under the customer and admin ledgers.
-- If booked through an agent's referral code (e.g., `WW-1001`), the booking is attributed specifically to that agent's agency and appears in their dashboard.
+- When an explorer (e.g. Lokesh) reserves a trip, **only that authentic booking is registered** in the database.
+- Direct website bookings appear only under the customer and admin master ledgers.
+- Bookings created by or referred through an agent (e.g. `WW-1001`) are attributed to that agent's portal.
 
-### 2. Multi-Option Payment Gateway Checkout
-When booking on the package details page (`/trips/<id>`) or dashboard:
-- **⚡ Instant UPI (GPay / PhonePe / Paytm / BHIM)**: Enter UPI ID for immediate payment verification.
-- **💳 Credit / Debit Card (Visa / MasterCard / RuPay)**: Enter card details with CVV and expiry for immediate processing.
-- **🏦 Net Banking (All Indian Banks)**: Select bank (SBI, HDFC, ICICI, Axis, PNB) with instant verification.
-- **⏳ Pay Later (Pay on Desk)**: Reserves seats with `pending` status, allowing payment later via UPI.
-- Selecting any online payment instantly assigns an official transaction reference (e.g. `PAY-UPI-98B2`, `PAY-CRD-7A1C`) and marks the booking `confirmed`.
+### 2. Departure Date AND Auto-Calculated Checkout / Return Date
+- Each booking explicitly tracks both **Departure / Start Date** and **Checkout / Return Date**.
+- When a traveller or agent selects a start date, the system **automatically computes the Return / Checkout Date** using the tour package's duration (e.g., *3 days / 2 nights*, *5 days / 4 nights*, *6 days / 5 nights*).
+- Both departure and checkout dates are displayed across:
+  - Package Booking Forms
+  - Bookings Master Ledger (`📅 2026-12-15 ➔ 2026-12-17`)
+  - Official Printable Soft-Copy Travel Voucher (`/bookings/<ref>/voucher`)
+  - Automated Confirmation & Completion Emails.
 
-### 3. Agent Manual Cancellation & Inventory Sync
-- Agents can view all client bookings attributed to their agency code.
-- If a client requests cancellation, the agent can click **Cancel booking ✕** directly from their bookings ledger.
-- The system automatically marks the booking `cancelled` and atomically restores the reserved seat capacity (`UPDATE packages SET reserved = MAX(0, reserved - ?)`).
+### 3. Multi-Gateway Payment Checkout with Interactive UPI QR Code
+- **⚡ Instant UPI with Dynamic QR Code**: An interactive SVG QR matrix pre-filled with the exact booking tariff. Travellers can scan with **Google Pay, PhonePe, Paytm, BHIM, Cred, Amazon Pay, or RuPay**. Includes a 1-click "Simulate QR Scan" button for instant testing.
+- **⚡ Quick-Select UPI ID (VPA) Chips**: 1-click select chips for GPay (`lokesh@okhdfcbank`), PhonePe (`@ybl`), Paytm (`@paytm`), BHIM (`@upi`), and the official desk VPA (`wanderwise.travel@icici`).
+- **💳 Credit / Debit Cards**: Visa, MasterCard, RuPay with CVV and expiry validation.
+- **🏦 Net Banking**: Immediate simulation for all major Indian banks (SBI, HDFC, ICICI, Axis, Kotak).
+- **⏳ Pay Later (Pay on Desk)**: Reserve seats with `pending` status, allowing the customer to pay online later from their dashboard.
 
-### 4. Seamless Homepage Logout Redirection
-- Logging out via the navigation bar, sidebar, or profile menu destroys the session and immediately redirects the user to the main public website homepage (`/`), providing a natural browsing experience.
+### 4. Partner (Agent) Booking for Client & Manual Cancellation
+- **Book for Client ↗**: When logged in as an Agent, partners can register a journey on behalf of their client (entering Client Name, Email, Phone, Dates, and Payment Option). The reservation is automatically attributed to the partner's referral code (`WW-1001`).
+- **Confirmation emails with soft-copy vouchers are sent to BOTH the client's email and the partner's email.**
+- **Manual Cancellation**: If a client requests cancellation, the agent can click **Cancel booking ✕** directly from their ledger, immediately releasing reserved seats back into package inventory.
+
+### 5. Automated Email Communications & Soft-Copy Voucher Report
+- **Booking Confirmed Email**: Dispatched immediately upon payment to the traveller's email (and partner copy if referred). Contains the booking reference, departure and checkout schedule, payment reference, and a direct button to view the official travel voucher.
+- **Trip Completed Email**: When an administrator completes a journey, a formal **Journey Completion Certificate & Itinerary Report** email is automatically dispatched to the traveller.
+- **Official Printable Travel Voucher (`/bookings/<reference>/voucher`)**: A print-ready A4 document with Wanderwise branding, reservation barcode, check-in/checkout schedule, stay and transport inclusions, payment receipt, and 24/7 emergency desk helpline. Supports 1-click printing or saving as PDF via `window.print()`.
+- **Admin Dispatched Emails Audit (`view=emails`)**: The administrator can review all dispatched transactional emails, delivery timestamps, recipients, and subjects in real time.
 
 ---
 

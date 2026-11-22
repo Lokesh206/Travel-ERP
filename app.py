@@ -72,9 +72,27 @@ CREATE TABLE IF NOT EXISTS bookings (
     agent_id INTEGER REFERENCES agents(id),
     package_id INTEGER NOT NULL REFERENCES packages(id),
     travel_date TEXT NOT NULL,
+    return_date TEXT,
     travellers INTEGER NOT NULL CHECK (travellers BETWEEN 1 AND 20),
     total_paise INTEGER NOT NULL CHECK (total_paise > 0),
     status TEXT NOT NULL CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+    payment_method TEXT,
+    payment_ref TEXT,
+    guest_name TEXT,
+    guest_email TEXT,
+    guest_phone TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS sent_emails (
+    id INTEGER PRIMARY KEY,
+    booking_id INTEGER REFERENCES bookings(id),
+    booking_ref TEXT,
+    recipient_email TEXT NOT NULL,
+    recipient_name TEXT,
+    subject TEXT NOT NULL,
+    email_type TEXT NOT NULL,
+    body_html TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'delivered',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS reviews (
@@ -126,6 +144,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 CREATE INDEX IF NOT EXISTS bookings_customer_idx ON bookings(customer_id, created_at);
 CREATE INDEX IF NOT EXISTS bookings_agent_idx ON bookings(agent_id, created_at);
+CREATE INDEX IF NOT EXISTS sent_emails_booking_idx ON sent_emails(booking_ref, created_at);
 CREATE INDEX IF NOT EXISTS wallet_agent_idx ON wallet_transactions(agent_id, created_at);
 CREATE INDEX IF NOT EXISTS withdrawals_agent_idx ON withdrawals(agent_id, created_at);
 CREATE INDEX IF NOT EXISTS reviews_created_idx ON reviews(created_at);
@@ -139,6 +158,101 @@ def connect_db() -> sqlite3.Connection:
     db.execute("PRAGMA foreign_keys = ON")
     db.execute("PRAGMA busy_timeout = 10000")
     return db
+
+
+def compute_return_date(start_date_str: str, duration_str: str) -> str:
+    try:
+        from datetime import datetime, timedelta
+        start = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        match = re.search(r"(\d+)\s*day", duration_str, re.IGNORECASE)
+        days = int(match.group(1)) if match else 3
+        checkout = start + timedelta(days=max(1, days - 1))
+        return checkout.isoformat()
+    except Exception:
+        return start_date_str
+
+
+def send_booking_email(booking: dict, email_type: str) -> None:
+    recipients = []
+    # 1. Primary Guest / Traveller Email
+    guest_email = booking.get("guest_email") or booking.get("customer_email")
+    guest_name = booking.get("guest_name") or booking.get("customer_name") or "Valued Traveller"
+    if guest_email:
+        recipients.append((guest_email, guest_name, False))
+
+    # 2. Agent / Partner Email (if booked with referral code or by agent)
+    if booking.get("agent_id"):
+        agent_user = g.db.execute(
+            "SELECT u.name, u.email FROM agents a JOIN users u ON u.id=a.user_id WHERE a.id=?",
+            (booking["agent_id"],)
+        ).fetchone()
+        if agent_user and agent_user["email"] != guest_email:
+            recipients.append((agent_user["email"], f"Partner {agent_user['name']}", True))
+
+    for rec_email, rec_name, is_agent_copy in recipients:
+        if email_type == "booking_confirmed":
+            subject = f"{'[PARTNER COPY] ' if is_agent_copy else ''}Booking Confirmed: {booking['title']} (#{booking['reference']}) - Wanderwise Travel Desk"
+            badge = "BOOKING CONFIRMED"
+            badge_color = "#1b5e20"
+            lead_msg = f"Dear {rec_name}, your tour reservation has been successfully confirmed and verified with payment."
+        elif email_type == "trip_completed":
+            subject = f"{'[PARTNER COPY] ' if is_agent_copy else ''}Journey Completed: {booking['title']} (#{booking['reference']}) - Travel Report & Certificate"
+            badge = "JOURNEY COMPLETED"
+            badge_color = "#0369a1"
+            lead_msg = f"Dear {rec_name}, congratulations on completing your incredible journey to {booking['destination']}! We hope you carry lifetime memories."
+        else:
+            subject = f"{'[PARTNER COPY] ' if is_agent_copy else ''}Trip Reserved: {booking['title']} (#{booking['reference']}) - Awaiting Payment"
+            badge = "RESERVATION PENDING"
+            badge_color = "#92400e"
+            lead_msg = f"Dear {rec_name}, your tour seats have been successfully reserved. Please complete payment before departure."
+
+        payment_line = f"<tr><td style='color: #6a7c6f; padding: 5px 0;'>Payment Ref:</td><td style='font-weight: 600; font-family: monospace; text-align: right;'>{booking['payment_ref']}</td></tr>" if booking.get('payment_ref') else ""
+        return_date_val = booking.get('return_date') or booking.get('travel_date')
+
+        html = f"""
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border: 1px solid #dbe4dc; border-radius: 12px; overflow: hidden; color: #1e2822;">
+          <div style="background: #193826; color: #ffffff; padding: 24px 30px; text-align: left;">
+            <div style="font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Wanderwise Travel ERP</div>
+            <div style="font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;">Incredible India Travel Desk · Official E-Ticket & Itinerary Report</div>
+          </div>
+          <div style="padding: 26px 30px;">
+            <div style="display: inline-block; background: {badge_color}18; color: {badge_color}; border: 1px solid {badge_color}40; border-radius: 20px; font-size: 11px; font-weight: 800; padding: 4px 12px; text-transform: uppercase;">{badge}</div>
+            <h2 style="font-size: 20px; color: #193826; margin: 12px 0 6px;">{booking['title']}</h2>
+            <p style="font-size: 13px; color: #5e6d63; margin-bottom: 20px;">{lead_msg}</p>
+            
+            <div style="background: #f4f8f4; border: 1px solid #dce8dd; border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Booking Reference:</td><td style="font-weight: 700; font-family: monospace; text-align: right;">#{booking['reference']}</td></tr>
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Departure / Start Date:</td><td style="font-weight: 700; text-align: right;">{booking['travel_date']} (Check-in 12:00 PM)</td></tr>
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Checkout / Return Date:</td><td style="font-weight: 700; text-align: right;">{return_date_val} (Checkout 11:00 AM)</td></tr>
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Tour Duration:</td><td style="font-weight: 700; text-align: right;">{booking.get('duration', 'Tour Duration')}</td></tr>
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Party Size:</td><td style="font-weight: 700; text-align: right;">{booking['travellers']} Guest(s)</td></tr>
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Total Amount:</td><td style="font-weight: 700; color: #193826; font-size: 15px; text-align: right;">₹{booking['total_paise']/100:,.0f}</td></tr>
+                <tr><td style="color: #6a7c6f; padding: 5px 0;">Payment Method:</td><td style="font-weight: 600; text-align: right;">{booking.get('payment_method', 'Online')}</td></tr>
+                {payment_line}
+              </table>
+            </div>
+
+            <div style="text-align: center; margin: 26px 0 16px;">
+              <a href="http://127.0.0.1:5000/bookings/{booking['reference']}/voucher" style="background: #193826; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 13px; display: inline-block;">
+                📄 View & Print Official Travel Voucher & Soft Copy 🖨️
+              </a>
+            </div>
+            <p style="text-align: center; font-size: 11px; color: #88998d;">A soft-copy PDF or paper printout of this voucher can be presented directly at hotel check-in and vehicle boarding.</p>
+          </div>
+          <div style="background: #f8faf8; border-top: 1px solid #e1e9e2; padding: 16px 30px; font-size: 11px; color: #6a7c6f; text-align: center;">
+            Wanderwise Travel ERP · 24/7 Helpline: +91 1800 200 4888 · Email: traveldesk@wanderwise.local
+          </div>
+        </div>
+        """
+        try:
+            g.db.execute(
+                """INSERT INTO sent_emails (booking_id, booking_ref, recipient_email, recipient_name, subject, email_type, body_html)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (booking.get("id"), booking["reference"], rec_email, rec_name, subject, email_type, html)
+            )
+        except Exception as e:
+            print("Email logging error:", e)
 
 
 def initialize_db() -> None:
@@ -180,12 +294,24 @@ def initialize_db() -> None:
             db.execute("INSERT INTO audit_logs(actor_id,action,record_type,record_id) VALUES(?,?,?,?)",
                        (ids["admin@wanderwise.local"], "Clean workspace initialized", "system", "seed"))
 
-        # Ensure payment columns exist on bookings
+        # Ensure new columns exist on bookings table
         b_cols = [r[1] for r in db.execute("PRAGMA table_info(bookings)").fetchall()]
-        if "payment_method" not in b_cols:
-            db.execute("ALTER TABLE bookings ADD COLUMN payment_method TEXT")
-        if "payment_ref" not in b_cols:
-            db.execute("ALTER TABLE bookings ADD COLUMN payment_ref TEXT")
+        for col in ["payment_method", "payment_ref", "return_date", "guest_name", "guest_email", "guest_phone"]:
+            if col not in b_cols:
+                db.execute(f"ALTER TABLE bookings ADD COLUMN {col} TEXT")
+
+        db.execute("""CREATE TABLE IF NOT EXISTS sent_emails (
+            id INTEGER PRIMARY KEY,
+            booking_id INTEGER REFERENCES bookings(id),
+            booking_ref TEXT,
+            recipient_email TEXT NOT NULL,
+            recipient_name TEXT,
+            subject TEXT NOT NULL,
+            email_type TEXT NOT NULL,
+            body_html TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'delivered',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )""")
 
     try:
         from seed_data import run_seed
@@ -518,6 +644,27 @@ def submit_review(booking_id: int) -> Any:
     return redirect(url_for("dashboard", view="bookings"))
 
 
+@app.get("/bookings/<string:reference>/voucher")
+def booking_voucher(reference: str) -> Any:
+    booking = g.db.execute(
+        """SELECT b.*, p.title, p.destination, p.duration, p.category, p.image_file,
+                  d.stay_type, d.meal_plan, d.transport, d.inclusions, d.itinerary,
+                  u.name AS customer_name, u.email AS customer_email,
+                  a.code AS agent_code, au.name AS agent_name
+           FROM bookings b
+           JOIN packages p ON p.id=b.package_id
+           LEFT JOIN package_details d ON d.package_id=p.id
+           JOIN users u ON u.id=b.customer_id
+           LEFT JOIN agents a ON a.id=b.agent_id
+           LEFT JOIN users au ON au.id=a.user_id
+           WHERE b.reference=?""",
+        (reference,)
+    ).fetchone()
+    if booking is None:
+        abort(404)
+    return render_template("booking_voucher.html", booking=booking)
+
+
 @app.get("/dashboard")
 @login_required
 def dashboard() -> Any:
@@ -529,21 +676,21 @@ def dashboard() -> Any:
     my_agent = get_my_agent() if role == "agent" else None
     if role == "customer":
         bookings = g.db.execute(
-            """SELECT b.*,p.title,p.destination,
+            """SELECT b.*,p.title,p.destination,p.duration,
                       EXISTS(SELECT 1 FROM reviews r WHERE r.booking_id=b.id) AS reviewed
                FROM bookings b JOIN packages p ON p.id=b.package_id
                WHERE b.customer_id=? ORDER BY b.created_at DESC""", (g.user["id"],)
         ).fetchall()
     elif role == "agent":
         bookings = g.db.execute(
-            """SELECT b.*,p.title,p.destination,u.name AS customer_name,
+            """SELECT b.*,p.title,p.destination,p.duration,u.name AS customer_name,
                       EXISTS(SELECT 1 FROM reviews r WHERE r.booking_id=b.id) AS reviewed FROM bookings b
                JOIN packages p ON p.id=b.package_id JOIN users u ON u.id=b.customer_id
                WHERE b.agent_id=? ORDER BY b.created_at DESC""", (my_agent["id"],)
         ).fetchall()
     else:
         bookings = g.db.execute(
-            """SELECT b.*,p.title,p.destination,u.name AS customer_name,
+            """SELECT b.*,p.title,p.destination,p.duration,u.name AS customer_name,
                       EXISTS(SELECT 1 FROM reviews r WHERE r.booking_id=b.id) AS reviewed FROM bookings b
                JOIN packages p ON p.id=b.package_id JOIN users u ON u.id=b.customer_id
                ORDER BY b.created_at DESC LIMIT 50"""
@@ -566,6 +713,9 @@ def dashboard() -> Any:
         "SELECT * FROM wallet_transactions WHERE agent_id=? ORDER BY created_at DESC LIMIT 12",
         (my_agent["id"],)
     ).fetchall() if my_agent else []
+    sent_emails = g.db.execute(
+        "SELECT * FROM sent_emails ORDER BY created_at DESC LIMIT 50"
+    ).fetchall() if role == "admin" else []
     stats = {
         "bookings": g.db.execute("SELECT COUNT(*) FROM bookings").fetchone()[0],
         "customers": g.db.execute("SELECT COUNT(*) FROM users WHERE role='customer'").fetchone()[0],
@@ -578,6 +728,7 @@ def dashboard() -> Any:
         "cancelled_bookings": g.db.execute("SELECT COUNT(*) FROM bookings WHERE status='cancelled'").fetchone()[0],
         "pending_withdrawals": g.db.execute("SELECT COUNT(*) FROM withdrawals WHERE status='pending'").fetchone()[0],
         "new_inquiries": g.db.execute("SELECT COUNT(*) FROM contact_inquiries WHERE status='new'").fetchone()[0],
+        "sent_emails_count": len(sent_emails) if role == "admin" else 0,
         "review_count": g.db.execute("SELECT COUNT(*) FROM reviews").fetchone()[0],
         "active_packages": g.db.execute("SELECT COUNT(*) FROM packages WHERE status='active'").fetchone()[0],
         "total_packages": g.db.execute("SELECT COUNT(*) FROM packages").fetchone()[0],
@@ -622,7 +773,7 @@ def dashboard() -> Any:
         my_agent=my_agent, agents=agents, rules=rules, withdrawals=withdrawals,
         transactions=transactions, balance=balance, reserved=reserved,
         available_balance=max(0, balance - reserved), team=team, logs=logs,
-        inquiries=inquiries, public_reviews=public_reviews,
+        inquiries=inquiries, public_reviews=public_reviews, sent_emails=sent_emails,
     )
 
 
@@ -646,15 +797,19 @@ def resolve_inquiry(inquiry_id: int) -> Any:
 @app.post("/bookings")
 @login_required
 def create_booking() -> Any:
-    return_to = safe_local_next(request.form.get("return_to")) or url_for("dashboard", view="packages")
+    return_to = safe_local_next(request.form.get("return_to")) or url_for("dashboard", view="bookings")
     package_id = request.form.get("package_id", type=int)
-    travel_date = request.form.get("travel_date", "")
+    travel_date = request.form.get("travel_date", "").strip()
+    return_date = request.form.get("return_date", "").strip()
     travellers = request.form.get("travellers", type=int)
     referral = request.form.get("agent_code", "").strip().upper()
     payment_method_input = request.form.get("payment_method", "upi").strip().lower()
     upi_id = request.form.get("upi_id", "").strip()
     card_number = request.form.get("card_number", "").strip()
     bank_name = request.form.get("bank_name", "").strip()
+    guest_name = request.form.get("guest_name", "").strip()
+    guest_email = request.form.get("guest_email", "").strip().lower()
+    guest_phone = request.form.get("guest_phone", "").strip()
 
     if not package_id or not travellers or not 1 <= travellers <= 20 or not travel_date:
         flash("Choose a date and enter between 1 and 20 travellers.", "error")
@@ -676,13 +831,37 @@ def create_booking() -> Any:
                 raise ValueError("That trip is no longer available.")
             if package["capacity"] - package["reserved"] < travellers:
                 raise ValueError("There aren’t enough seats left for that trip.")
+
+            # Calculate return / checkout date if not explicitly supplied
+            if not return_date:
+                return_date = compute_return_date(travel_date, package["duration"])
+
             agent = None
             if g.user["role"] == "agent":
                 agent = get_my_agent()
-            elif referral:
-                agent = g.db.execute("SELECT * FROM agents WHERE code=?", (referral,)).fetchone()
-                if agent is None:
-                    raise ValueError("That agent referral code wasn’t found.")
+                # Partner is booking for client: ensure client user exists
+                client_email = guest_email or f"client-{secrets.token_hex(3)}@wanderwise.local"
+                client_name = guest_name or "Client Traveller"
+                client_user = g.db.execute("SELECT id FROM users WHERE email=?", (client_email,)).fetchone()
+                if not client_user:
+                    cur = g.db.execute(
+                        "INSERT INTO users(name,email,password_hash,role) VALUES(?,?,?,'customer')",
+                        (client_name, client_email, generate_password_hash("Travel@123")),
+                    )
+                    customer_id = cur.lastrowid
+                else:
+                    customer_id = client_user["id"]
+                guest_name = client_name
+                guest_email = client_email
+            else:
+                customer_id = g.user["id"]
+                guest_name = guest_name or g.user["name"]
+                guest_email = guest_email or g.user["email"]
+                if referral:
+                    agent = g.db.execute("SELECT * FROM agents WHERE code=?", (referral,)).fetchone()
+                    if agent is None:
+                        raise ValueError("That agent referral code wasn’t found.")
+
             reservation = g.db.execute(
                 "UPDATE packages SET reserved=reserved+? WHERE id=? AND status='active' AND capacity-reserved>=?",
                 (travellers, package_id, travellers),
@@ -712,17 +891,42 @@ def create_booking() -> Any:
                 status = "pending"
 
             cursor = g.db.execute(
-                """INSERT INTO bookings(reference,customer_id,agent_id,package_id,travel_date,
-                   travellers,total_paise,status,payment_method,payment_ref) VALUES(?,?,?,?,?,?,?,?,?,?)""",
-                (reference, g.user["id"], agent["id"] if agent else None, package_id,
-                 travel_date, travellers, total_amount, status, method_name, payment_ref),
+                """INSERT INTO bookings(reference,customer_id,agent_id,package_id,travel_date,return_date,
+                   travellers,total_paise,status,payment_method,payment_ref,guest_name,guest_email,guest_phone)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (reference, customer_id, agent["id"] if agent else None, package_id,
+                 travel_date, return_date, travellers, total_amount, status, method_name, payment_ref,
+                 guest_name, guest_email, guest_phone),
             )
+            booking_id = cursor.lastrowid
+
+            # Dispatch confirmation email with soft-copy voucher report
+            booking_record = {
+                "id": booking_id,
+                "reference": reference,
+                "title": package["title"],
+                "destination": package["destination"],
+                "duration": package["duration"],
+                "travel_date": travel_date,
+                "return_date": return_date,
+                "travellers": travellers,
+                "total_paise": total_amount,
+                "status": status,
+                "payment_method": method_name,
+                "payment_ref": payment_ref,
+                "guest_name": guest_name,
+                "guest_email": guest_email,
+                "guest_phone": guest_phone,
+                "agent_id": agent["id"] if agent else None,
+            }
+            send_booking_email(booking_record, "booking_confirmed" if status == "confirmed" else "booking_reserved")
+
             if status == "confirmed":
                 audit(f"Booking {reference} confirmed with payment ({method_name})", "booking", reference)
-                flash(f"Payment of ₹{total_amount / 100:,.0f} successful via {method_name}! Booking {reference} is confirmed.", "success")
+                flash(f"Payment of ₹{total_amount / 100:,.0f} successful via {method_name}! Booking {reference} confirmed. Confirmation email & travel voucher sent to {guest_email}.", "success")
             else:
                 audit(f"Booking {reference} reserved (Pay Later)", "booking", reference)
-                flash(f"Trip reserved! Booking {reference} is awaiting payment. You can pay online anytime from your bookings ledger.", "success")
+                flash(f"Trip reserved! Booking {reference} is awaiting payment. E-ticket summary sent to {guest_email}.", "success")
     except ValueError as error:
         flash(str(error), "error")
     return redirect(url_for("dashboard", view="bookings"))
@@ -753,7 +957,15 @@ def pay_booking(booking_id: int) -> Any:
                 (pay_method, txn_ref, booking_id)
             )
             audit(f"Payment recorded via {pay_method} (Ref: {txn_ref})", "booking", booking["reference"])
-        flash(f"Payment verified via {pay_method}! Booking {booking['reference']} is now confirmed.", "success")
+            
+            # Fetch updated booking and send confirmation email
+            paid_b = g.db.execute(
+                """SELECT b.*, p.title, p.destination, p.duration
+                   FROM bookings b JOIN packages p ON p.id=b.package_id WHERE b.id=?""", (booking_id,)
+            ).fetchone()
+            if paid_b:
+                send_booking_email(dict(paid_b), "booking_confirmed")
+        flash(f"Payment verified via {pay_method}! Booking {booking['reference']} is now confirmed. Travel voucher sent via email.", "success")
     return redirect(url_for("dashboard", view="bookings"))
 
 
@@ -804,6 +1016,19 @@ def update_booking(booking_id: int) -> Any:
                         if not agent["parent_id"]:
                             break
                         agent_id = agent["parent_id"]
+
+                # Dispatch Journey Completion Certificate & Report Email to traveller
+                comp_b = g.db.execute(
+                    """SELECT b.*, p.title, p.destination, p.duration, u.name AS customer_name, u.email AS customer_email,
+                              a.code AS agent_code
+                       FROM bookings b
+                       JOIN packages p ON p.id=b.package_id
+                       JOIN users u ON u.id=b.customer_id
+                       LEFT JOIN agents a ON a.id=b.agent_id
+                       WHERE b.id=?""", (booking_id,)
+                ).fetchone()
+                if comp_b:
+                    send_booking_email(dict(comp_b), "trip_completed")
             else:
                 if booking["status"] not in ("pending", "confirmed"):
                     raise ValueError("This booking can no longer be cancelled.")
@@ -814,7 +1039,7 @@ def update_booking(booking_id: int) -> Any:
                 )
             audit(f"Booking marked {status}", "booking", booking["reference"])
         if status == "completed":
-            flash(f"Booking {booking['reference']} marked completed. Eligible commissions have been added to the agent wallet ledger.", "success")
+            flash(f"Booking {booking['reference']} marked completed. Eligible commissions credited and Journey Completion Certificate & soft-copy report emailed to traveller.", "success")
         else:
             flash(f"Booking {booking['reference']} has been cancelled and {booking['travellers']} reserved seat(s) released.", "success")
     except ValueError as error:

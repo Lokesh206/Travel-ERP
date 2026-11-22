@@ -18,9 +18,10 @@
     <div class="workspace-label">WORKSPACE</div>
     <nav class="nav-menu">
       <a class="nav-link {{ 'active' if view == 'overview' }}" href="{{ url_for('dashboard', view='overview') }}"><span>◫</span> Overview</a>
-      <a class="nav-link {{ 'active' if view == 'packages' }}" href="{{ url_for('dashboard', view='packages') }}"><span>⌘</span> {% if g.user.role == 'admin' %}Manage packages{% else %}Explore trips{% endif %} <span class="nav-count">{{ stats.active_packages if stats.active_packages is defined else packages|length }}</span></a>
-      <a class="nav-link {{ 'active' if view == 'bookings' }}" href="{{ url_for('dashboard', view='bookings') }}"><span>▤</span> Bookings {% if g.user.role == 'admin' and stats.pending_bookings %}<span class="nav-count" style="background: #fbf1de; color: #9c7940;">{{ stats.pending_bookings }}</span>{% endif %}</a>
+      <a class="nav-link {{ 'active' if view == 'packages' }}" href="{{ url_for('dashboard', view='packages') }}"><span>⌘</span> {% if g.user.role == 'admin' %}Manage packages{% elif g.user.role == 'agent' %}Tour Packages{% else %}Explore trips{% endif %} <span class="nav-count">{{ stats.active_packages if stats.active_packages is defined else packages|length }}</span></a>
+      <a class="nav-link {{ 'active' if view == 'bookings' }}" href="{{ url_for('dashboard', view='bookings') }}"><span>▤</span> {% if g.user.role == 'agent' %}Referred Bookings{% else %}Bookings Ledger{% endif %} {% if g.user.role == 'admin' and stats.pending_bookings %}<span class="nav-count" style="background: #fbf1de; color: #9c7940;">{{ stats.pending_bookings }}</span>{% endif %}</a>
       {% if g.user.role == 'agent' %}
+        <a class="nav-link {{ 'active' if view == 'book_client' }}" href="{{ url_for('dashboard', view='book_client') }}" style="background: #eef7ee; color: #1c4b27; font-weight: 700;"><span>✍</span> Book for Client ↗</a>
         <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Earnings &amp; wallet</a>
         <a class="nav-link {{ 'active' if view == 'team' }}" href="{{ url_for('dashboard', view='team') }}"><span>♧</span> My travel circle</a>
       {% endif %}
@@ -30,6 +31,7 @@
         <a class="nav-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}"><span>◈</span> Commission ladder</a>
         <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Payouts queue {% if stats.pending_withdrawals %}<span class="nav-count" style="background: #faeae7; color: #a4594c;">{{ stats.pending_withdrawals }}</span>{% endif %}</a>
         <a class="nav-link {{ 'active' if view == 'inquiries' }}" href="{{ url_for('dashboard', view='inquiries') }}"><span>✉</span> Contact inbox {% if stats.new_inquiries %}<span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">{{ stats.new_inquiries }}</span>{% endif %}</a>
+        <a class="nav-link {{ 'active' if view == 'emails' }}" href="{{ url_for('dashboard', view='emails') }}"><span>📧</span> Dispatched Emails <span class="nav-count">{{ sent_emails|length }}</span></a>
         <a class="nav-link {{ 'active' if view == 'reviews' }}" href="{{ url_for('dashboard', view='reviews') }}"><span>★</span> Traveler reviews</a>
         <a class="nav-link {{ 'active' if view == 'audit' }}" href="{{ url_for('dashboard', view='audit') }}"><span>◷</span> Activity audit</a>
         <div class="workspace-label nav-spacer">PUBLIC SITE</div>
@@ -703,16 +705,112 @@
       </section>
 
     <!-- =================================================================== -->
+    <!-- VIEW: AGENT BOOK FOR CLIENT -->
+    <!-- =================================================================== -->
+    {% elif view == 'book_client' and g.user.role == 'agent' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">PARTNER AGENCY DESK</span>
+          <h1>Book a Journey for <em>Your Client.</em></h1>
+          <p class="muted">Register reservations on behalf of your travelers under your official referral code ({{ my_agent.code }}). Confirmation vouchers and trip reports will be emailed to both you and your client.</p>
+        </div>
+        <a class="button button-green" href="{{ url_for('dashboard', view='bookings') }}">View Client Bookings ↗</a>
+      </section>
+
+      <section class="panel form-panel" style="max-width: 820px; margin: 0 auto;">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">CLIENT RESERVATION FORM</span>
+            <h2>New Client Booking · Partner Code {{ my_agent.code }}</h2>
+          </div>
+        </div>
+
+        <form method="post" action="{{ url_for('create_booking') }}" style="display: grid; gap: 16px; padding: 22px 28px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="agent_code" value="{{ my_agent.code }}">
+          <input type="hidden" name="return_to" value="{{ url_for('dashboard', view='bookings') }}">
+
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Select Tour Package</label>
+            <select name="package_id" id="agent-pkg-select" required style="height: 42px; width: 100%; border-radius: 8px; border: 1px solid #d4ded6; padding: 0 12px; font-size: 13px;" onchange="onAgentPkgChange()">
+              {% for p in packages %}
+                <option value="{{ p.id }}" data-price="{{ (p.price_paise / 100)|round }}" data-duration="{{ p.duration }}" {% if request.args.get('pkg')|int == p.id %}selected{% endif %}>
+                  {{ p.title }} ({{ p.destination }}) · {{ p.duration }} · {{ (p.price_paise / 100)|inr }}/person ({{ p.available }} seats available)
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Client Full Name</label>
+              <input type="text" name="guest_name" placeholder="e.g. Ramesh Kumar" required style="height: 40px; width: 100%;">
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Client Email Address (For E-Ticket &amp; Soft Copy)</label>
+              <input type="email" name="guest_email" placeholder="e.g. ramesh.kumar@gmail.com" required style="height: 40px; width: 100%;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Client Contact Phone</label>
+              <input type="tel" name="guest_phone" placeholder="+91 98765 43210" value="+91 98765 43210" style="height: 40px; width: 100%;">
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Departure Date</label>
+              <input type="date" name="travel_date" id="agent-start-date" min="{{ today }}" value="{{ today }}" required style="height: 40px; width: 100%;" onchange="onAgentDateChange(this.value)">
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Checkout / Return Date</label>
+              <input type="date" name="return_date" id="agent-return-date" min="{{ today }}" required readonly style="height: 40px; width: 100%; background: #f4f8f4; font-weight: 700; color: #1e3a26;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 14px; align-items: center;">
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Number of Guests</label>
+              <input type="number" name="travellers" id="agent-guests-input" min="1" max="20" value="2" required style="height: 40px; width: 100%;" oninput="onAgentGuestsChange()">
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Payment Option</label>
+              <select name="payment_method" style="height: 40px; width: 100%; border-radius: 6px; border: 1px solid #d4ded6;">
+                <option value="upi">⚡ Client Paid via UPI (Instant Confirm &amp; Voucher)</option>
+                <option value="card">💳 Client Paid via Credit/Debit Card</option>
+                <option value="netbanking">🏦 Client Paid via Net Banking</option>
+                <option value="pay_later">⏳ Pay Later on Desk (Pending Reservation)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="background: #f7faf7; border: 1px solid #dce8dd; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #5f7064; display: block;">Total Booking Tariff:</span>
+              <strong id="agent-total-display" style="font-size: 22px; color: #193826; font-family: 'DM Sans', sans-serif;">Calculating...</strong>
+            </div>
+            <button class="button button-dark" type="submit" style="padding: 12px 24px;">
+              Confirm Client Booking &amp; Dispatch Voucher ↗
+            </button>
+          </div>
+        </form>
+      </section>
+
+    <!-- =================================================================== -->
     <!-- VIEW: BOOKINGS -->
     <!-- =================================================================== -->
     {% elif view == 'bookings' %}
       <section class="page-heading">
         <div>
           <span class="eyebrow">RESERVATIONS &amp; ITINERARIES</span>
-          <h1>The Booking <em>Master Ledger.</em></h1>
-          <p class="muted">Follow each trip as it progresses from reservation request to completed journey.</p>
+          <h1>{% if g.user.role == 'agent' %}Client <em>Reservations Ledger.</em>{% else %}The Booking <em>Master Ledger.</em>{% endif %}</h1>
+          <p class="muted">Follow each trip as it progresses from reservation request to completed journey. Printable soft-copy vouchers and travel reports are issued for all bookings.</p>
         </div>
-        <a class="button button-green" href="{{ url_for('dashboard', view='packages') }}">Explore collection ↗</a>
+        <div style="display: flex; gap: 10px;">
+          {% if g.user.role == 'agent' %}
+            <a class="button button-green" href="{{ url_for('dashboard', view='book_client') }}">Book for Client ↗</a>
+          {% endif %}
+          <a class="button button-dark" href="{{ url_for('dashboard', view='packages') }}">Explore collection ↗</a>
+        </div>
       </section>
 
       <section class="panel table-panel">
@@ -727,26 +825,30 @@
           <table>
             <thead>
               <tr>
-                <th>REF / DATE</th>
+                <th>REF / SCHEDULE</th>
                 {% if g.user.role != 'customer' %}<th>TRAVELLER</th>{% endif %}
                 <th>JOURNEY</th>
                 <th>GUESTS</th>
                 <th>TOTAL</th>
                 <th>PAYMENT &amp; REF</th>
                 <th>STATUS</th>
-                <th>ACTIONS &amp; WHAT'S NEXT</th>
+                <th>ACTIONS &amp; SOFT COPY</th>
               </tr>
             </thead>
             <tbody>
               {% for booking in bookings %}
                 <tr>
                   <td>
-                    <strong>{{ booking.reference }}</strong>
-                    <span class="cell-sub">{{ booking.travel_date }}</span>
+                    <strong style="font-family: monospace;">#{{ booking.reference }}</strong>
+                    <span class="cell-sub" style="font-weight: 600; color: #1e4526; font-size: 11px;">
+                      📅 {{ booking.travel_date }} ➔ {{ booking.return_date or booking.travel_date }}
+                    </span>
+                    {% if booking.duration %}<span class="cell-sub" style="font-size: 10px; color: #647568;">{{ booking.duration }}</span>{% endif %}
                   </td>
                   {% if g.user.role != 'customer' %}
                     <td>
-                      <strong>{{ booking.customer_name }}</strong>
+                      <strong>{{ booking.guest_name or booking.customer_name }}</strong>
+                      {% if booking.guest_email %}<span class="cell-sub">{{ booking.guest_email }}</span>{% endif %}
                     </td>
                   {% endif %}
                   <td>
@@ -767,6 +869,9 @@
                   </td>
                   <td><span class="status-badge status-{{ booking.status }}">{{ booking.status|title }}</span></td>
                   <td class="action-cell">
+                    <!-- Soft-Copy Travel Voucher Report Button -->
+                    <a href="{{ url_for('booking_voucher', reference=booking.reference) }}" target="_blank" class="mini-action" style="background:#eef7ee; color:#1b5e20; border-color:#c4e2c7; text-decoration:none; margin-right:4px;" title="View &amp; Print Official Soft-Copy Travel Voucher">Voucher 📄</a>
+
                     {% if booking.status == 'pending' %}
                       {% if g.user.role == 'customer' %}
                         <form method="post" action="{{ url_for('pay_booking', booking_id=booking.id) }}" style="display:inline;">
@@ -1174,6 +1279,75 @@
             <p>Verified reviews will appear here once travellers complete their trips.</p>
           </div>
         {% endfor %}
+      </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW: DISPATCHED EMAILS (ADMIN) -->
+    <!-- =================================================================== -->
+    {% elif view == 'emails' and g.user.role == 'admin' %}
+      <section class="page-heading">
+        <div>
+          <span class="eyebrow">TRANSACTIONAL COMMUNICATIONS</span>
+          <h1>Dispatched Emails &amp; <em>Travel Vouchers.</em></h1>
+          <p class="muted">Live audit trail of all confirmation receipts, payment verifications, and trip completion certificates delivered to travelers and partners.</p>
+        </div>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">DELIVERY LEDGER</span>
+            <h2>{{ sent_emails|length }} Dispatched Messages</h2>
+          </div>
+          <input class="table-search" type="search" placeholder="Filter by recipient, ref, or subject…" data-table-search>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>TIMESTAMP</th>
+                <th>RECIPIENT &amp; ROLE</th>
+                <th>BOOKING REF</th>
+                <th>MESSAGE TYPE</th>
+                <th>SUBJECT</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for em in sent_emails %}
+                <tr>
+                  <td>
+                    <span class="cell-sub" style="font-family: monospace;">{{ em.created_at }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ em.recipient_name or 'Traveller' }}</strong>
+                    <span class="cell-sub">{{ em.recipient_email }}</span>
+                  </td>
+                  <td>
+                    <strong style="font-family: monospace;">#{{ em.booking_ref }}</strong>
+                  </td>
+                  <td>
+                    {% if em.email_type == 'booking_confirmed' %}
+                      <span class="status-badge status-confirmed" style="font-size: 9px; padding: 3px 8px;">CONFIRMED</span>
+                    {% elif em.email_type == 'trip_completed' %}
+                      <span class="status-badge status-completed" style="font-size: 9px; padding: 3px 8px;">COMPLETED</span>
+                    {% else %}
+                      <span class="status-badge status-pending" style="font-size: 9px; padding: 3px 8px;">RESERVED</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span style="font-size: 12px; font-weight: 600; color: #213d29;">{{ em.subject }}</span>
+                  </td>
+                  <td>
+                    <a href="{{ url_for('booking_voucher', reference=em.booking_ref) }}" target="_blank" class="mini-action" style="text-decoration: none;">View Voucher ↗</a>
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="6" class="empty-cell">No emails dispatched yet. As bookings are placed, confirmed, or completed, email records will be logged here.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </section>
 
     <!-- =================================================================== -->
@@ -1603,6 +1777,48 @@
       if (elT3) elT3.textContent = fmt(t3);
       if (elT4) elT4.textContent = fmt(t4);
       if (elPlat) elPlat.textContent = fmt(plat);
+    }
+
+    function onAgentPkgChange() {
+      const sel = document.getElementById('agent-pkg-select');
+      if (!sel) return;
+      const opt = sel.options[sel.selectedIndex];
+      const dur = opt.getAttribute('data-duration') || '3 days';
+      const startDate = document.getElementById('agent-start-date').value;
+      onAgentDateChange(startDate, dur);
+      onAgentGuestsChange();
+    }
+
+    function onAgentDateChange(startDateStr, customDur) {
+      if (!startDateStr) return;
+      const sel = document.getElementById('agent-pkg-select');
+      const dur = customDur || (sel ? sel.options[sel.selectedIndex].getAttribute('data-duration') : '3 days');
+      const m = (dur || '').match(/(\d+)\s*day/i);
+      const days = m ? parseInt(m[1], 10) : 3;
+      const start = new Date(startDateStr);
+      const checkout = new Date(start);
+      checkout.setDate(start.getDate() + Math.max(1, days - 1));
+      const yyyy = checkout.getFullYear();
+      const mm = String(checkout.getMonth() + 1).padStart(2, '0');
+      const dd = String(checkout.getDate()).padStart(2, '0');
+      const checkoutInput = document.getElementById('agent-return-date');
+      if (checkoutInput) checkoutInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    function onAgentGuestsChange() {
+      const sel = document.getElementById('agent-pkg-select');
+      const guestsInput = document.getElementById('agent-guests-input');
+      const totalDisplay = document.getElementById('agent-total-display');
+      if (!sel || !guestsInput || !totalDisplay) return;
+      const opt = sel.options[sel.selectedIndex];
+      const price = parseFloat(opt.getAttribute('data-price')) || 0;
+      const guests = parseInt(guestsInput.value, 10) || 1;
+      const total = price * guests;
+      totalDisplay.textContent = '₹' + Math.round(total).toLocaleString('en-IN');
+    }
+
+    if (document.getElementById('agent-pkg-select')) {
+      onAgentPkgChange();
     }
   </script>
 </body>
