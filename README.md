@@ -3,8 +3,11 @@
 > **Enterprise Indian Travel Commerce & Agency Operations ERP Platform**  
 > Built with Python, Flask, SQLite3, HTML5, CSS3, and modern responsive design.
 
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Lokesh206/Travel-ERP)
+[![Python Version](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![Framework](https://img.shields.io/badge/framework-Flask%203.x-green.svg)](https://flask.palletsprojects.com/)
+[![WSGI Server](https://img.shields.io/badge/WSGI-Gunicorn%2022.x-black.svg)](https://gunicorn.org/)
+[![Hosting](https://img.shields.io/badge/hosting-Render-46E3B7.svg)](https://render.com/)
 [![Database](https://img.shields.io/badge/database-SQLite3%20WAL-lightgrey.svg)](https://www.sqlite.org/)
 [![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
@@ -264,6 +267,23 @@ python app.py
 
 Open `http://127.0.0.1:5000` in your web browser.
 
+### 🌐 Deploy Live to Render (1-Click or Manual)
+
+This repository includes full out-of-the-box configuration for [Render](https://render.com) (`render.yaml`, `Procfile`, `gunicorn`, `.python-version`):
+
+1. **Option A (1-Click Blueprint - Recommended)**:
+   - Go to [dashboard.render.com](https://dashboard.render.com/) ➔ Click **New +** ➔ **Blueprint**.
+   - Select your repo **`Lokesh206/Travel-ERP`** and click **Apply**.
+   - Render automatically builds, seeds all 16 tour packages, and launches your live application.
+
+2. **Option B (Manual Web Service)**:
+   - In Render, click **New +** ➔ **Web Service** ➔ Connect `Lokesh206/Travel-ERP`.
+   - **Build Command**: `pip install -r requirements.txt && python -c "from app import initialize_db; initialize_db()"`
+   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120`
+   - **Instance Type**: **Free** ($0/month).
+
+See the comprehensive [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for full screenshots, environment variables, and live test instructions.
+
 ---
 
 ## 📁 Project Structure
@@ -273,8 +293,9 @@ Travel-ERP/
 ├── app.py                  # Core Flask application, routing, auth & commission engine
 ├── seed_data.py            # Package inventory & initial data
 ├── seed_real_world.py      # Production-grade Indian bookings, agents, inquiries & reviews
-├── requirements.txt        # Minimal Python dependencies (Flask, Werkzeug)
+├── requirements.txt        # Flask and Gunicorn
 ├── run.bat                 # 1-click Windows runner
+├── render.yaml             # Render web service, persistent disk & environment
 ├── static/
 │   ├── style.css           # Global typography & layout system
 │   ├── landing.css         # Public showcase, search filters & hero

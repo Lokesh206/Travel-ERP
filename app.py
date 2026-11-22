@@ -265,7 +265,8 @@ def initialize_db() -> None:
         )
         if db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
             demo_users = [
-                ("Aarav Mehta", "admin@wanderwise.local", "admin", "Admin@123"),
+                ("Aarav Mehta", "admin@wanderwise.local", "admin",
+                 os.environ.get("TRAVEL_ERP_ADMIN_PASSWORD") or "Admin@123"),
                 ("Priya Sharma", "agent@wanderwise.local", "agent", "Agent@123"),
                 ("Maya Kapoor", "customer@wanderwise.local", "customer", "Travel@123"),
                 ("Rohan Das", "rohan@wanderwise.local", "agent", "Agent@123"),
@@ -318,6 +319,10 @@ def initialize_db() -> None:
         run_seed()
     except Exception as err:
         print("Seed warning:", err)
+
+
+# Ensure database and tables exist even when loaded via WSGI (e.g. gunicorn on Render)
+initialize_db()
 
 
 @app.before_request
@@ -1199,5 +1204,4 @@ def not_found(_error: Any) -> tuple[str, int]:
 
 
 if __name__ == "__main__":
-    initialize_db()
-    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=False)

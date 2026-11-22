@@ -1,9 +1,12 @@
 from __future__ import annotations
+import os
 import sqlite3
 from pathlib import Path
 from werkzeug.security import generate_password_hash
 
-DATABASE = Path("travel_erp.sqlite3")
+DATABASE = Path(
+    os.environ.get("TRAVEL_ERP_DATABASE", Path(__file__).resolve().parent / "travel_erp.sqlite3")
+)
 
 def run_seed():
     db = sqlite3.connect(DATABASE)
@@ -48,6 +51,82 @@ def run_seed():
     db.commit()
 
     new_places = [
+        (
+            "Coastal calm, Goa",
+            "Goa, India",
+            "Beach",
+            "Slow mornings, golden-hour shores and a stay made for switching off.",
+            "3 days · 2 nights",
+            1200000,
+            24,
+            "gallery-coast.jpg",
+            "https://goa-tourism.com/",
+            "Sunset beach walks, Old Goa cathedral walk, coastal catamaran cruise",
+            (
+                "Boutique beach hotel",
+                "Daily breakfast",
+                "Airport transfers and local transfers",
+                "2 nights’ accommodation\nDaily breakfast\nAirport transfers\nLocal travel desk support",
+                "Day 1 — Arrive in Goa, check in and enjoy a relaxed beach evening.\nDay 2 — Explore the coastline and nearby markets at your own pace.\nDay 3 — Breakfast, check out and depart.",
+            ),
+        ),
+        (
+            "Into the Himalayas",
+            "Manali, India",
+            "Adventure",
+            "Mountain air, pine trails and a tucked-away boutique mountain stay.",
+            "5 days · 4 nights",
+            1850000,
+            18,
+            "gallery-himalaya.jpg",
+            "https://himachaltourism.gov.in/",
+            "Pine forest nature trail, Solang valley excursion, Old Manali cafe trail",
+            (
+                "Boutique mountain lodge",
+                "Daily breakfast",
+                "Private local transfers",
+                "4 nights’ accommodation\nDaily breakfast\nLocal transfers\nGuided nature walk",
+                "Day 1 — Arrive in Manali and settle into your mountain lodge.\nDay 2 — Explore the old town and nearby viewpoints.\nDay 3 — Take a guided nature walk through pine-scented trails.\nDay 4 — Enjoy a flexible day for local sightseeing.\nDay 5 — Breakfast, check out and depart.",
+            ),
+        ),
+        (
+            "Backwaters & beyond",
+            "Alappuzha, India",
+            "Culture",
+            "Drift through Kerala’s backwaters, spice gardens and leafy landscapes.",
+            "4 days · 3 nights",
+            1500000,
+            15,
+            "gallery-backwaters.jpg",
+            "https://www.keralatourism.org/",
+            "Vembanad backwater cruise, spice plantation tour, village canoe ride",
+            (
+                "Heritage homestay and one houseboat night",
+                "Breakfast and one traditional lunch",
+                "Local transfers and backwater cruise",
+                "3 nights’ accommodation\nBreakfast and one traditional lunch\nBackwater cruise\nLocal travel desk support",
+                "Day 1 — Arrive in Alappuzha and check in.\nDay 2 — Cruise the backwaters and enjoy a traditional lunch.\nDay 3 — Visit a village and enjoy an unhurried local experience.\nDay 4 — Breakfast, check out and depart.",
+            ),
+        ),
+        (
+            "Desert after dark",
+            "Jaisalmer, India",
+            "Culture",
+            "Old-city lanes, a golden fort and an unforgettable night beneath the stars.",
+            "3 days · 2 nights",
+            1680000,
+            12,
+            "gallery-desert.jpg",
+            "https://www.tourism.rajasthan.gov.in/",
+            "Jaisalmer Fort walk, Sam sand dunes camel safari, starry desert camp dinner",
+            (
+                "Heritage hotel and one desert camp night",
+                "Daily breakfast and camp dinner",
+                "Local transfers and shared desert excursion",
+                "2 nights’ accommodation\nDaily breakfast\nOne camp dinner\nShared desert excursion",
+                "Day 1 — Arrive in Jaisalmer and explore the old city.\nDay 2 — Visit the fort, then enjoy a desert camp evening.\nDay 3 — Breakfast, check out and depart.",
+            ),
+        ),
         (
             "Taj Mahal & Mughal Splendour",
             "Agra, Uttar Pradesh",
