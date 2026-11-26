@@ -42,7 +42,7 @@
       <a class="nav-item" href="#gallery">Travel Blog</a>
       <a class="nav-item" href="#thought-journey">About Us</a>
       <a class="nav-item" href="#contact">Contact</a>
-      <a class="nav-item" href="{{ url_for('login') }}?role=partner">Partner Program</a>
+      <a class="nav-item" href="{{ url_for('referral_program') }}" title="TravelEasy Partner Program">Referral Program</a>
     </nav>
 
     <div class="header-right-actions">
@@ -381,7 +381,7 @@
                 <div class="schedule-chips-wrap">
                   {% set date_list = (package.upcoming_dates or '09 Dec, 14 Jan, 11 Feb, 18 Mar, 15 Apr').split(',') %}
                   {% for dt in date_list %}
-                    <span class="schedule-date-chip {% if loop.first %}chip-current{% endif %}" title="Scheduled Departure">{{ dt.strip() }}</span>
+                    <a href="{{ url_for('trip_details', package_id=package.id) }}#booking" class="schedule-date-chip {% if loop.first %}chip-current{% endif %}" title="Click to view departure on {{ dt.strip() }}" style="text-decoration: none; cursor: pointer;">{{ dt.strip() }}</a>
                   {% endfor %}
                 </div>
               </div>

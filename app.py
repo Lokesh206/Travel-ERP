@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
+import re
 import secrets
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
 from pathlib import Path
@@ -172,6 +173,34 @@ def compute_return_date(start_date_str: str, duration_str: str) -> str:
         return checkout.isoformat()
     except Exception:
         return start_date_str
+
+
+def parse_upcoming_dates(dates_str: str) -> list[dict[str, str]]:
+    if not dates_str:
+        return []
+    months = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+              "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+    result = []
+    current_year = date.today().year
+    for item in dates_str.split(","):
+        raw = item.strip()
+        if not raw:
+            continue
+        m = re.match(r"^(\d{1,2})\s+([A-Za-z]{3})(?:\s+(\d{4}))?", raw)
+        if m:
+            day = int(m.group(1))
+            mon_str = m.group(2).lower()
+            mon = months.get(mon_str, 1)
+            yr = int(m.group(3)) if m.group(3) else current_year
+            if not m.group(3) and (mon < date.today().month or (mon == date.today().month and day < date.today().day)):
+                yr += 1
+            iso = f"{yr:04d}-{mon:02d}-{day:02d}"
+            chip = f"{day:02d} {m.group(2).title()}"
+            display = f"{day:02d} {m.group(2).title()} {yr}"
+            result.append({"display": display, "chip": chip, "iso": iso, "raw": raw})
+        else:
+            result.append({"display": raw, "chip": raw, "iso": "", "raw": raw})
+    return result
 
 
 def send_booking_email(booking: dict, email_type: str) -> None:
@@ -650,7 +679,25 @@ def trip_details(package_id: int) -> Any:
             "gallery-heritage.jpg" if "jaisalmer" in destination else
             "gallery-monument.jpg"
         )
-    return render_template("trip_details.html", package=trip)
+    parsed_dates = parse_upcoming_dates(trip.get("upcoming_dates") or "")
+    req_date = request.args.get("travel_date", "").strip()
+    first_upcoming_iso = parsed_dates[0]["iso"] if parsed_dates and parsed_dates[0]["iso"] else ""
+    initial_travel_date = req_date or first_upcoming_iso or date.today().isoformat()
+    initial_return_date = compute_return_date(initial_travel_date, trip["duration"])
+    return render_template(
+        "trip_details.html",
+        package=trip,
+        upcoming_schedule=parsed_dates,
+        initial_travel_date=initial_travel_date,
+        initial_return_date=initial_return_date,
+        selected_travel_date=req_date or first_upcoming_iso,
+    )
+
+
+@app.route("/partner-program")
+@app.route("/referral-program")
+def referral_program() -> Any:
+    return render_template("referral_program.html")
 
 
 @app.post("/reviews/<int:booking_id>")

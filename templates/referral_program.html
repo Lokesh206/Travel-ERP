@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TravelEasy Referral Program · Share the Journey. Earn Rewards.</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ref-blue-primary: #095ec2;
+      --ref-blue-dark: #003e8a;
+      --ref-blue-deep: #002d62;
+      --ref-gold: #f5a623;
+      --ref-gold-hover: #e09415;
+      --ref-text-dark: #0f2942;
+      --ref-text-muted: #64748b;
+      --ref-bg-light: #f8fafc;
+      --ref-card-border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      color: var(--ref-text-dark);
+      background: #ffffff;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Traveleasy Header */
+    .traveleasy-header {
+      background: #ffffff;
+      border-bottom: 1px solid #edf2f7;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+    .traveleasy-brand img {
+      height: 48px;
+      width: auto;
+      display: block;
+    }
+    .traveleasy-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .traveleasy-nav a.nav-item {
+      text-decoration: none;
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+      padding: 8px 0;
+      transition: color 0.2s;
+    }
+    .traveleasy-nav a.nav-item:hover {
+      color: var(--ref-blue-primary);
+    }
+    .traveleasy-nav a.nav-item.active-ref {
+      color: var(--ref-blue-primary);
+      font-weight: 700;
+    }
+    .traveleasy-nav a.nav-item.active-ref::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--ref-gold);
+      border-radius: 2px;
+    }
+    .header-login-btn {
+      background: #0066cc;
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,102,204,0.25);
+      transition: all 0.2s ease;
+    }
+    .header-login-btn:hover {
+      background: #0052a3;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0,102,204,0.35);
+    }
+
+    /* Hero Section */
+    .ref-hero-section {
+      background: linear-gradient(135deg, #095ec2 0%, #0047a0 50%, #003366 100%);
+      color: #ffffff;
+      padding: 70px 32px 85px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ref-hero-section::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .ref-hero-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 48px;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    .eyebrow-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .eyebrow-dash {
+      width: 32px;
+      height: 3.5px;
+      background: var(--ref-gold);
+      border-radius: 2px;
+    }
+    .eyebrow-text {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ref-gold);
+    }
+    .ref-hero-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 58px;
+      font-weight: 800;
+      line-height: 1.12;
+      margin: 0 0 20px;
+      color: #ffffff;
+    }
+    .ref-hero-title span.highlight-gold {
+      color: var(--ref-gold);
+      font-style: normal;
+    }
+    .ref-hero-desc {
+      font-size: 16px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.9);
+      max-width: 520px;
+      margin: 0 0 32px;
+    }
+    .ref-hero-cta-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-gold {
+      background: var(--ref-gold);
+      color: #111827;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 9999px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(245, 166, 35, 0.35);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-gold:hover {
+      background: var(--ref-gold-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 166, 35, 0.45);
+    }
+    .btn-outline-white {
+      border: 1.5px solid rgba(255,255,255,0.45);
+      background: rgba(255,255,255,0.06);
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 9999px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .btn-outline-white:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: #ffffff;
+    }
+
+    /* Hero Right Glass Card */
+    .hero-glass-card {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 24px;
+      padding: 30px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+    }
+    .glass-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .glass-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+    .badge-premium {
+      background: rgba(255, 210, 77, 0.18);
+      border: 1px solid rgba(255, 210, 77, 0.35);
+      color: #ffd24d;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+    .glass-benefit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .benefit-item {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+    .benefit-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #eaf2fd;
+      color: #0066cc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .benefit-content h4 {
+      margin: 0 0 3px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0e2238;
+    }
+    .benefit-content p {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .glass-footer-note {
+      margin-top: 20px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.85);
+      text-align: center;
+    }
+
+    /* How It Works & Steps */
+    .ref-section {
+      padding: 80px 32px;
+    }
+    .bg-light {
+      background: var(--ref-bg-light);
+    }
+    .ref-container {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    /* 3 Steps Row */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 70px;
+    }
+    .step-card {
+      background: #ffffff;
+      border: 1px solid var(--ref-card-border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .step-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.07);
+    }
+    .step-num-badge {
+      display: inline-block;
+      background: #eef5ff;
+      color: #0066cc;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+    }
+    .step-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 10px;
+      color: var(--ref-text-dark);
+    }
+    .step-card p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--ref-text-muted);
+    }
+
+    /* Section Headings with Gold Bar */
+    .section-header-gold {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .gold-vertical-bar {
+      width: 4px;
+      height: 36px;
+      background: var(--ref-gold);
+      border-radius: 2px;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .section-header-gold h2 {
+      font-size: 34px;
+      font-weight: 800;
+      color: #0f2942;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .section-subtitle {
+      font-size: 15px;
+      color: var(--ref-text-muted);
+      margin: 0 0 36px 18px;
+    }
+
+    /* 4 Value Cards Grid */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .value-card {
+      background: #ffffff;
+      border: 1px solid var(--ref-card-border);
+      border-radius: 18px;
+      padding: 26px 22px;
+      transition: transform 0.2s;
+    }
+    .value-card:hover {
+      transform: translateY(-3px);
+    }
+    .val-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #eef5ff;
+      color: #0066cc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+    .value-card h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0e2238;
+      margin: 0 0 8px;
+    }
+    .value-card p {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--ref-text-muted);
+      margin: 0;
+    }
+
+    /* Progression Levels Section */
+    .progress-section {
+      padding: 90px 32px;
+      background: #ffffff;
+    }
+    .progress-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .progress-left h2 {
+      font-size: 44px;
+      font-weight: 800;
+      color: #0f2942;
+      margin: 0 0 16px;
+      line-height: 1.15;
+    }
+    .progress-left h2 span.brand-gold {
+      font-family: 'Playfair Display', Georgia, serif;
+      color: #d97706;
+      font-weight: 800;
+    }
+    .progress-left p {
+      font-size: 15.5px;
+      line-height: 1.65;
+      color: var(--ref-text-muted);
+      margin: 0 0 32px;
+      max-width: 460px;
+    }
+    .levels-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .level-row-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .level-row-card:hover {
+      border-color: #cbd5e1;
+      transform: translateX(4px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+    }
+    .level-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .lvl-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #0e2238;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .lvl-details h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0e2238;
+      margin: 0 0 4px;
+    }
+    .lvl-details p {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
+    }
+    .lvl-tag {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0066cc;
+    }
+
+    /* Blue CTA Banner */
+    .ref-cta-container {
+      max-width: 1240px;
+      margin: 0 auto 80px;
+      padding: 0 32px;
+    }
+    .ref-cta-banner {
+      background: linear-gradient(135deg, #094a96 0%, #003366 100%);
+      border-radius: 24px;
+      padding: 44px 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      box-shadow: 0 16px 36px rgba(0, 51, 102, 0.2);
+    }
+    .ref-cta-banner h3 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 34px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0 0 8px;
+    }
+    .ref-cta-banner p {
+      font-size: 15px;
+      color: rgba(255,255,255,0.88);
+      margin: 0;
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      padding: 80px 32px 100px;
+      background: #ffffff;
+    }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .faq-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 28px 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+    .faq-card h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0e2238;
+      margin: 0 0 10px;
+    }
+    .faq-card p {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--ref-text-muted);
+      margin: 0;
+    }
+
+    /* Footer */
+    .ref-footer {
+      background: #002244;
+      color: #ffffff;
+      padding: 60px 32px 28px;
+    }
+    .ref-footer-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+      gap: 40px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .ref-footer-col h4 {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      margin: 0 0 16px;
+    }
+    .ref-footer-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ref-footer-col ul li a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13.5px;
+      transition: color 0.2s;
+    }
+    .ref-footer-col ul li a:hover {
+      color: #ffffff;
+    }
+    .ref-footer-bottom {
+      max-width: 1240px;
+      margin: 24px auto 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 992px) {
+      .traveleasy-header { padding: 12px 20px; }
+      .traveleasy-nav { display: none; }
+      .ref-hero-container { grid-template-columns: 1fr; gap: 40px; }
+      .ref-hero-title { font-size: 42px; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .values-grid { grid-template-columns: repeat(2, 1fr); }
+      .progress-grid { grid-template-columns: 1fr; gap: 40px; }
+      .faq-grid { grid-template-columns: 1fr; }
+      .ref-cta-banner { flex-direction: column; text-align: center; padding: 32px 24px; }
+      .ref-footer-container { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .values-grid { grid-template-columns: 1fr; }
+      .ref-footer-container { grid-template-columns: 1fr; }
+      .ref-footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TravelEasy Header with Active Referral Program indicator -->
+  <header class="traveleasy-header">
+    <a class="traveleasy-brand" href="{{ url_for('public_home') }}" title="TravelEasy · Travel around the world">
+      <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy Logo">
+    </a>
+
+    <nav class="traveleasy-nav" aria-label="Main navigation">
+      <a class="nav-item" href="{{ url_for('public_home') }}">Home</a>
+      <a class="nav-item" href="{{ url_for('public_home', region='domestic') }}#trips">Domestic ⌵</a>
+      <a class="nav-item" href="{{ url_for('public_home', region='international') }}#trips">International ⌵</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#trips">Tour Packages ⌵</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#deals">Deals</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#thought-journey">About Us</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#contact">Contact</a>
+      <a class="nav-item active-ref" href="{{ url_for('referral_program') }}">Referral Program</a>
+    </nav>
+
+    <div>
+      <a class="header-login-btn" href="{{ url_for('login') }}">
+        <span>♟</span> Login / Register
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="ref-hero-section">
+    <div class="ref-hero-container">
+      <div class="ref-hero-left">
+        <div class="eyebrow-container">
+          <div class="eyebrow-dash"></div>
+          <span class="eyebrow-text">TRAVELEASY REFERRAL PROGRAM</span>
+        </div>
+        <h1 class="ref-hero-title">
+          Share the journey.<br>
+          <span class="highlight-gold">Earn rewards.</span>
+        </h1>
+        <p class="ref-hero-desc">
+          Turn your travel network into an opportunity. Refer friends, family and fellow travellers to TravelEasy and grow with every successful journey.
+        </p>
+        <div class="ref-hero-cta-group">
+          <!-- Button links directly to login page -->
+          <a class="btn-gold" href="{{ url_for('login') }}?role=agent">
+            Join the Referral Program &rarr;
+          </a>
+          <a class="btn-outline-white" href="#how-it-works">
+            How It Works
+          </a>
+        </div>
+      </div>
+
+      <!-- Glass Benefit Card (Right side) -->
+      <div class="hero-glass-card">
+        <div class="glass-header">
+          <h3>Why become a TravelEasy Referrer?</h3>
+          <span class="badge-premium">PREMIUM BENEFITS</span>
+        </div>
+        <div class="glass-benefit-list">
+          <div class="benefit-item">
+            <div class="benefit-icon-box">↗</div>
+            <div class="benefit-content">
+              <h4>Share your referral</h4>
+              <p>Introduce TravelEasy to someone planning a trip.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-icon-box">◇</div>
+            <div class="benefit-content">
+              <h4>Successful booking</h4>
+              <p>When your referral completes an eligible booking.</p>
+            </div>
+          </div>
+          <div class="benefit-item">
+            <div class="benefit-icon-box">★</div>
+            <div class="benefit-content">
+              <h4>Grow your rewards</h4>
+              <p>Build your referral journey and unlock higher levels.</p>
+            </div>
+          </div>
+        </div>
+        <div class="glass-footer-note">
+          Simple. Transparent. Designed to reward genuine referrals.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: How It Works & Steps -->
+  <section class="ref-section bg-light" id="how-it-works">
+    <div class="ref-container">
+      <div class="steps-grid">
+        <div class="step-card">
+          <span class="step-num-badge">01</span>
+          <h3>Join</h3>
+          <p>Log in or register with TravelEasy and become part of the referral program.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num-badge">02</span>
+          <h3>Refer</h3>
+          <p>Share your referral with friends, family, colleagues or anyone planning their next journey.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num-badge">03</span>
+          <h3>Earn &amp; Grow</h3>
+          <p>Eligible completed bookings contribute to your referral journey and level progression.</p>
+        </div>
+      </div>
+
+      <!-- More Than Just a Referral -->
+      <div class="section-header-gold">
+        <div class="gold-vertical-bar"></div>
+        <h2>More Than Just a Referral</h2>
+      </div>
+      <p class="section-subtitle">TravelEasy is building a long-term community where genuine recommendations create value.</p>
+
+      <div class="values-grid">
+        <div class="value-card">
+          <div class="val-icon">↗</div>
+          <h4>Easy Referrals</h4>
+          <p>A straightforward way to introduce TravelEasy to people you know.</p>
+        </div>
+        <div class="value-card">
+          <div class="val-icon">★</div>
+          <h4>Reward Potential</h4>
+          <p>Build your referral activity and progress through the program.</p>
+        </div>
+        <div class="value-card">
+          <div class="val-icon">◇</div>
+          <h4>Transparent Journey</h4>
+          <p>Keep track of your eligible referrals and program progress.</p>
+        </div>
+        <div class="value-card">
+          <div class="val-icon">♟</div>
+          <h4>Travel Community</h4>
+          <p>Become part of a growing TravelEasy network of travellers and referrers.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Progress with TravelEasy -->
+  <section class="progress-section">
+    <div class="ref-container">
+      <div class="progress-grid">
+        <div class="progress-left">
+          <h2>
+            Progress with<br>
+            <span class="brand-gold">TravelEasy</span>
+          </h2>
+          <p>
+            The referral program is designed to support progressive rewards. As your eligible referral activity grows, your level can move upward according to TravelEasy's applicable program rules.
+          </p>
+          <!-- Button links directly to login page -->
+          <a class="btn-gold" href="{{ url_for('login') }}?role=agent">
+            Start Your Journey &rarr;
+          </a>
+        </div>
+
+        <div class="levels-stack">
+          <div class="level-row-card">
+            <div class="level-left">
+              <div class="lvl-badge">L1</div>
+              <div class="lvl-details">
+                <h4>Starter</h4>
+                <p>Begin your referral journey</p>
+              </div>
+            </div>
+            <span class="lvl-tag">5%</span>
+          </div>
+
+          <div class="level-row-card">
+            <div class="level-left">
+              <div class="lvl-badge">L2</div>
+              <div class="lvl-details">
+                <h4>Explorer</h4>
+                <p>Build consistent referral activity</p>
+              </div>
+            </div>
+            <span class="lvl-tag">Next Level</span>
+          </div>
+
+          <div class="level-row-card">
+            <div class="level-left">
+              <div class="lvl-badge">L3</div>
+              <div class="lvl-details">
+                <h4>Voyager</h4>
+                <p>Grow your TravelEasy network</p>
+              </div>
+            </div>
+            <span class="lvl-tag">Next Level</span>
+          </div>
+
+          <div class="level-row-card">
+            <div class="level-left">
+              <div class="lvl-badge">L4</div>
+              <div class="lvl-details">
+                <h4>Pathfinder</h4>
+                <p>Advance through eligible activity</p>
+              </div>
+            </div>
+            <span class="lvl-tag">Next Level</span>
+          </div>
+
+          <div class="level-row-card">
+            <div class="level-left">
+              <div class="lvl-badge">L5</div>
+              <div class="lvl-details">
+                <h4>TravelEasy Partner</h4>
+                <p>Reach the highest program level</p>
+              </div>
+            </div>
+            <span class="lvl-tag">Top Level</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Blue CTA Banner -->
+  <div class="ref-cta-container">
+    <div class="ref-cta-banner">
+      <div>
+        <h3>Ready to share your next journey?</h3>
+        <p>Join TravelEasy's Referral Program and start building your referral journey today.</p>
+      </div>
+      <!-- Button links directly to login page -->
+      <a class="btn-gold" href="{{ url_for('login') }}?role=agent">
+        Join Now &rarr;
+      </a>
+    </div>
+  </div>
+
+  <!-- Section 5: FAQ Section -->
+  <section class="faq-section">
+    <div class="ref-container">
+      <div class="section-header-gold">
+        <div class="gold-vertical-bar"></div>
+        <h2>Frequently Asked Questions</h2>
+      </div>
+      <p class="section-subtitle">Everything you need to understand the referral journey.</p>
+
+      <div class="faq-grid">
+        <div class="faq-card">
+          <h4>Who can join the Referral Program?</h4>
+          <p>TravelEasy customers and eligible registered users can participate according to the applicable program rules.</p>
+        </div>
+        <div class="faq-card">
+          <h4>How do I make a referral?</h4>
+          <p>After joining, use your referral facility to share TravelEasy with people who may be interested in booking a journey.</p>
+        </div>
+        <div class="faq-card">
+          <h4>When is a referral considered successful?</h4>
+          <p>A referral becomes eligible when the applicable requirements for a qualifying booking are completed.</p>
+        </div>
+        <div class="faq-card">
+          <h4>Can my referral level change?</h4>
+          <p>Yes. Eligible activity can contribute to progression through the TravelEasy referral levels.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="ref-footer">
+    <div class="ref-footer-container">
+      <div>
+        <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 44px; filter: brightness(0) invert(1); margin-bottom: 14px;">
+        <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin: 0;">
+          TravelEasy · Travel Easy · Live Fully.<br>
+          Plan your next journey with confidence.
+        </p>
+      </div>
+
+      <div class="ref-footer-col">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="{{ url_for('public_home') }}#trips">India</a></li>
+          <li><a href="{{ url_for('public_home', region='international') }}#trips">International</a></li>
+          <li><a href="{{ url_for('public_home') }}#trips">Tour Packages</a></li>
+          <li><a href="{{ url_for('public_home') }}#deals">Deals</a></li>
+        </ul>
+      </div>
+
+      <div class="ref-footer-col">
+        <h4>TravelEasy</h4>
+        <ul>
+          <li><a href="{{ url_for('public_home') }}#thought-journey">About Us</a></li>
+          <li><a href="{{ url_for('login') }}">Login / Register</a></li>
+          <li><a href="{{ url_for('referral_program') }}">Referral Program</a></li>
+        </ul>
+      </div>
+
+      <div class="ref-footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:+919876543210">☎ +91 98765 43210</a></li>
+          <li><a href="mailto:info@traveleasy.in">✉ info@traveleasy.in</a></li>
+          <li><span style="font-size: 13px; color: #94a3b8;">📍 Hassan, Karnataka</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ref-footer-bottom">
+      <span>© 2026 TravelEasy. All rights reserved.</span>
+      <span>Verified Bookings &amp; 24/7 Concierge Support</span>
+    </div>
+  </footer>
+
+</body>
+</html>

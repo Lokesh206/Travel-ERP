@@ -17,6 +17,66 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=7">
   <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=7">
   <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=3">
+  <style>
+    .upcoming-departures-box {
+      background: #f7faf7;
+      border: 1px solid #d9e8d7;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .departure-dates-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .dep-date-pill {
+      background: #ffffff;
+      border: 1.5px solid #c2dec0;
+      color: #1e4526;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .dep-date-pill:hover {
+      background: #eaf4e8;
+      border-color: #235e35;
+      transform: translateY(-1px);
+    }
+    .dep-date-pill.active-dep-pill {
+      background: #235e35;
+      border-color: #164022;
+      color: #ffffff;
+      box-shadow: 0 3px 8px rgba(35, 94, 53, 0.3);
+    }
+    .active-dep-pill span {
+      filter: brightness(1.2);
+    }
+    .date-input-field {
+      height: 40px;
+      font-weight: 600;
+      font-size: 12.5px;
+      cursor: pointer;
+      border: 1px solid #c8d8cb;
+      border-radius: 8px;
+      padding: 6px 10px;
+      width: 100%;
+      background: #ffffff;
+      color: #1e3f28;
+    }
+    .date-input-field:focus {
+      border-color: #235e35;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(35, 94, 53, 0.2);
+    }
+  </style>
 </head>
 <body class="website-page trip-details-page">
   <header class="site-header">
@@ -150,23 +210,45 @@
             <input type="hidden" name="package_id" value="{{ package.id }}">
             <input type="hidden" name="return_to" value="{{ url_for('trip_details', package_id=package.id) }}#booking">
 
+            <!-- Upcoming Scheduled Departure Dates Selector -->
+            {% if upcoming_schedule %}
+            <div class="upcoming-departures-box" style="margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: 700; color: #1e3f28; text-transform: uppercase; letter-spacing: 0.5px;">
+                  📅 Scheduled Departures (Next 5 Months)
+                </span>
+                <span style="font-size: 10px; color: #406846; font-weight: 600;">Tap date to select</span>
+              </div>
+              <div class="departure-dates-chips">
+                {% for dt_item in upcoming_schedule %}
+                  <button type="button" 
+                          class="dep-date-pill {% if dt_item.iso == initial_travel_date %}active-dep-pill{% endif %}" 
+                          data-iso="{{ dt_item.iso }}"
+                          onclick="selectDepartureDate('{{ dt_item.iso }}', this)">
+                    <span>🗓️</span> {{ dt_item.chip or dt_item.display }}
+                  </button>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
             <!-- Departure and Return / Checkout Dates Linked -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
               <label style="margin-bottom: 0;">
                 Departure / Start Date
-                <input name="travel_date" id="start-date-input" type="date" min="{{ today }}" value="{{ today }}" required onchange="handleStartDateChange(this.value)">
+                <input name="travel_date" id="start-date-input" class="date-input-field" type="date" min="{{ today }}" value="{{ initial_travel_date }}" required onchange="handleStartDateChange(this.value)" oninput="handleStartDateChange(this.value)">
               </label>
 
               <label style="margin-bottom: 0;">
                 Return / Checkout Date
-                <input name="return_date" id="return-date-input" type="date" min="{{ today }}" required readonly style="background: #f4f8f4; font-weight: 700; color: #1e4526; cursor: default;">
+                <input name="return_date" id="return-date-input" class="date-input-field" type="date" min="{{ initial_travel_date }}" value="{{ initial_return_date }}" required onchange="handleReturnDateChange(this.value)" oninput="handleReturnDateChange(this.value)">
               </label>
             </div>
 
             <!-- Visual Itinerary Duration Badge -->
             <div id="itinerary-dates-badge" style="background: #f0f7ef; border: 1px solid #d4e7d0; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #204627; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
               <span>📅 <strong>Itinerary Schedule:</strong> {{ package.duration }}</span>
-              <span id="dates-summary-span" style="font-weight: 700;">Departure to Checkout</span>
+              <span id="dates-summary-span" style="font-weight: 700;">{{ initial_travel_date }} ➔ {{ initial_return_date }}</span>
             </div>
 
             <!-- Traveller & E-Ticket Recipient Details -->
@@ -454,12 +536,51 @@
           </form>
 
         {% elif package.available > 0 and not g.user %}
+          <!-- Upcoming Scheduled Departure Dates Selector for Guests -->
+          {% if upcoming_schedule %}
+          <div class="upcoming-departures-box" style="margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 11px; font-weight: 700; color: #1e3f28; text-transform: uppercase; letter-spacing: 0.5px;">
+                📅 Scheduled Departures (Next 5 Months)
+              </span>
+              <span style="font-size: 10px; color: #406846; font-weight: 600;">Tap date to select</span>
+            </div>
+            <div class="departure-dates-chips">
+              {% for dt_item in upcoming_schedule %}
+                <button type="button" 
+                        class="dep-date-pill {% if dt_item.iso == initial_travel_date %}active-dep-pill{% endif %}" 
+                        data-iso="{{ dt_item.iso }}"
+                        onclick="selectDepartureDate('{{ dt_item.iso }}', this)">
+                  <span>🗓️</span> {{ dt_item.chip or dt_item.display }}
+                </button>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <label style="margin-bottom: 0;">
+              Departure / Start Date
+              <input name="travel_date" id="start-date-input" class="date-input-field" type="date" min="{{ today }}" value="{{ initial_travel_date }}" required onchange="handleStartDateChange(this.value)" oninput="handleStartDateChange(this.value)">
+            </label>
+
+            <label style="margin-bottom: 0;">
+              Return / Checkout Date
+              <input name="return_date" id="return-date-input" class="date-input-field" type="date" min="{{ initial_travel_date }}" value="{{ initial_return_date }}" required onchange="handleReturnDateChange(this.value)" oninput="handleReturnDateChange(this.value)">
+            </label>
+          </div>
+
+          <div id="itinerary-dates-badge" style="background: #f0f7ef; border: 1px solid #d4e7d0; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #204627; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+            <span>📅 <strong>Itinerary Schedule:</strong> {{ package.duration }}</span>
+            <span id="dates-summary-span" style="font-weight: 700;">{{ initial_travel_date }} ➔ {{ initial_return_date }}</span>
+          </div>
+
           <div class="booking-live-price">
             <span>Starting from:</span>
             <strong>{{ (package.price_paise / 100)|inr }} / person</strong>
           </div>
-          <a class="button button-dark button-wide" href="{{ url_for('login', next=url_for('trip_details', package_id=package.id) ~ '#booking') }}">
-            Sign in to request this trip <span>↗</span>
+          <a class="button button-dark button-wide" id="guest-signin-date-btn" href="{{ url_for('login', next=url_for('trip_details', package_id=package.id) ~ '?travel_date=' ~ initial_travel_date ~ '#booking') }}">
+            Sign in to book selected date <span>↗</span>
           </a>
           <a class="button button-secondary button-wide" style="margin-top: 8px; text-align: center;" href="{{ url_for('register') }}">
             New traveller? Create account <span>↗</span>
@@ -512,19 +633,67 @@
     }
     const tripDays = parseDurationDays(durationText);
 
+    function parseYMD(str) {
+      if (!str) return new Date();
+      const parts = str.split('-');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      }
+      return new Date(str);
+    }
+    function formatYMD(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dd}`;
+    }
+
     function handleStartDateChange(startDateStr) {
       if (!startDateStr) return;
-      const start = new Date(startDateStr);
+      const start = parseYMD(startDateStr);
       const checkout = new Date(start);
       checkout.setDate(start.getDate() + Math.max(1, tripDays - 1));
-      const yyyy = checkout.getFullYear();
-      const mm = String(checkout.getMonth() + 1).padStart(2, '0');
-      const dd = String(checkout.getDate()).padStart(2, '0');
-      const checkoutStr = `${yyyy}-${mm}-${dd}`;
+      const checkoutStr = formatYMD(checkout);
       const retInput = document.getElementById('return-date-input');
-      if (retInput) retInput.value = checkoutStr;
+      if (retInput) {
+        retInput.min = startDateStr;
+        retInput.value = checkoutStr;
+      }
       const sumSpan = document.getElementById('dates-summary-span');
-      if (sumSpan) sumSpan.textContent = `${startDateStr} ➔ ${checkoutStr} (${tripDays} Days)`;
+      if (sumSpan) sumSpan.textContent = `${startDateStr} ➔ ${checkoutStr} (${tripDays} Days / ${tripDays - 1} Nights)`;
+
+      document.querySelectorAll('.dep-date-pill').forEach(b => {
+        if (b.getAttribute('data-iso') === startDateStr) {
+          b.classList.add('active-dep-pill');
+        } else {
+          b.classList.remove('active-dep-pill');
+        }
+      });
+
+      const guestBtn = document.getElementById('guest-signin-date-btn');
+      if (guestBtn) {
+        guestBtn.href = "{{ url_for('login') }}?next=" + encodeURIComponent("{{ url_for('trip_details', package_id=package.id) }}?travel_date=" + startDateStr + "#booking");
+      }
+    }
+
+    function handleReturnDateChange(retDateStr) {
+      const startInput = document.getElementById('start-date-input');
+      if (!startInput || !startInput.value || !retDateStr) return;
+      const start = parseYMD(startInput.value);
+      const end = parseYMD(retDateStr);
+      const diffDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+      const sumSpan = document.getElementById('dates-summary-span');
+      if (sumSpan) sumSpan.textContent = `${startInput.value} ➔ ${retDateStr} (${diffDays} Days / ${diffDays - 1} Nights)`;
+    }
+
+    function selectDepartureDate(isoStr, btnElem) {
+      const startInput = document.getElementById('start-date-input');
+      if (startInput) {
+        startInput.value = isoStr;
+        handleStartDateChange(isoStr);
+      }
+      document.querySelectorAll('.dep-date-pill').forEach(b => b.classList.remove('active-dep-pill'));
+      if (btnElem) btnElem.classList.add('active-dep-pill');
     }
 
     // Auto-initialize Return / Checkout date on page load
