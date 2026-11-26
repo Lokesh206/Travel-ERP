@@ -1077,3 +1077,40 @@
     gap: 8px !important;
   }
 }
+
+@media (max-width: 768px) {
+  .traveleasy-hero {
+    min-height: 460px !important;
+    padding: 40px 16px 52px !important;
+  }
+  .hero-slide-indicator-badge {
+    font-size: 9.5px !important;
+    padding: 5px 12px !important;
+    letter-spacing: 0.5px !important;
+  }
+  .hero-region-pills-row {
+    gap: 7px !important;
+    margin: 14px 0 18px !important;
+  }
+  .hero-region-pill {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+  .hero-slideshow-controls {
+    right: 14px !important;
+    bottom: 12px !important;
+    padding: 4px 10px !important;
+  }
+  .search-buttons-group {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .hero-search-action-btn,
+  .hero-search-reset-btn {
+    width: 100% !important;
+    min-height: 46px !important;
+    justify-content: center !important;
+  }
+}

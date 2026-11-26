@@ -26,13 +26,19 @@
     </a>
 
     <nav class="site-nav traveleasy-nav" id="traveleasy-nav-menu" aria-label="Main navigation">
-      <a class="nav-item active-nav-tab" href="{{ url_for('public_home') }}">
+      <a class="nav-item {% if not selected_region and not selected_destination and not selected_category and not selected_origin and not query_text %}active-nav-tab{% endif %}" href="{{ url_for('public_home') }}" title="Reset all filters and view all packages">
         <span>Home</span>
         <span class="active-orange-bar"></span>
       </a>
-      <a class="nav-item" href="#trips">Domestic <span class="nav-caret">⌵</span></a>
-      <a class="nav-item" href="#trips">International <span class="nav-caret">⌵</span></a>
-      <a class="nav-item" href="#trips">Tour Packages <span class="nav-caret">⌵</span></a>
+      <a class="nav-item {% if selected_region == 'domestic' %}active-nav-tab{% endif %}" href="{{ url_for('public_home', region='domestic') }}#trips" title="Tour packages across different states in India">
+        <span>Domestic</span> <span class="nav-caret">⌵</span>
+      </a>
+      <a class="nav-item {% if selected_region == 'international' %}active-nav-tab{% endif %}" href="{{ url_for('public_home', region='international') }}#trips" title="World places &amp; international holidays">
+        <span>International</span> <span class="nav-caret">⌵</span>
+      </a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#trips" title="All 16 Tour Packages">
+        <span>Tour Packages</span> <span class="nav-caret">⌵</span>
+      </a>
       <a class="nav-item" href="#gallery">Travel Blog</a>
       <a class="nav-item" href="#thought-journey">About Us</a>
       <a class="nav-item" href="#contact">Contact</a>
@@ -73,40 +79,111 @@
       {% for category, message in messages %}<div class="site-flash flash-{{ category }}">{{ message }}</div>{% endfor %}
     {% endwith %}
 
-    <!-- Hero Section -->
-    <section class="site-hero traveleasy-hero">
-      <div class="hero-copy">
-        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> SMALL-GROUP ESCAPES · 5-MONTH DEPARTURES</span>
+    <!-- Hero Section with Slow High-Quality Slideshow (Domestic & International) -->
+    <section class="site-hero traveleasy-hero" id="hero-slideshow-wrap">
+      <!-- Background Slideshow Track (Slow transition, High Image Quality) -->
+      <div class="hero-slideshow-track" id="hero-slideshow-track">
+        <!-- Slide 0: Domestic Panorama (Himalayas, Delhi, Agra, Kerala, Rajasthan, Varanasi, Goa) -->
+        <div class="hero-slide active" data-slide="0" data-type="domestic">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-3.jpg') }}" alt="Domestic States of India Collage" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+
+        <!-- Slide 1: International World Landmarks (Paris, Rome, Pisa, London, Hot Air Balloons) -->
+        <div class="hero-slide" data-slide="1" data-type="international">
+          <img src="{{ url_for('static', filename='hero-slide-international-1.jpg') }}" alt="International World Destinations" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+
+        <!-- Slide 2: Domestic India Map with States & Culture -->
+        <div class="hero-slide" data-slide="2" data-type="domestic">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-2.jpg') }}" alt="Map of Indian States & Landmarks" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+
+        <!-- Slide 3: International World Places Suitcase -->
+        <div class="hero-slide" data-slide="3" data-type="international">
+          <img src="{{ url_for('static', filename='hero-slide-international-2.jpg') }}" alt="International World Places Suitcase" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+
+        <!-- Slide 4: Domestic Incredible India Seasons & Traveler Map -->
+        <div class="hero-slide" data-slide="4" data-type="domestic">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-4.jpg') }}" alt="Incredible India Seasons and States" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+
+        <!-- Slide 5: Domestic Heritage Monuments Globe -->
+        <div class="hero-slide" data-slide="5" data-type="domestic">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-1.jpg') }}" alt="Indian Heritage Monuments Globe" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+      </div>
+
+      <!-- Foreground Hero Copy & Quick Filter Switchers -->
+      <div class="hero-copy hero-foreground-content">
+        <div class="hero-slide-indicator-badge" id="hero-slide-badge">
+          <span class="badge-flag-icon">🇮🇳</span>
+          <span class="badge-title-text" id="hero-slide-badge-text">DOMESTIC: DIFFERENT STATES ACROSS INDIA</span>
+        </div>
+
         <h1>Travel around<br>the world.<br><em>TravelEasy.</em></h1>
-        <p>Iconic world wonders, sacred heritage shrines, confirmed stays, meals, and 24/7 dedicated travel desk support.</p>
+        <p>Explore 10 vibrant states across India &amp; 6 world destinations with 5-month departure schedules and 24/7 travel desk support.</p>
+
+        <!-- Quick Region Filter Buttons -->
+        <div class="hero-region-pills-row">
+          <a class="hero-region-pill {% if selected_region == 'domestic' %}pill-active{% endif %}" href="{{ url_for('public_home', region='domestic') }}#trips" title="View trips across different states in India">
+            <span>🇮🇳</span> Domestic (10 Indian States)
+          </a>
+          <a class="hero-region-pill {% if selected_region == 'international' %}pill-active{% endif %}" href="{{ url_for('public_home', region='international') }}#trips" title="View world destinations">
+            <span>🌍</span> International (6 World Places)
+          </a>
+          <a class="hero-region-pill pill-reset" href="{{ url_for('public_home') }}#trips" onclick="resetAllAndRefresh(event)" title="Reset all filters and view all 16 packages">
+            <span>🔄</span> Show All 16 Displays
+          </a>
+        </div>
+
         <div class="hero-actions">
-          <a class="button button-orange" href="#trips">Browse 16 Packages <span>↘</span></a>
+          <a class="button button-orange" href="#trips">Browse Packages <span>↘</span></a>
           <a class="hero-secondary" href="#thought-journey">Our Travel Thought <span>↓</span></a>
         </div>
-        <div class="hero-footnote"><span class="hero-footnote-mark">✳</span> Thoughtful trips. No guesswork. Just go.</div>
+        <div class="hero-footnote"><span class="hero-footnote-mark">✳</span> Slow background slides · Enhanced picture quality · Real confirmed bookings</div>
       </div>
-      <div class="hero-art" role="img" aria-label="TravelEasy scenic collage">
-        <div class="hero-art-label"><span>THE GOOD KIND OF GETTING AWAY</span><strong>Out of office.<br>Into the moment.</strong></div>
-        <div class="hero-art-location"><span>↗</span><div><strong>16 Curated Destinations</strong><small>Domestic &amp; International Journeys</small></div></div>
+
+      <!-- Floating Slideshow Controls (Prev, Next, Play/Pause, Indicators) -->
+      <div class="hero-slideshow-controls">
+        <button type="button" class="slide-nav-btn slide-prev-btn" onclick="prevHeroSlide()" aria-label="Previous background slide">‹</button>
+        <div class="slide-dots-group" id="slide-dots-group">
+          <span class="slide-dot active" onclick="jumpToHeroSlide(0)" title="Slide 1: Indian States Panorama"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(1)" title="Slide 2: World Places & Landmarks"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(2)" title="Slide 3: States of India Map"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(3)" title="Slide 4: World Travel Suitcase"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(4)" title="Slide 5: Seasons Across India"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(5)" title="Slide 6: Indian Heritage Globe"></span>
+        </div>
+        <button type="button" class="slide-nav-btn slide-next-btn" onclick="nextHeroSlide()" aria-label="Next background slide">›</button>
+        <button type="button" class="slide-playpause-btn" id="slide-playpause-btn" onclick="toggleSlidePlayPause()" title="Pause/Play background slideshow">⏸</button>
       </div>
     </section>
 
-    <!-- Hero Search Widget (Image 3 Style) -->
+    <!-- Hero Search Widget (Image 3 Style) with Reset / Refresh Support -->
     <section class="hero-search-wrapper" id="hero-search-section">
       <div class="hero-search-card" id="hero-search-box">
         <!-- Top Pill Tabs matching Image 3 -->
         <div class="hero-search-tabs-row">
-          <button type="button" class="search-tab-pill tab-flights {% if not selected_category %}active{% endif %}" onclick="selectSearchTab('', this)">Flights</button>
+          <button type="button" class="search-tab-pill tab-flights {% if not selected_category and not selected_region %}active{% endif %}" onclick="selectSearchTab('', this)">Flights</button>
           <button type="button" class="search-tab-pill tab-hotels {% if selected_category == 'Luxury' %}active{% endif %}" onclick="selectSearchTab('Luxury', this)">Hotels</button>
           <button type="button" class="search-tab-pill tab-packages {% if selected_category == 'Heritage' %}active{% endif %}" onclick="selectSearchTab('Heritage', this)">Holiday Packages</button>
           <button type="button" class="search-tab-pill tab-bus {% if selected_category == 'Pilgrimage' %}active{% endif %}" onclick="selectSearchTab('Pilgrimage', this)">Bus</button>
-          <button type="button" class="search-tab-pill tab-visa {% if selected_category == 'International' %}active{% endif %}" onclick="selectSearchTab('International', this)">Visa</button>
+          <button type="button" class="search-tab-pill tab-visa {% if selected_category == 'International' or selected_region == 'international' %}active{% endif %}" onclick="selectSearchTab('International', this)">Visa / World</button>
           <button type="button" class="search-tab-pill tab-activities {% if selected_category == 'Adventure' %}active{% endif %}" onclick="selectSearchTab('Adventure', this)">Activities</button>
+          <button type="button" class="search-tab-pill tab-reset-all" onclick="resetAllAndRefresh(event)" title="Reset all filters and refresh display">🔄 Reset All</button>
         </div>
 
         <!-- 5-Field Input Strip matching Image 3 -->
-        <form class="hero-search-form-row" method="get" action="#trips">
+        <form class="hero-search-form-row" method="get" action="#trips" id="hero-search-form">
           <input type="hidden" name="category" id="hero-category-input" value="{{ selected_category or '' }}">
+          <input type="hidden" name="region" id="hero-region-input" value="{{ selected_region or '' }}">
           
           <div class="search-field-pill">
             <span class="field-glyph">↕</span>
@@ -169,19 +246,31 @@
             </div>
           </div>
 
-          <button type="submit" class="hero-search-action-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <span>Search Now</span>
-          </button>
+          <div class="search-buttons-group">
+            <button type="submit" class="hero-search-action-btn" title="Search trips matching filters">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span>Search Now</span>
+            </button>
+            <button type="button" class="hero-search-reset-btn" onclick="resetAllAndRefresh(event)" title="Reset and refresh all filters">
+              🔄 Reset
+            </button>
+          </div>
         </form>
 
-        {% if selected_destination or selected_origin or selected_category %}
+        {% if selected_destination or selected_origin or selected_category or selected_region or query_text %}
           <div class="hero-search-active-filter">
-            <span>Filtered by: <strong>{{ selected_origin or '' }} {{ '→ ' ~ selected_destination if selected_destination else (selected_category or '') }}</strong></span>
-            <a href="{{ url_for('public_home') }}#trips" class="clear-search-pill">Clear filters ✕</a>
+            <span>Active Filter: <strong>
+              {% if selected_region == 'domestic' %}🇮🇳 Domestic (10 Indian States)
+              {% elif selected_region == 'international' %}🌍 International (6 World Places)
+              {% endif %}
+              {{ selected_origin or '' }} {{ '→ ' ~ selected_destination if selected_destination else (selected_category or '') }}
+            </strong></span>
+            <a href="{{ url_for('public_home') }}#trips" class="clear-search-pill" onclick="resetAllAndRefresh(event)">
+              🔄 Reset All Filters &amp; Refresh All Displays
+            </a>
           </div>
         {% endif %}
       </div>
@@ -224,12 +313,27 @@
     <section class="site-section trips-section" id="trips">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">A FEW PLACES WE LOVE · 5-MONTH UPCOMING CALENDAR</span>
-          <h2>Pick a place.<br><em>We’ll mind the details.</em></h2>
+          <span class="eyebrow">
+            {% if selected_region == 'domestic' %}🇮🇳 DOMESTIC DESTINATIONS · 10 STATES ACROSS INDIA
+            {% elif selected_region == 'international' %}🌍 INTERNATIONAL DESTINATIONS · 6 WORLD PLACES
+            {% else %}A FEW PLACES WE LOVE · 5-MONTH UPCOMING CALENDAR{% endif %}
+          </span>
+          <h2>
+            {% if selected_region == 'domestic' %}Domestic Escapes.<br><em>Explore India’s Iconic States.</em>
+            {% elif selected_region == 'international' %}World Escapes.<br><em>Explore International Wonders.</em>
+            {% else %}Pick a place.<br><em>We’ll mind the details.</em>{% endif %}
+          </h2>
         </div>
-        <p>From world-renowned monuments to sacred pilgrimages, each package includes stays, meals, activities, and private transfers.
-          {% if selected_destination or selected_category or selected_origin %}<br><span class="filter-caption">Showing {{ packages|length }} matching {{ 'trip' if packages|length == 1 else 'trips' }}.</span>{% endif %}
-        </p>
+        <div style="text-align: right;">
+          <p>From world-renowned monuments to sacred pilgrimages, each package includes stays, meals, activities, and private transfers.
+            {% if selected_destination or selected_category or selected_origin or selected_region or query_text %}<br><span class="filter-caption">Showing {{ packages|length }} matching {{ 'trip' if packages|length == 1 else 'trips' }}.</span>{% endif %}
+          </p>
+          {% if selected_destination or selected_category or selected_origin or selected_region or query_text %}
+            <a href="{{ url_for('public_home') }}#trips" class="reset-all-display-link" onclick="resetAllAndRefresh(event)">
+              🔄 Reset Filters &amp; Show All 16 Trips
+            </a>
+          {% endif %}
+        </div>
       </div>
 
       <div class="public-trip-grid image1-grid-layout">
@@ -302,9 +406,15 @@
         {% else %}
           <div class="no-public-trips">
             <span>✳</span>
-            <h3>{{ 'No trips match those filters yet.' if selected_destination or selected_category or selected_origin else 'New trips are on their way.' }}</h3>
-            <p>{{ 'Try another destination, origin or category, or clear the filters.' if selected_destination or selected_category or selected_origin else 'Check back soon or get in touch and we’ll help plan something lovely.' }}</p>
-            {% if selected_destination or selected_category or selected_origin %}<a class="text-link" href="{{ url_for('public_home') }}#trips">Clear filters ↗</a>{% endif %}
+            <h3>{{ 'No trips match those filters yet.' if selected_destination or selected_category or selected_origin or selected_region or query_text else 'New trips are on their way.' }}</h3>
+            <p>{{ 'Try another destination, origin or category, or reset the filters to see all domestic and international packages.' if selected_destination or selected_category or selected_origin or selected_region or query_text else 'Check back soon or get in touch and we’ll help plan something lovely.' }}</p>
+            {% if selected_destination or selected_category or selected_origin or selected_region or query_text %}
+              <div style="margin-top: 14px;">
+                <a class="button button-orange reset-action-big-btn" href="{{ url_for('public_home') }}#trips" onclick="resetAllAndRefresh(event)">
+                  🔄 Reset All Filters &amp; View All 16 Displays
+                </a>
+              </div>
+            {% endif %}
           </div>
         {% endfor %}
       </div>
@@ -716,12 +826,116 @@
 
     function selectSearchTab(category, btn) {
       const categoryInput = document.getElementById('hero-category-input');
+      const regionInput = document.getElementById('hero-region-input');
       if (categoryInput) {
         categoryInput.value = category;
+      }
+      if (regionInput) {
+        if (category === 'International') {
+          regionInput.value = 'international';
+        } else {
+          regionInput.value = '';
+        }
       }
       document.querySelectorAll('.search-tab-pill').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
     }
+
+    // Reset all filters and refresh entire display
+    function resetAllAndRefresh(e) {
+      if (e) e.preventDefault();
+      const origin = document.getElementById('search-origin');
+      if (origin) origin.value = '';
+      const dest = document.getElementById('search-dest');
+      if (dest) dest.value = '';
+      const cat = document.getElementById('hero-category-input');
+      if (cat) cat.value = '';
+      const reg = document.getElementById('hero-region-input');
+      if (reg) reg.value = '';
+      const dep = document.getElementById('search-departure-date');
+      if (dep) dep.value = '';
+      const ret = document.getElementById('search-return-date');
+      if (ret) ret.value = '';
+      
+      // Navigate to clean public URL without filter query strings
+      window.location.href = window.location.pathname + '#trips';
+    }
+
+    // Hero Background Slideshow Engine (Slow, Enhanced Quality, Domestic & International)
+    const heroSlidesData = [
+      { flag: '🇮🇳', title: 'DOMESTIC: DIFFERENT STATES ACROSS INDIA', detail: 'Himalayas · Delhi · Agra · Kerala · Rajasthan · Varanasi · Goa' },
+      { flag: '🌍', title: 'INTERNATIONAL: ICONIC WORLD DESTINATIONS', detail: 'Paris · Rome · Pisa · London · Global Skylines & Hot Air Balloons' },
+      { flag: '🇮🇳', title: 'DOMESTIC: CULTURAL HERITAGE & STATES OF INDIA', detail: 'Kashmir Valley · Golden Temple · Kerala Lagoons · Rajasthan Forts' },
+      { flag: '🌍', title: 'INTERNATIONAL: GLOBAL ISLAND & CITY ESCAPES', detail: 'Philippines · Bali · Dubai · Thailand · Singapore · Vietnam' },
+      { flag: '🇮🇳', title: 'DOMESTIC: INCREDIBLE INDIAN SEASONS', detail: 'Monsoon Retreats · Winter Snow Adventures · Royal Heritage Trails' },
+      { flag: '🇮🇳', title: 'DOMESTIC: TIMELESS HERITAGE MONUMENTS', detail: 'Statue of Unity · Taj Mahal · Qutub Minar · Gateway of India' }
+    ];
+
+    let currentSlideIdx = 0;
+    let slideTimer = null;
+    let slideIsPaused = false;
+    const SLIDE_DURATION = 7500; // Slow, majestic 7.5 seconds per slide
+
+    function showHeroSlide(index) {
+      const slides = document.querySelectorAll('.hero-slide');
+      const dots = document.querySelectorAll('.slide-dot');
+      if (!slides.length) return;
+
+      if (index >= slides.length) index = 0;
+      if (index < 0) index = slides.length - 1;
+      currentSlideIdx = index;
+
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === index);
+      });
+      dots.forEach((d, i) => {
+        d.classList.toggle('active', i === index);
+      });
+
+      const badgeIcon = document.querySelector('.badge-flag-icon');
+      const badgeText = document.getElementById('hero-slide-badge-text');
+      const data = heroSlidesData[index];
+      if (badgeIcon && data) badgeIcon.textContent = data.flag;
+      if (badgeText && data) badgeText.textContent = data.title;
+    }
+
+    function nextHeroSlide() {
+      showHeroSlide(currentSlideIdx + 1);
+    }
+
+    function prevHeroSlide() {
+      showHeroSlide(currentSlideIdx - 1);
+    }
+
+    function jumpToHeroSlide(idx) {
+      showHeroSlide(idx);
+    }
+
+    function toggleSlidePlayPause() {
+      const btn = document.getElementById('slide-playpause-btn');
+      slideIsPaused = !slideIsPaused;
+      if (slideIsPaused) {
+        if (slideTimer) clearInterval(slideTimer);
+        if (btn) btn.textContent = '▶';
+      } else {
+        startHeroSlideshow();
+        if (btn) btn.textContent = '⏸';
+      }
+    }
+
+    function startHeroSlideshow() {
+      if (slideTimer) clearInterval(slideTimer);
+      slideTimer = setInterval(() => {
+        if (!slideIsPaused) {
+          nextHeroSlide();
+        }
+      }, SLIDE_DURATION);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      showHeroSlide(0);
+      startHeroSlideshow();
+    });
 
     document.querySelectorAll('.site-nav a').forEach((link) => link.addEventListener('click', () => {
       document.querySelector('.site-nav')?.classList.remove('nav-open');

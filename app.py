@@ -533,6 +533,7 @@ def public_home() -> Any:
     category = request.args.get("category", "").strip()
     origin = request.args.get("origin", "").strip()
     query_text = request.args.get("q", "").strip()
+    region = request.args.get("region", "").strip().lower()
 
     destinations = g.db.execute(
         "SELECT DISTINCT destination FROM packages WHERE status='active' ORDER BY destination"
@@ -545,6 +546,10 @@ def public_home() -> Any:
     ).fetchall()
     package_query = "SELECT *, capacity-reserved AS available FROM packages WHERE status='active'"
     package_args: list[str] = []
+    if region == "domestic":
+        package_query += " AND category != 'International'"
+    elif region == "international":
+        package_query += " AND category = 'International'"
     if destination:
         package_query += " AND (destination LIKE ? OR title LIKE ?)"
         package_args.extend([f"%{destination}%", f"%{destination}%"])
@@ -583,7 +588,7 @@ def public_home() -> Any:
         "public_home.html", packages=packages, reviews=reviews, review_count=review_count,
         destinations=destinations, origins=origins, categories=categories,
         selected_destination=destination, selected_origin=origin, selected_category=category,
-        query_text=query_text,
+        selected_region=region, query_text=query_text,
         marquee_packages=marquee_packages, tourist_landmarks=tourist_landmarks,
     )
 
