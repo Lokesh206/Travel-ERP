@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
-  <meta name="theme-color" content="#1a2e21">
+  <meta name="theme-color" content="#095ec2">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,18 +12,644 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
-  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=7">
-  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=7">
-  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=3">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=8">
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=8">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=8">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=4">
   <style>
-    .upcoming-departures-box {
-      background: #f7faf7;
-      border: 1px solid #d9e8d7;
+    :root {
+      --te-blue-primary: #095ec2;
+      --te-blue-dark: #003e8a;
+      --te-blue-deep: #002244;
+      --te-gold: #f5a623;
+      --te-gold-hover: #e09415;
+      --te-text-dark: #0f2942;
+      --te-text-muted: #64748b;
+      --te-bg-page: #f8fafc;
+      --te-card-border: #e2e8f0;
+      --te-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      --te-card-radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    body.trip-details-page {
+      background: var(--te-bg-page);
+      color: var(--te-text-dark);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Unified TravelEasy Header */
+    .traveleasy-header {
+      background: #ffffff;
+      border-bottom: 1px solid #edf2f7;
+      padding: 12px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+    .traveleasy-brand img {
+      height: 46px;
+      width: auto;
+      display: block;
+    }
+    .traveleasy-nav {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+    .traveleasy-nav a.nav-item {
+      text-decoration: none;
+      color: #1e293b;
+      font-size: 13.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 0;
+      transition: color 0.2s;
+    }
+    .traveleasy-nav a.nav-item:hover {
+      color: var(--te-blue-primary);
+    }
+    .header-user-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-header-login {
+      background: #0066cc;
+      color: #ffffff;
+      padding: 9px 20px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,102,204,0.22);
+      transition: all 0.2s ease;
+    }
+    .btn-header-login:hover {
+      background: #0052a3;
+      transform: translateY(-1px);
+    }
+
+    /* Breadcrumbs & Top Bar */
+    .trip-top-nav-wrap {
+      max-width: 1240px;
+      margin: 18px auto 0;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .breadcrumbs-list {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--te-text-muted);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .breadcrumbs-list a {
+      color: #475569;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .breadcrumbs-list a:hover {
+      color: var(--te-blue-primary);
+    }
+    .breadcrumbs-list .sep {
+      color: #cbd5e1;
+      font-size: 11px;
+    }
+    .breadcrumbs-list .current {
+      color: var(--te-blue-primary);
+      font-weight: 700;
+    }
+    .btn-back-pill {
+      background: #ffffff;
+      border: 1px solid var(--te-card-border);
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 30px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+      transition: all 0.2s;
+    }
+    .btn-back-pill:hover {
+      background: #f1f5f9;
+      color: var(--te-blue-primary);
+      border-color: #cbd5e1;
+    }
+
+    /* Main Container & Grid */
+    .trip-main-container {
+      max-width: 1240px;
+      margin: 18px auto 60px;
+      padding: 0 24px;
+    }
+    .trip-layout-grid {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    /* Hero Showcase Board */
+    .trip-hero-showcase {
+      background: #ffffff;
+      border-radius: var(--te-card-radius);
+      border: 1px solid var(--te-card-border);
+      box-shadow: var(--te-card-shadow);
+      overflow: hidden;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .hero-photo-wrap {
+      position: relative;
+      height: 380px;
+      width: 100%;
+      overflow: hidden;
+      background: #0f172a;
+    }
+    .hero-cover-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      filter: brightness(1.05) contrast(1.12) saturate(1.22);
+      transition: transform 6s ease;
+    }
+    .trip-hero-showcase:hover .hero-cover-photo {
+      transform: scale(1.03);
+    }
+    .hero-photo-vignette {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.4) 50%, rgba(15, 23, 42, 0.88) 100%);
+      pointer-events: none;
+    }
+    .hero-badge-overlay {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      z-index: 3;
+    }
+    .badge-pill {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 30px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .badge-pill-region {
+      background: rgba(9, 94, 194, 0.85);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .badge-pill-cat {
+      background: rgba(255, 255, 255, 0.88);
+      color: #0f2942;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .badge-pill-rating {
+      background: rgba(245, 166, 35, 0.9);
+      color: #111827;
+      font-weight: 800;
+    }
+    .badge-pill-urgency {
+      background: rgba(220, 38, 38, 0.9);
+      color: #ffffff;
+    }
+
+    .hero-floating-details {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
+      z-index: 3;
+      color: #ffffff;
+    }
+    .hero-floating-details h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin: 0 0 10px;
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .hero-floating-details p {
+      font-size: 14.5px;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.92);
+      margin: 0;
+      max-width: 640px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+
+    .hero-substrip {
+      padding: 16px 24px;
+      background: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-top: 1px solid var(--te-card-border);
+    }
+    .substrip-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #15803d;
+      font-weight: 700;
+    }
+    .substrip-verified span.check-icon {
+      background: #dcfce7;
+      color: #15803d;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .official-portal-pill {
+      font-size: 11.5px;
+      color: var(--te-blue-primary);
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0f7ff;
+      border: 1px solid #bfdbfe;
+      padding: 5px 12px;
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+    .official-portal-pill:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    /* Overview Display Board (Key Facts Cards) */
+    .trip-display-board {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .board-card {
+      background: #ffffff;
+      border: 1px solid var(--te-card-border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .board-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+      border-color: #cbd5e1;
+    }
+    .board-card-icon {
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
+      background: #eef5ff;
+      color: var(--te-blue-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .board-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .board-card-label {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--te-text-muted);
+    }
+    .board-card-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--te-text-dark);
+      line-height: 1.35;
+    }
+    .board-card-sub {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Content Cards (Itinerary, Activities, Inclusions, Tips) */
+    .trip-section-card {
+      background: #ffffff;
+      border: 1px solid var(--te-card-border);
+      border-radius: var(--te-card-radius);
+      box-shadow: var(--te-card-shadow);
+      padding: 30px;
+      margin-bottom: 24px;
+    }
+    .section-eyebrow-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .eyebrow-bar {
+      width: 4px;
+      height: 20px;
+      background: var(--te-gold);
+      border-radius: 2px;
+    }
+    .eyebrow-heading {
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--te-gold);
+      margin: 0;
+    }
+    .trip-section-card h2 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f2942;
+      margin: 0 0 20px;
+      line-height: 1.25;
+    }
+
+    /* Activities Grid */
+    .activities-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .activity-chip {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .activity-chip:hover {
+      background: #ffffff;
+      border-color: var(--te-blue-primary);
+      color: var(--te-blue-primary);
+      transform: translateY(-1px);
+    }
+    .activity-star {
+      color: var(--te-gold);
+      font-size: 14px;
+    }
+
+    /* Day-by-Day Timeline */
+    .itinerary-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+    }
+    .itinerary-milestone {
+      display: flex;
+      align-items: stretch;
+      gap: 18px;
+      position: relative;
+    }
+    .milestone-marker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 32px;
+      flex-shrink: 0;
+    }
+    .milestone-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #eef5ff;
+      border: 2px solid var(--te-blue-primary);
+      color: var(--te-blue-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      z-index: 2;
+    }
+    .milestone-line {
+      flex: 1;
+      width: 2px;
+      background: #e2e8f0;
+      margin: 4px 0;
+    }
+    .milestone-content {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      flex: 1;
+      transition: all 0.2s;
+    }
+    .itinerary-milestone:hover .milestone-content {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .milestone-day-badge {
+      display: inline-block;
+      background: #0066cc;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .milestone-text {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #334155;
+      margin: 0;
+    }
+
+    /* Inclusions Grid */
+    .inclusions-checklist {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .inclusion-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #334155;
+    }
+    .inclusion-check {
+      color: #16a34a;
+      font-size: 16px;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: -1px;
+    }
+    .inclusions-note {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 12.5px;
+      color: #166534;
+      margin: 0;
+    }
+
+    /* Guidelines Cards */
+    .guidelines-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .guide-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+    .guide-card strong {
+      font-size: 13.5px;
+      color: #0f2942;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .guide-card p {
+      font-size: 12.5px;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    /* Right Sidebar: Booking & Reservation Console */
+    .trip-booking-panel {
+      background: #ffffff;
+      border: 1px solid var(--te-card-border);
+      border-radius: var(--te-card-radius);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      padding: 28px;
+      position: sticky;
+      top: 96px;
+    }
+    .booking-eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--te-gold);
+      display: block;
+      margin-bottom: 6px;
+    }
+    .booking-price-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .trip-booking-price {
+      font-size: 32px;
+      font-weight: 800;
+      color: #0f2942;
+      margin: 0;
+      line-height: 1;
+    }
+    .trip-booking-price span {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--te-text-muted);
+    }
+    .original-price-strike {
+      font-size: 14px;
+      color: #94a3b8;
+      text-decoration: line-through;
+      margin-right: 6px;
+    }
+    .save-tag-pill {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #059669;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .trip-availability {
+      font-size: 12px;
+      font-weight: 700;
+      color: #059669;
+      margin: 6px 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .trip-availability.sold-out {
+      color: #dc2626;
+    }
+
+    /* Scheduled Departures Section */
+    .upcoming-departures-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
     }
     .departure-dates-chips {
       display: flex;
@@ -32,8 +658,8 @@
     }
     .dep-date-pill {
       background: #ffffff;
-      border: 1.5px solid #c2dec0;
-      color: #1e4526;
+      border: 1.5px solid #cbd5e1;
+      color: #334155;
       font-size: 11.5px;
       font-weight: 700;
       padding: 6px 12px;
@@ -46,113 +672,373 @@
       font-family: inherit;
     }
     .dep-date-pill:hover {
-      background: #eaf4e8;
-      border-color: #235e35;
+      background: #eef5ff;
+      border-color: var(--te-blue-primary);
+      color: var(--te-blue-primary);
       transform: translateY(-1px);
     }
     .dep-date-pill.active-dep-pill {
-      background: #235e35;
-      border-color: #164022;
+      background: var(--te-blue-primary);
+      border-color: var(--te-blue-dark);
       color: #ffffff;
-      box-shadow: 0 3px 8px rgba(35, 94, 53, 0.3);
+      box-shadow: 0 4px 12px rgba(9, 94, 194, 0.3);
     }
-    .active-dep-pill span {
-      filter: brightness(1.2);
-    }
+
+    /* Date Input Fields */
     .date-input-field {
-      height: 40px;
+      height: 42px;
       font-weight: 600;
-      font-size: 12.5px;
+      font-size: 13px;
       cursor: pointer;
-      border: 1px solid #c8d8cb;
-      border-radius: 8px;
-      padding: 6px 10px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 6px 12px;
       width: 100%;
       background: #ffffff;
-      color: #1e3f28;
+      color: #0f2942;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     .date-input-field:focus {
-      border-color: #235e35;
+      border-color: var(--te-blue-primary);
       outline: none;
-      box-shadow: 0 0 0 2px rgba(35, 94, 53, 0.2);
+      box-shadow: 0 0 0 3px rgba(9, 94, 194, 0.15);
+    }
+
+    /* Transport Cards */
+    .transport-selection-block {
+      margin-bottom: 16px;
+    }
+    .transport-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .transport-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+    .transport-card input[type="radio"] {
+      margin: 0;
+      accent-color: var(--te-blue-primary);
+    }
+    .transport-card:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+    .transport-card.active {
+      border-color: var(--te-blue-primary);
+      background: #f0f7ff;
+    }
+    .tr-info {
+      flex: 1;
+    }
+    .tr-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0f2942;
+    }
+    .tr-desc {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .tr-price-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #059669;
+    }
+
+    /* Payment Tabs */
+    .payment-tab-btn {
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.2s;
+    }
+    .payment-tab-btn.active {
+      background: var(--te-blue-primary);
+      border-color: var(--te-blue-primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(9, 94, 194, 0.25);
+    }
+
+    /* Primary CTA Buttons */
+    .btn-pay-submit {
+      width: 100%;
+      background: var(--te-gold);
+      color: #111827;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(245, 166, 35, 0.35);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-pay-submit:hover {
+      background: var(--te-gold-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 166, 35, 0.45);
+    }
+    .btn-whatsapp-booking {
+      width: 100%;
+      background: #25d366;
+      color: #ffffff;
+      font-size: 13.5px;
+      font-weight: 700;
+      padding: 12px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      box-shadow: 0 4px 14px rgba(37, 211, 102, 0.25);
+      transition: all 0.2s;
+    }
+    .btn-whatsapp-booking:hover {
+      background: #20ba5a;
+      transform: translateY(-1px);
+    }
+
+    /* Unified Footer */
+    .traveleasy-footer {
+      background: var(--te-blue-deep);
+      color: #ffffff;
+      padding: 60px 32px 28px;
+      margin-top: 60px;
+    }
+    .footer-container {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+      gap: 40px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+    }
+    .footer-col h4 {
+      font-size: 13.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      margin: 0 0 16px;
+    }
+    .footer-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-col ul li a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s;
+    }
+    .footer-col ul li a:hover {
+      color: #ffffff;
+    }
+    .footer-bottom {
+      max-width: 1240px;
+      margin: 24px auto 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 992px) {
+      .traveleasy-header { padding: 12px 20px; }
+      .traveleasy-nav { display: none; }
+      .trip-layout-grid { grid-template-columns: 1fr; }
+      .trip-display-board { grid-template-columns: 1fr; }
+      .inclusions-checklist { grid-template-columns: 1fr; }
+      .guidelines-grid { grid-template-columns: 1fr; }
+      .footer-container { grid-template-columns: 1fr 1fr; }
+      .hero-floating-details h1 { font-size: 28px; }
+      .hero-photo-wrap { height: 280px; }
+    }
+    @media (max-width: 600px) {
+      .footer-container { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
     }
   </style>
 </head>
 <body class="website-page trip-details-page">
-  <header class="site-header">
-    <a class="brand" href="{{ url_for('public_home') }}"><img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 38px; vertical-align: middle;"></a>
-    <nav class="site-nav" aria-label="Main navigation">
-      <a href="{{ url_for('public_home') }}#trips">Our trips</a>
-      <a href="{{ url_for('public_home') }}#gallery">Tourist places</a>
-      <a href="{{ url_for('public_home') }}#reviews">Traveller stories</a>
-      <a href="{{ url_for('public_home') }}#contact">Contact</a>
+
+  <!-- Unified TravelEasy Header -->
+  <header class="traveleasy-header">
+    <a class="traveleasy-brand" href="{{ url_for('public_home') }}" title="TravelEasy · Travel around the world">
+      <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy Logo">
+    </a>
+
+    <nav class="traveleasy-nav" aria-label="Main navigation">
+      <a class="nav-item" href="{{ url_for('public_home') }}">Home</a>
+      <a class="nav-item" href="{{ url_for('public_home', region='domestic') }}#trips">Domestic ⌵</a>
+      <a class="nav-item" href="{{ url_for('public_home', region='international') }}#trips">International ⌵</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#trips">Tour Packages ⌵</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#deals">Deals</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#thought-journey">About Us</a>
+      <a class="nav-item" href="{{ url_for('public_home') }}#contact">Contact</a>
+      <a class="nav-item" href="{{ url_for('referral_program') }}" title="TravelEasy Partner Program">Referral Program</a>
     </nav>
-    <div class="site-actions">
+
+    <div class="header-user-actions">
       {% if g.user %}
-        <a class="site-login-link" href="{{ url_for('dashboard') }}">My dashboard ({{ g.user.name.split()[0] }}) ↗</a>
-        <a class="site-logout-link" href="{{ url_for('logout') }}" title="Sign out of TravelEasy">Log out 🚪</a>
+        <a class="btn-header-login" href="{{ url_for('dashboard') }}">
+          <span>♟</span> My Dashboard ({{ g.user.name.split()[0] }}) ↗
+        </a>
+        <a href="{{ url_for('logout') }}" title="Sign out" style="font-size: 13px; color: #ef4444; font-weight: 700; text-decoration: none;">Log Out 🚪</a>
       {% else %}
-        <a class="site-login-link" href="{{ url_for('login') }}">Sign in</a>
-        <a class="button button-dark site-top-cta" href="{{ url_for('register') }}">Join us <span>↗</span></a>
+        <a class="btn-header-login" href="{{ url_for('login') }}">
+          <span>♟</span> Login / Register
+        </a>
       {% endif %}
     </div>
   </header>
 
-  <main class="trip-detail-main">
+  <!-- Top Navigation Bar & Breadcrumbs -->
+  <div class="trip-top-nav-wrap">
+    <ul class="breadcrumbs-list" aria-label="Breadcrumbs">
+      <li><a href="{{ url_for('public_home') }}">Home</a></li>
+      <li class="sep">❯</li>
+      <li><a href="{{ url_for('public_home') }}#trips">Tour Packages</a></li>
+      <li class="sep">❯</li>
+      <li><a href="{{ url_for('public_home') }}?destination={{ package.destination }}#trips">{{ package.destination }}</a></li>
+      <li class="sep">❯</li>
+      <li class="current">{{ package.title }}</li>
+    </ul>
+
+    <a class="btn-back-pill" href="{{ url_for('public_home') }}#trips">
+      <span>←</span> Back to All 16 Tour Packages
+    </a>
+  </div>
+
+  <main class="trip-main-container">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}<div class="site-flash flash-{{ category }}">{{ message }}</div>{% endfor %}
     {% endwith %}
 
-    <a class="trip-back-link" href="{{ url_for('public_home') }}#trips">← Back to all trips & places</a>
+    <div class="trip-layout-grid">
+      <!-- Left Column: The Comprehensive Travel Display Board -->
+      <div class="trip-content-column">
 
-    <section class="trip-detail-hero">
-      <img src="{{ url_for('static', filename=package.image_file or 'gallery-monument.jpg') }}" alt="{{ package.title }}" fetchpriority="high">
-      <div class="trip-detail-overlay">
-        <span class="eyebrow eyebrow-light">{{ package.destination }} · {{ package.category }}</span>
-        <h1>{{ package.title }}</h1>
-        <p>{{ package.description }}</p>
-        {% if package.official_url %}
-          <div>
-            <a class="official-verified-banner" href="{{ package.official_url }}" target="_blank" rel="noopener noreferrer">
-              🏛️ Official Monument / Shrine Portal: {{ package.official_url }} ↗
-            </a>
-          </div>
-        {% endif %}
-      </div>
-    </section>
+        <!-- 1. Hero Showcase Board -->
+        <section class="trip-hero-showcase">
+          <div class="hero-photo-wrap">
+            <img src="{{ url_for('static', filename=package.image_file or 'gallery-monument.jpg') }}" alt="{{ package.title }}" class="hero-cover-photo" fetchpriority="high">
+            <div class="hero-photo-vignette"></div>
 
-    <div class="trip-detail-layout">
-      <div class="trip-detail-content">
+            <div class="hero-badge-overlay">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span class="badge-pill badge-pill-region">
+                  {% if 'India' in package.destination or package.destination in ['Goa', 'Kashmir', 'Kerala', 'Agra', 'Amritsar', 'Kevadia', 'Jaisalmer', 'Manali'] %}
+                    🇮🇳 Domestic India
+                  {% else %}
+                    ✈️ International Holiday
+                  {% endif %}
+                </span>
+                <span class="badge-pill badge-pill-cat">🏛️ {{ package.category }}</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <span class="badge-pill badge-pill-rating">★ 4.95 Rating</span>
+                <span class="badge-pill badge-pill-urgency">● {{ package.available }} Seats Left</span>
+              </div>
+            </div>
 
-        <!-- Fact Strip: Duration (No. of days), Stays, Meals, Transport -->
-        <section class="trip-facts" aria-label="Trip overview key facts">
-          <div>
-            <span class="eyebrow">NO. OF DAYS / DURATION</span>
-            <strong>{{ package.duration }}</strong>
+            <div class="hero-floating-details">
+              <h1>{{ package.title }}</h1>
+              <p>{{ package.description }}</p>
+            </div>
           </div>
-          <div>
-            <span class="eyebrow">STAYS & ACCOMMODATION</span>
-            <strong>{{ package.stay_type }}</strong>
-          </div>
-          <div>
-            <span class="eyebrow">MEALS & DINING</span>
-            <strong>{{ package.meal_plan }}</strong>
-          </div>
-          <div>
-            <span class="eyebrow">TRANSPORT & TRANSFERS</span>
-            <strong>{{ package.transport }}</strong>
+
+          <div class="hero-substrip">
+            <div class="substrip-verified">
+              <span class="check-icon">✓</span>
+              <span>Verified TravelEasy Escapes Desk · Instant Soft-Copy E-Ticket &amp; Vouchers</span>
+            </div>
+            {% if package.official_url %}
+              <a class="official-portal-pill" href="{{ package.official_url }}" target="_blank" rel="noopener noreferrer">
+                🏛️ Official Portal: {{ package.official_url }} ↗
+              </a>
+            {% endif %}
           </div>
         </section>
 
-        <!-- Activities Section -->
+        <!-- 2. Overview Display Board (Key Facts Cards) -->
+        <section class="trip-display-board" aria-label="Trip overview key facts">
+          <div class="board-card">
+            <div class="board-card-icon">⏱️</div>
+            <div class="board-card-info">
+              <span class="board-card-label">NO. OF DAYS / DURATION</span>
+              <strong class="board-card-val">{{ package.duration }}</strong>
+              <span class="board-card-sub">Carefully paced daily itinerary</span>
+            </div>
+          </div>
+
+          <div class="board-card">
+            <div class="board-card-icon">🏨</div>
+            <div class="board-card-info">
+              <span class="board-card-label">STAYS &amp; ACCOMMODATION</span>
+              <strong class="board-card-val">{{ package.stay_type }}</strong>
+              <span class="board-card-sub">Handpicked star comfort &amp; resorts</span>
+            </div>
+          </div>
+
+          <div class="board-card">
+            <div class="board-card-icon">🍽️</div>
+            <div class="board-card-info">
+              <span class="board-card-label">MEALS &amp; DINING</span>
+              <strong class="board-card-val">{{ package.meal_plan }}</strong>
+              <span class="board-card-sub">Buffet breakfast &amp; authentic dinners</span>
+            </div>
+          </div>
+
+          <div class="board-card">
+            <div class="board-card-icon">🚗</div>
+            <div class="board-card-info">
+              <span class="board-card-label">TRANSPORT &amp; TRANSFERS</span>
+              <strong class="board-card-val">{{ package.transport }}</strong>
+              <span class="board-card-sub">Chauffeur vehicle &amp; airport pickups</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Curated Activities & Sightseeing Highlights -->
         {% if package.activities %}
-          <section class="trip-info-panel activities-panel">
-            <span class="eyebrow" style="color: #b5894f; font-weight: 700;">ACTIVITIES & SIGHTSEEING</span>
-            <h2>Curated Experiences & Highlights</h2>
+          <section class="trip-section-card">
+            <div class="section-eyebrow-row">
+              <div class="eyebrow-bar"></div>
+              <span class="eyebrow-heading">ACTIVITIES &amp; SIGHTSEEING</span>
+            </div>
+            <h2>Curated Experiences &amp; Daily Highlights</h2>
             <div class="activities-grid">
               {% for act in package.activities.split(', ') %}
                 <div class="activity-chip">
-                  <span class="activity-chip-icon">✦</span>
+                  <span class="activity-star">✦</span>
                   <span>{{ act }}</span>
                 </div>
               {% endfor %}
@@ -160,46 +1046,122 @@
           </section>
         {% endif %}
 
-        <!-- Inclusions Section -->
-        <section class="trip-info-panel">
-          <span class="eyebrow">WHAT’S INCLUDED</span>
-          <h2>The Thoughtful Details</h2>
-          <p class="trip-preline">{{ package.inclusions }}</p>
-          <p class="trip-confirmation-note">All monument entries, priority temple darshan passes, and private guide arrangements are handled by the TravelEasy travel desk.</p>
-        </section>
+        <!-- 4. Interactive Day-by-Day Journey Itinerary Board -->
+        <section class="trip-section-card">
+          <div class="section-eyebrow-row">
+            <div class="eyebrow-bar"></div>
+            <span class="eyebrow-heading">YOUR ITINERARY SCHEDULE</span>
+          </div>
+          <h2>Day-by-Day Journey Experience</h2>
 
-        <!-- Day-by-Day Itinerary Section -->
-        <section class="trip-info-panel">
-          <span class="eyebrow">YOUR JOURNEY</span>
-          <h2>Day-by-Day Experience Outline</h2>
-          <p class="trip-preline">{{ package.itinerary }}</p>
-        </section>
-
-        <!-- Good to Know Section -->
-        <section class="trip-info-panel">
-          <span class="eyebrow">GOOD TO KNOW</span>
-          <h2>Guidelines & Helpful Tips</h2>
-          <ul class="trip-good-to-know">
-            <li><strong>Darshan / Shrine Etiquette:</strong> Please follow traditional modest dress guidelines when visiting temples and religious shrines. Head coverings are customary at Gurudwaras.</li>
-            <li><strong>Official Portals:</strong> Current ticketing timings and special pooja slots are also updated on the official government/trust portal:
-              {% if package.official_url %}
-                <a href="{{ package.official_url }}" target="_blank" rel="noopener noreferrer" style="color: #49684c; font-weight: 600;">{{ package.official_url }} ↗</a>
-              {% else %}
-                <a href="{{ url_for('public_home') }}#contact">Contact our desk</a>
+          <div class="itinerary-timeline">
+            {% set day_lines = package.itinerary.split('\n') %}
+            {% for line in day_lines %}
+              {% if line.strip() %}
+                <div class="itinerary-milestone">
+                  <div class="milestone-marker">
+                    <span class="milestone-dot">{{ loop.index }}</span>
+                    {% if not loop.last %}<span class="milestone-line"></span>{% endif %}
+                  </div>
+                  <div class="milestone-content">
+                    {% set parts = line.split('—', 1) %}
+                    {% if parts|length == 2 %}
+                      <div class="milestone-day-badge">{{ parts[0].strip() }}</div>
+                      <p class="milestone-text">{{ parts[1].strip() }}</p>
+                    {% else %}
+                      <p class="milestone-text">{{ line.strip() }}</p>
+                    {% endif %}
+                  </div>
+                </div>
               {% endif %}
-            </li>
-            <li><strong>Identification:</strong> Carry valid government photo IDs (Aadhaar, Passport, or Voter ID) for seamless hotel check-ins and monument security gates.</li>
-            <li><strong>Flexibility:</strong> Departure dates and custom vehicle upgrades are arranged on request to suit your travel schedule.</li>
-          </ul>
+            {% endfor %}
+          </div>
         </section>
+
+        <!-- 5. Thoughtful Inclusions & Privileges Board -->
+        <section class="trip-section-card">
+          <div class="section-eyebrow-row">
+            <div class="eyebrow-bar"></div>
+            <span class="eyebrow-heading">WHAT’S INCLUDED</span>
+          </div>
+          <h2>Thoughtful Inclusions &amp; Travel Privileges</h2>
+
+          <div class="inclusions-checklist">
+            <div class="inclusion-item">
+              <span class="inclusion-check">✓</span>
+              <span>All monument entry tickets &amp; priority shrine darshan passes</span>
+            </div>
+            <div class="inclusion-item">
+              <span class="inclusion-check">✓</span>
+              <span>Dedicated 24/7 TravelEasy concierge desk support</span>
+            </div>
+            <div class="inclusion-item">
+              <span class="inclusion-check">✓</span>
+              <span>Sanitized private vehicle with verified chauffeur &amp; all tolls/fuel</span>
+            </div>
+            <div class="inclusion-item">
+              <span class="inclusion-check">✓</span>
+              <span>Curated meal plans as confirmed in your digital travel voucher</span>
+            </div>
+            <div class="inclusion-item">
+              <span class="inclusion-check">✓</span>
+              <span>Digital E-ticket soft copies emailed instantly upon reservation</span>
+            </div>
+            <div class="inclusion-item">
+              <span class="inclusion-check">✓</span>
+              <span>Flexible date rescheduling and vehicle upgrade options</span>
+            </div>
+          </div>
+
+          <p class="inclusions-note">
+            💡 <strong>Travel Desk Guarantee:</strong> {{ package.inclusions }} All passes and logistics are pre-arranged so you enjoy a seamless, worry-free vacation.
+          </p>
+        </section>
+
+        <!-- 6. Guidelines & Helpful Travel Tips -->
+        <section class="trip-section-card">
+          <div class="section-eyebrow-row">
+            <div class="eyebrow-bar"></div>
+            <span class="eyebrow-heading">GOOD TO KNOW</span>
+          </div>
+          <h2>Guidelines &amp; Helpful Travel Tips</h2>
+
+          <div class="guidelines-grid">
+            <div class="guide-card">
+              <strong>🛕 Darshan &amp; Shrine Etiquette</strong>
+              <p>Please follow traditional modest dress guidelines when visiting temples and religious shrines. Head coverings are customary at Gurudwaras.</p>
+            </div>
+            <div class="guide-card">
+              <strong>🏛️ Official Portals &amp; Timing</strong>
+              <p>Current ticketing timings and special pooja slots are verified through official state and temple trusts by our desk.</p>
+            </div>
+            <div class="guide-card">
+              <strong>🪪 Identity Verification</strong>
+              <p>Carry valid government photo IDs (Aadhaar, Passport, or Voter ID) for seamless hotel check-ins and monument security gates.</p>
+            </div>
+            <div class="guide-card">
+              <strong>🔄 Schedule Flexibility</strong>
+              <p>Departure dates and vehicle upgrades can be tailored on request. Contact our 24/7 desk anytime to customize.</p>
+            </div>
+          </div>
+        </section>
+
       </div>
 
-      <!-- Booking Panel ("and then booking a") -->
+      <!-- Right Column: Booking & Reservation Console -->
       <aside class="trip-booking-panel" id="booking">
-        <span class="eyebrow">RESERVE THIS ESCAPE</span>
-        <p class="trip-booking-price" id="base-price" data-price-paise="{{ package.price_paise }}">
-          {{ (package.price_paise / 100)|inr }} <span>/ person</span>
-        </p>
+        <span class="booking-eyebrow">RESERVE THIS ESCAPE</span>
+
+        <div class="booking-price-row">
+          <div>
+            <span class="original-price-strike">₹{{ '{:,}'.format(((package.price_paise * 102) // 10000) * 100) }}</span>
+            <p class="trip-booking-price" id="base-price" data-price-paise="{{ package.price_paise }}">
+              {{ (package.price_paise / 100)|inr }} <span>/ person</span>
+            </p>
+          </div>
+          <span class="save-tag-pill">Save 5%</span>
+        </div>
+
         <p class="trip-availability {{ 'sold-out' if package.available == 0 }}">
           ● {{ package.available }} {{ 'seats' if package.available != 1 else 'seat' }} currently available
         </p>
@@ -212,12 +1174,12 @@
 
             <!-- Upcoming Scheduled Departure Dates Selector -->
             {% if upcoming_schedule %}
-            <div class="upcoming-departures-box" style="margin-bottom: 14px;">
+            <div class="upcoming-departures-box">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 11px; font-weight: 700; color: #1e3f28; text-transform: uppercase; letter-spacing: 0.5px;">
+                <span style="font-size: 11px; font-weight: 700; color: #0f2942; text-transform: uppercase; letter-spacing: 0.5px;">
                   📅 Scheduled Departures (Next 5 Months)
                 </span>
-                <span style="font-size: 10px; color: #406846; font-weight: 600;">Tap date to select</span>
+                <span style="font-size: 10px; color: var(--te-blue-primary); font-weight: 700;">Tap to select</span>
               </div>
               <div class="departure-dates-chips">
                 {% for dt_item in upcoming_schedule %}
@@ -234,49 +1196,51 @@
 
             <!-- Departure and Return / Checkout Dates Linked -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-              <label style="margin-bottom: 0;">
+              <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
                 Departure / Start Date
                 <input name="travel_date" id="start-date-input" class="date-input-field" type="date" min="{{ today }}" value="{{ initial_travel_date }}" required onchange="handleStartDateChange(this.value)" oninput="handleStartDateChange(this.value)">
               </label>
 
-              <label style="margin-bottom: 0;">
+              <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
                 Return / Checkout Date
                 <input name="return_date" id="return-date-input" class="date-input-field" type="date" min="{{ initial_travel_date }}" value="{{ initial_return_date }}" required onchange="handleReturnDateChange(this.value)" oninput="handleReturnDateChange(this.value)">
               </label>
             </div>
 
             <!-- Visual Itinerary Duration Badge -->
-            <div id="itinerary-dates-badge" style="background: #f0f7ef; border: 1px solid #d4e7d0; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #204627; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-              <span>📅 <strong>Itinerary Schedule:</strong> {{ package.duration }}</span>
-              <span id="dates-summary-span" style="font-weight: 700;">{{ initial_travel_date }} ➔ {{ initial_return_date }}</span>
+            <div id="itinerary-dates-badge" style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 14px; font-size: 11.5px; color: var(--te-blue-primary); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <span>📅 <strong>Schedule:</strong> {{ package.duration }}</span>
+              <span id="dates-summary-span" style="font-weight: 800;">{{ initial_travel_date }} ➔ {{ initial_return_date }}</span>
             </div>
 
             <!-- Traveller & E-Ticket Recipient Details -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-              <label style="margin-bottom: 0;">
+              <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
                 Lead Traveller Name
-                <input name="guest_name" type="text" placeholder="Full Name" value="{% if g.user %}{{ g.user.name }}{% endif %}" required style="height: 38px; font-size: 12px;">
+                <input name="guest_name" type="text" placeholder="Full Name" value="{% if g.user %}{{ g.user.name }}{% endif %}" required style="height: 40px; font-size: 12.5px; border-radius: 8px; border: 1.5px solid #cbd5e1; padding: 6px 10px; width: 100%;">
               </label>
-              <label style="margin-bottom: 0;">
+              <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
                 E-Ticket &amp; Soft Copy Email
-                <input name="guest_email" type="email" placeholder="name@example.com" value="{% if g.user %}{{ g.user.email }}{% endif %}" required style="height: 38px; font-size: 12px;">
+                <input name="guest_email" type="email" placeholder="name@example.com" value="{% if g.user %}{{ g.user.email }}{% endif %}" required style="height: 40px; font-size: 12.5px; border-radius: 8px; border: 1.5px solid #cbd5e1; padding: 6px 10px; width: 100%;">
               </label>
             </div>
-            <label style="margin-bottom: 12px;">
-              Mobile Number (SMS / WhatsApp Updates)
-              <input name="guest_phone" type="tel" placeholder="+91 98765 43210" value="+91 98450 12345" style="height: 38px; font-size: 12px;">
+
+            <label style="margin-bottom: 12px; font-size: 11.5px; font-weight: 700; color: #334155; display: block;">
+              Mobile Number (WhatsApp Updates)
+              <input name="guest_phone" type="tel" placeholder="+91 98765 43210" value="+91 98450 12345" style="height: 40px; font-size: 12.5px; border-radius: 8px; border: 1.5px solid #cbd5e1; padding: 6px 10px; width: 100%;">
             </label>
 
             <!-- Transportation Mode Selection Grid -->
-            <div class="transport-selection-block" style="margin-bottom: 14px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="font-size: 11px; font-weight: 700; color: #1e3f28; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0;">
+            <div class="transport-selection-block">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-size: 11px; font-weight: 800; color: #0f2942; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
                   🚗 Transportation &amp; Transfers
                 </label>
-                <button type="button" onclick="skipTransport()" class="skip-transport-pill" id="skip-transport-btn" style="background: #eef3ef; border: 1px solid #c9d8cb; color: #234830; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
+                <button type="button" onclick="skipTransport()" class="skip-transport-pill" id="skip-transport-btn" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
                   🚶 Skip Transport (₹0)
                 </button>
               </div>
+
               <div class="transport-grid">
                 <label class="transport-card active" id="tr-card-sedan">
                   <input type="radio" name="transport_mode" value="Private AC Sedan / SUV" checked onchange="selectTransport('Private AC Sedan / SUV', 0, this)">
@@ -290,230 +1254,172 @@
                 <label class="transport-card" id="tr-card-rail">
                   <input type="radio" name="transport_mode" value="Vande Bharat Express / AC Rail" onchange="selectTransport('Vande Bharat Express / AC Rail', 0, this)">
                   <div class="tr-info">
-                    <div class="tr-title">🚆 Vande Bharat / AC Rail</div>
-                    <div class="tr-desc">Executive AC Chair Car / 1st AC with station transfers</div>
+                    <div class="tr-title">🚆 Vande Bharat Express / AC Rail</div>
+                    <div class="tr-desc">Premium rail transfers with scenic routes</div>
                     <div class="tr-price-tag included">Included (₹0)</div>
                   </div>
                 </label>
 
                 <label class="transport-card" id="tr-card-flight">
-                  <input type="radio" name="transport_mode" value="Flight Express Add-on" onchange="selectTransport('Flight Express Add-on', 4500, this)">
+                  <input type="radio" name="transport_mode" value="Flight Transfers (Economy)" onchange="selectTransport('Flight Transfers (Economy)', 4500, this)">
                   <div class="tr-info">
-                    <div class="tr-title">✈️ Flight Express Add-on</div>
-                    <div class="tr-desc">Return domestic flights + 15kg check-in luggage</div>
+                    <div class="tr-title">✈️ Domestic / International Flight Assistance</div>
+                    <div class="tr-desc">Scheduled flights with 15kg baggage included</div>
                     <div class="tr-price-tag upgrade">+₹4,500 / person</div>
                   </div>
                 </label>
-
-                <label class="transport-card" id="tr-card-volvo">
-                  <input type="radio" name="transport_mode" value="Luxury Volvo AC Sleeper" onchange="selectTransport('Luxury Volvo AC Sleeper', -1000, this)">
-                  <div class="tr-info">
-                    <div class="tr-title">🚌 Luxury Volvo AC Sleeper</div>
-                    <div class="tr-desc">Multi-Axle reclining coach + hotel transfers</div>
-                    <div class="tr-price-tag saver">Save ₹1,000 / person</div>
-                  </div>
-                </label>
-
-                <label class="transport-card" id="tr-card-skip">
-                  <input type="radio" name="transport_mode" id="tr-input-skip" value="No Transport Required (Self-Arranged)" onchange="selectTransport('No Transport Required (Self-Arranged)', 0, this)">
-                  <div class="tr-info">
-                    <div class="tr-title">🚶 No Transport (Skip)</div>
-                    <div class="tr-desc">I will arrange my own transport / Local arrival</div>
-                    <div class="tr-price-tag" style="color: #4b6b50;">Skip Transport (₹0)</div>
-                  </div>
-                </label>
               </div>
             </div>
 
-            <label>
-              Number of travellers
-              <input name="travellers" id="travellers-input" type="number" min="1" max="{{ package.available if package.available < 20 else 20 }}" value="1" required oninput="recalculatePricing()">
+            <!-- Number of Travellers -->
+            <label style="margin-bottom: 14px; font-size: 11.5px; font-weight: 700; color: #334155; display: block;">
+              Number of Travellers
+              <input name="travellers" id="travellers-input" type="number" min="1" max="20" value="1" required style="height: 40px; font-size: 14px; font-weight: 700; border-radius: 8px; border: 1.5px solid #cbd5e1; padding: 6px 12px; width: 100%;" onchange="recalculatePricing()" oninput="recalculatePricing()">
             </label>
 
             <!-- Live Fare Breakdown Card -->
-            <div class="fare-breakdown-card" style="background: #f7faf7; border: 1px solid #dce8dd; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; font-size: 11px;">
-              <div style="font-weight: 700; color: #1e3f28; margin-bottom: 6px; display: flex; justify-content: space-between;">
-                <span>Fare Summary</span>
-                <span id="fare-traveller-label">1 Traveller</span>
+            <div class="fare-breakdown-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 6px;">
+                <span id="fare-traveller-label">1 Traveller Base:</span>
+                <span id="fare-base-display" style="font-weight: 700; color: #0f2942;">{{ (package.price_paise / 100)|inr }}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; color: #49634e; margin-bottom: 3px;">
-                <span>Base Tour Tariff:</span>
-                <span id="fare-base-display">{{ (package.price_paise / 100)|inr }}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 8px;">
+                <span id="fare-transport-label">Transport Included:</span>
+                <span id="fare-transport-display" style="font-weight: 700; color: #059669;">₹0</span>
               </div>
-              <div style="display: flex; justify-content: space-between; color: #49634e; margin-bottom: 3px;">
-                <span id="fare-transport-label">Transport (Private AC Sedan):</span>
-                <span id="fare-transport-display" style="font-weight: 600;">Included (₹0)</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; color: #49634e; margin-bottom: 4px;">
-                <span>GST (5%) &amp; Monument Permits:</span>
-                <span style="color: #256b37; font-weight: 600;">Waived (₹0)</span>
-              </div>
-              <div style="border-top: 1px dashed #c8dec9; padding-top: 6px; display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; color: #143520;">
-                <span>Total Amount Payable:</span>
-                <span id="live-total" style="color: #193826;">{{ (package.price_paise / 100)|inr }}</span>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; color: #0f2942; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                <span>Total Payable Amount:</span>
+                <span id="live-total" style="color: var(--te-blue-primary);">{{ (package.price_paise / 100)|inr }}</span>
               </div>
             </div>
 
-            {% if g.user.role == 'customer' %}
-              <label>
-                Agent referral code <span>(optional)</span>
-                <input name="agent_code" maxlength="24" placeholder="e.g. WW-1001">
+            <!-- Enhanced Multi-Option Payment Method Console -->
+            <div class="payment-method-block" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 16px; margin-bottom: 16px;">
+              <label style="font-size: 11px; font-weight: 800; color: #0f2942; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; display: block;">
+                💳 Choose Payment Mode
               </label>
-            {% endif %}
 
-            <!-- Interactive Payment Method Selection -->
-            <div class="booking-payment-options">
-              <span class="payment-section-title">Select Payment Option</span>
-              
-              <div class="payment-methods-grid">
-                <label class="pay-method-card active" id="card-opt-upi">
-                  <input type="radio" name="payment_method" value="upi" checked onchange="handlePaymentChange('upi')">
-                  <div class="pay-method-info">
-                    <strong>⚡ Instant UPI / QR</strong>
-                    <small>GPay, PhonePe, Paytm</small>
-                  </div>
-                </label>
-
-                <label class="pay-method-card" id="card-opt-card">
-                  <input type="radio" name="payment_method" value="card" onchange="handlePaymentChange('card')">
-                  <div class="pay-method-info">
-                    <strong>💳 Card</strong>
-                    <small>Visa, MC, RuPay</small>
-                  </div>
-                </label>
-
-                <label class="pay-method-card" id="card-opt-netbanking">
-                  <input type="radio" name="payment_method" value="netbanking" onchange="handlePaymentChange('netbanking')">
-                  <div class="pay-method-info">
-                    <strong>🏦 Net Banking</strong>
-                    <small>HDFC, ICICI, SBI</small>
-                  </div>
-                </label>
-
-                <label class="pay-method-card" id="card-opt-pay_later">
-                  <input type="radio" name="payment_method" value="pay_later" onchange="handlePaymentChange('pay_later')">
-                  <div class="pay-method-info">
-                    <strong>⏳ Pay on Desk</strong>
-                    <small>Reserve now, pay later</small>
-                  </div>
-                </label>
+              <!-- Payment Tabs Selector -->
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px;">
+                <button type="button" class="payment-tab-btn active" id="tab-btn-upi" onclick="switchPaymentTab('upi')">
+                  ⚡ UPI / QR
+                </button>
+                <button type="button" class="payment-tab-btn" id="tab-btn-card" onclick="switchPaymentTab('card')">
+                  💳 Card
+                </button>
+                <button type="button" class="payment-tab-btn" id="tab-btn-netbanking" onclick="switchPaymentTab('netbanking')">
+                  🏦 NetBank
+                </button>
+                <button type="button" class="payment-tab-btn" id="tab-btn-pay_later" onclick="switchPaymentTab('pay_later')">
+                  ⏳ Pay Later
+                </button>
               </div>
 
-              <!-- UPI & Interactive QR Code Section -->
+              <input type="hidden" name="payment_method" id="selected-payment-method" value="upi">
+
+              <!-- UPI & QR Code Subfield -->
               <div class="payment-subfield" id="subfield-upi">
-                
-                <!-- Dynamic Interactive QR Code Box -->
-                <div style="background: #ffffff; border: 1.5px solid #234830; border-radius: 12px; padding: 16px; margin-bottom: 14px; text-align: center; box-shadow: 0 4px 12px rgba(25, 56, 38, 0.06);">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 11px; font-weight: 800; color: #1e3f28; letter-spacing: 0.5px; text-transform: uppercase;">
-                      ⚡ SCAN &amp; PAY VIA ANY UPI APP
-                    </span>
-                    <span id="upi-timer-pill" style="background: #fdf5ea; color: #b45309; border: 1px solid #fed7aa; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700;">
-                      🔒 Expires in <span id="payment-timer">09:59</span>
-                    </span>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px; text-align: center; margin-bottom: 12px;">
+                  <div style="font-size: 11px; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                    Scan &amp; Pay Instantly via any UPI App
                   </div>
 
-                  <!-- Visual SVG QR Code -->
-                  <div style="display: inline-block; background: #fff; padding: 12px; border: 1px solid #d4ded6; border-radius: 8px; margin: 4px auto 10px;">
-                    <svg width="140" height="140" viewBox="0 0 140 140" style="display: block; margin: 0 auto;">
-                      <!-- Stylized Authentic QR Matrix -->
+                  <!-- Dynamic SVG QR Code -->
+                  <div style="display: inline-block; background: #ffffff; padding: 8px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 8px;">
+                    <svg width="120" height="120" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
                       <rect width="140" height="140" fill="#ffffff"/>
-                      <!-- Top Left Finder -->
-                      <rect x="10" y="10" width="36" height="36" fill="#1b3d28"/>
+                      <rect x="10" y="10" width="36" height="36" fill="#095ec2"/>
                       <rect x="16" y="16" width="24" height="24" fill="#ffffff"/>
-                      <rect x="22" y="22" width="12" height="12" fill="#1b3d28"/>
-                      <!-- Top Right Finder -->
-                      <rect x="94" y="10" width="36" height="36" fill="#1b3d28"/>
+                      <rect x="22" y="22" width="12" height="12" fill="#095ec2"/>
+                      <rect x="94" y="10" width="36" height="36" fill="#095ec2"/>
                       <rect x="100" y="16" width="24" height="24" fill="#ffffff"/>
-                      <rect x="106" y="22" width="12" height="12" fill="#1b3d28"/>
-                      <!-- Bottom Left Finder -->
-                      <rect x="10" y="94" width="36" height="36" fill="#1b3d28"/>
+                      <rect x="106" y="22" width="12" height="12" fill="#095ec2"/>
+                      <rect x="10" y="94" width="36" height="36" fill="#095ec2"/>
                       <rect x="16" y="100" width="24" height="24" fill="#ffffff"/>
-                      <rect x="22" y="106" width="12" height="12" fill="#1b3d28"/>
-                      <!-- Data Modules -->
-                      <rect x="52" y="12" width="6" height="12" fill="#1b3d28"/>
-                      <rect x="64" y="18" width="6" height="18" fill="#1b3d28"/>
-                      <rect x="76" y="12" width="12" height="6" fill="#1b3d28"/>
-                      <rect x="52" y="36" width="18" height="6" fill="#1b3d28"/>
-                      <rect x="76" y="30" width="6" height="18" fill="#1b3d28"/>
-                      <rect x="12" y="52" width="18" height="6" fill="#1b3d28"/>
-                      <rect x="36" y="52" width="6" height="18" fill="#1b3d28"/>
-                      <rect x="52" y="52" width="36" height="36" rx="6" fill="#2d5e3c"/>
+                      <rect x="22" y="106" width="12" height="12" fill="#095ec2"/>
+                      <rect x="52" y="12" width="6" height="12" fill="#095ec2"/>
+                      <rect x="64" y="18" width="6" height="18" fill="#095ec2"/>
+                      <rect x="76" y="12" width="12" height="6" fill="#095ec2"/>
+                      <rect x="52" y="36" width="18" height="6" fill="#095ec2"/>
+                      <rect x="76" y="30" width="6" height="18" fill="#095ec2"/>
+                      <rect x="12" y="52" width="18" height="6" fill="#095ec2"/>
+                      <rect x="36" y="52" width="6" height="18" fill="#095ec2"/>
+                      <rect x="52" y="52" width="36" height="36" rx="6" fill="#003e8a"/>
                       <text x="70" y="74" font-size="14" font-family="sans-serif" font-weight="bold" fill="#ffffff" text-anchor="middle">UPI</text>
-                      <rect x="94" y="52" width="18" height="6" fill="#1b3d28"/>
-                      <rect x="118" y="52" width="10" height="18" fill="#1b3d28"/>
-                      <rect x="12" y="76" width="6" height="12" fill="#1b3d28"/>
-                      <rect x="24" y="70" width="18" height="6" fill="#1b3d28"/>
-                      <rect x="94" y="70" width="6" height="24" fill="#1b3d28"/>
-                      <rect x="106" y="82" width="22" height="6" fill="#1b3d28"/>
-                      <rect x="52" y="94" width="12" height="12" fill="#1b3d28"/>
-                      <rect x="70" y="100" width="18" height="6" fill="#1b3d28"/>
-                      <rect x="64" y="112" width="6" height="18" fill="#1b3d28"/>
-                      <rect x="76" y="118" width="12" height="10" fill="#1b3d28"/>
-                      <rect x="94" y="94" width="18" height="12" fill="#1b3d28"/>
-                      <rect x="118" y="100" width="12" height="12" fill="#1b3d28"/>
-                      <rect x="100" y="118" width="24" height="10" fill="#1b3d28"/>
+                      <rect x="94" y="52" width="18" height="6" fill="#095ec2"/>
+                      <rect x="118" y="52" width="10" height="18" fill="#095ec2"/>
+                      <rect x="12" y="76" width="6" height="12" fill="#095ec2"/>
+                      <rect x="24" y="70" width="18" height="6" fill="#095ec2"/>
+                      <rect x="94" y="70" width="6" height="24" fill="#095ec2"/>
+                      <rect x="106" y="82" width="22" height="6" fill="#095ec2"/>
+                      <rect x="52" y="94" width="12" height="12" fill="#095ec2"/>
+                      <rect x="70" y="100" width="18" height="6" fill="#095ec2"/>
+                      <rect x="64" y="112" width="6" height="18" fill="#095ec2"/>
+                      <rect x="76" y="118" width="12" height="10" fill="#095ec2"/>
+                      <rect x="94" y="94" width="18" height="12" fill="#095ec2"/>
+                      <rect x="118" y="100" width="12" height="12" fill="#095ec2"/>
+                      <rect x="100" y="118" width="24" height="10" fill="#095ec2"/>
                     </svg>
                   </div>
 
-                  <div style="font-size: 13px; font-weight: 700; color: #1e3f28;">
-                    Amount Payable: <span id="qr-amount-display" style="color: #c27803;">{{ (package.price_paise / 100)|inr }}</span>
+                  <div style="font-size: 13px; font-weight: 700; color: #0f2942;">
+                    Amount Payable: <span id="qr-amount-display" style="color: var(--te-gold); font-weight: 800;">{{ (package.price_paise / 100)|inr }}</span>
                   </div>
-                  <div style="font-size: 10px; color: #697a6f; margin-top: 4px;">
-                    Scan with Google Pay · PhonePe · Paytm · BHIM · Cred · RuPay
+                  <div style="font-size: 10.5px; color: #64748b; margin-top: 3px;">
+                    Google Pay · PhonePe · Paytm · BHIM · Cred · RuPay
                   </div>
 
-                  <!-- Direct 1-Tap Mobile UPI Intent Launcher -->
+                  <!-- Direct Mobile App Launchers -->
                   <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
-                    <button type="button" onclick="triggerUpiIntent('Google Pay', 'gpay')" style="background: #ffffff; border: 1px solid #d4ded6; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1f2937; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                      <span>🟢</span> GPay
+                    <button type="button" onclick="triggerUpiIntent('Google Pay', 'gpay')" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1e293b; cursor: pointer;">
+                      🟢 GPay
                     </button>
-                    <button type="button" onclick="triggerUpiIntent('PhonePe', 'phonepe')" style="background: #ffffff; border: 1px solid #d4ded6; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1f2937; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                      <span>🟣</span> PhonePe
+                    <button type="button" onclick="triggerUpiIntent('PhonePe', 'phonepe')" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1e293b; cursor: pointer;">
+                      🟣 PhonePe
                     </button>
-                    <button type="button" onclick="triggerUpiIntent('Paytm', 'paytm')" style="background: #ffffff; border: 1px solid #d4ded6; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1f2937; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                      <span>🔵</span> Paytm
+                    <button type="button" onclick="triggerUpiIntent('Paytm', 'paytm')" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1e293b; cursor: pointer;">
+                      🔵 Paytm
                     </button>
-                    <button type="button" onclick="triggerUpiIntent('BHIM UPI', 'bhim')" style="background: #ffffff; border: 1px solid #d4ded6; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1f2937; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-                      <span>🟠</span> BHIM
+                    <button type="button" onclick="triggerUpiIntent('BHIM UPI', 'bhim')" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1e293b; cursor: pointer;">
+                      🟠 BHIM
                     </button>
                   </div>
 
-                  <button type="button" onclick="simulateQrScan()" style="margin-top: 10px; width: 100%; background: #eef6ee; border: 1px solid #c8dec9; color: #1a4224; font-size: 11px; font-weight: 700; padding: 7px 14px; border-radius: 6px; cursor: pointer;">
+                  <button type="button" onclick="simulateQrScan()" style="margin-top: 10px; width: 100%; background: #e0f2fe; border: 1px solid #bae6fd; color: #0369a1; font-size: 11px; font-weight: 700; padding: 7px 12px; border-radius: 6px; cursor: pointer;">
                     ⚡ Tap to Simulate Instant QR Scan &amp; Pay
                   </button>
                 </div>
 
-                <!-- UPI ID / VPA Quick Selector Chips -->
+                <!-- UPI ID / VPA Selector Chips -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                  <label style="font-size: 11px; font-weight: 700; color: #37443a; margin-bottom: 0;">Select or Enter UPI ID / VPA</label>
-                  <button type="button" onclick="copyDeskUpi()" id="copy-vpa-btn" style="background: none; border: none; color: #226b38; font-size: 10px; font-weight: 700; cursor: pointer; padding: 0;">📋 Copy Desk VPA</button>
+                  <label style="font-size: 11px; font-weight: 700; color: #334155; margin: 0;">Select or Enter UPI ID</label>
+                  <button type="button" onclick="copyDeskUpi()" id="copy-vpa-btn" style="background: none; border: none; color: var(--te-blue-primary); font-size: 10px; font-weight: 700; cursor: pointer; padding: 0;">📋 Copy Desk VPA</button>
                 </div>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
-                  <button type="button" class="upi-chip" onclick="setUpiId('lokesh@okhdfcbank')" style="background: #f4f8f4; border: 1px solid #d3e2d5; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #22432b;">🟢 GPay (lokesh@okhdfcbank)</button>
-                  <button type="button" class="upi-chip" onclick="setUpiId('9845012345@ybl')" style="background: #f4f8f4; border: 1px solid #d3e2d5; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #22432b;">🟣 PhonePe (@ybl)</button>
-                  <button type="button" class="upi-chip" onclick="setUpiId('9845012345@paytm')" style="background: #f4f8f4; border: 1px solid #d3e2d5; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #22432b;">🔵 Paytm (@paytm)</button>
-                  <button type="button" class="upi-chip" onclick="setUpiId('traveleasy.travel@icici')" style="background: #fdf6e7; border: 1px solid #ecd39c; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #7d4d03; font-weight: 700;">🏢 Travel Desk (traveleasy.travel@icici)</button>
+                  <button type="button" class="upi-chip" onclick="setUpiId('lokesh@okhdfcbank')" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #334155;">🟢 GPay (lokesh@okhdfcbank)</button>
+                  <button type="button" class="upi-chip" onclick="setUpiId('9845012345@ybl')" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #334155;">🟣 PhonePe (@ybl)</button>
+                  <button type="button" class="upi-chip" onclick="setUpiId('9845012345@paytm')" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #334155;">🔵 Paytm (@paytm)</button>
+                  <button type="button" class="upi-chip" onclick="setUpiId('traveleasy.travel@icici')" style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #92400e; font-weight: 700;">🏢 Desk (traveleasy.travel@icici)</button>
                 </div>
 
-                <input type="text" id="upi_id_input" name="upi_id" placeholder="e.g. name@okhdfcbank" value="{% if g.user %}{{ g.user.name.split()[0].lower() }}@okaxis{% else %}traveler@okhdfcbank{% endif %}" style="height: 38px; font-size: 12px; width: 100%;">
-                <small style="color: #2e5c38; font-size: 10px; margin-top: 4px; display: block;">🔒 Instant confirmation &amp; digital travel voucher issued upon payment.</small>
+                <input type="text" id="upi_id_input" name="upi_id" placeholder="e.g. name@okhdfcbank" value="{% if g.user %}{{ g.user.name.split()[0].lower() }}@okaxis{% else %}traveler@okhdfcbank{% endif %}" style="height: 38px; font-size: 12px; width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 10px;">
+                <small style="color: #059669; font-size: 10px; margin-top: 4px; display: block;">🔒 Instant confirmation &amp; digital travel voucher issued upon payment.</small>
               </div>
 
               <!-- Card Input Field -->
               <div class="payment-subfield" id="subfield-card" style="display: none;">
-                <label style="font-size: 11px; font-weight: 700; color: #37443a; margin-bottom: 4px; display: block;">Card Number</label>
-                <input type="text" name="card_number" placeholder="4532 •••• •••• 8921" value="4532 8921 7740 8921" maxlength="19" style="height: 38px; font-size: 12px; width: 100%; margin-bottom: 6px;">
+                <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Card Number</label>
+                <input type="text" name="card_number" placeholder="4532 •••• •••• 8921" value="4532 8921 7740 8921" maxlength="19" style="height: 38px; font-size: 12px; width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 10px; margin-bottom: 6px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                  <input type="text" placeholder="Exp (MM/YY)" value="12/28" style="height: 34px; font-size: 11px;">
-                  <input type="password" placeholder="CVV" value="892" maxlength="4" style="height: 34px; font-size: 11px;">
+                  <input type="text" placeholder="Exp (MM/YY)" value="12/28" style="height: 34px; font-size: 11px; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 4px 8px;">
+                  <input type="password" placeholder="CVV" value="892" maxlength="4" style="height: 34px; font-size: 11px; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 4px 8px;">
                 </div>
               </div>
 
               <!-- Net Banking Input Field -->
               <div class="payment-subfield" id="subfield-netbanking" style="display: none;">
-                <label style="font-size: 11px; font-weight: 700; color: #37443a; margin-bottom: 4px; display: block;">Select Net Banking Bank</label>
-                <select name="bank_name" style="height: 38px; font-size: 12px; width: 100%;">
+                <label style="font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Select Net Banking Bank</label>
+                <select name="bank_name" style="height: 38px; font-size: 12px; width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 10px;">
                   <option value="HDFC Bank">HDFC Bank</option>
                   <option value="State Bank of India">State Bank of India (SBI)</option>
                   <option value="ICICI Bank">ICICI Bank</option>
@@ -524,13 +1430,13 @@
 
               <!-- Pay Later Info -->
               <div class="payment-subfield" id="subfield-pay_later" style="display: none;">
-                <p style="font-size: 11px; color: #8c6728; background: #fdf7ec; border: 1px solid #f4e1be; border-radius: 6px; padding: 8px; margin: 0;">
+                <p style="font-size: 11px; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 10px; margin: 0;">
                   Seats reserved immediately in pending status. You can complete payment anytime from your dashboard before departure.
                 </p>
               </div>
             </div>
 
-            <button class="button button-dark button-wide" id="pay-confirm-btn" type="submit">
+            <button class="btn-pay-submit" id="pay-confirm-btn" type="submit">
               Pay {{ (package.price_paise / 100)|inr }} &amp; Confirm Booking ↗
             </button>
           </form>
@@ -538,12 +1444,12 @@
         {% elif package.available > 0 and not g.user %}
           <!-- Upcoming Scheduled Departure Dates Selector for Guests -->
           {% if upcoming_schedule %}
-          <div class="upcoming-departures-box" style="margin-bottom: 14px;">
+          <div class="upcoming-departures-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span style="font-size: 11px; font-weight: 700; color: #1e3f28; text-transform: uppercase; letter-spacing: 0.5px;">
+              <span style="font-size: 11px; font-weight: 700; color: #0f2942; text-transform: uppercase; letter-spacing: 0.5px;">
                 📅 Scheduled Departures (Next 5 Months)
               </span>
-              <span style="font-size: 10px; color: #406846; font-weight: 600;">Tap date to select</span>
+              <span style="font-size: 10px; color: var(--te-blue-primary); font-weight: 700;">Tap date to select</span>
             </div>
             <div class="departure-dates-chips">
               {% for dt_item in upcoming_schedule %}
@@ -559,58 +1465,98 @@
           {% endif %}
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-            <label style="margin-bottom: 0;">
+            <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
               Departure / Start Date
               <input name="travel_date" id="start-date-input" class="date-input-field" type="date" min="{{ today }}" value="{{ initial_travel_date }}" required onchange="handleStartDateChange(this.value)" oninput="handleStartDateChange(this.value)">
             </label>
 
-            <label style="margin-bottom: 0;">
+            <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
               Return / Checkout Date
               <input name="return_date" id="return-date-input" class="date-input-field" type="date" min="{{ initial_travel_date }}" value="{{ initial_return_date }}" required onchange="handleReturnDateChange(this.value)" oninput="handleReturnDateChange(this.value)">
             </label>
           </div>
 
-          <div id="itinerary-dates-badge" style="background: #f0f7ef; border: 1px solid #d4e7d0; border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #204627; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-            <span>📅 <strong>Itinerary Schedule:</strong> {{ package.duration }}</span>
-            <span id="dates-summary-span" style="font-weight: 700;">{{ initial_travel_date }} ➔ {{ initial_return_date }}</span>
+          <div id="itinerary-dates-badge" style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 14px; font-size: 11.5px; color: var(--te-blue-primary); margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+            <span>📅 <strong>Schedule:</strong> {{ package.duration }}</span>
+            <span id="dates-summary-span" style="font-weight: 800;">{{ initial_travel_date }} ➔ {{ initial_return_date }}</span>
           </div>
 
-          <div class="booking-live-price">
-            <span>Starting from:</span>
-            <strong>{{ (package.price_paise / 100)|inr }} / person</strong>
+          <div class="booking-live-price" style="margin-bottom: 12px;">
+            <span style="font-size: 12px; color: #64748b;">Starting from:</span>
+            <strong style="font-size: 24px; color: #0f2942; display: block;">{{ (package.price_paise / 100)|inr }} / person</strong>
           </div>
-          <a class="button button-dark button-wide" id="guest-signin-date-btn" href="{{ url_for('login', next=url_for('trip_details', package_id=package.id) ~ '?travel_date=' ~ initial_travel_date ~ '#booking') }}">
+
+          <a class="btn-pay-submit" id="guest-signin-date-btn" href="{{ url_for('login', next=url_for('trip_details', package_id=package.id) ~ '?travel_date=' ~ initial_travel_date ~ '#booking') }}" style="text-decoration: none;">
             Sign in to book selected date <span>↗</span>
           </a>
-          <a class="button button-secondary button-wide" style="margin-top: 8px; text-align: center;" href="{{ url_for('register') }}">
+          <a class="button button-secondary button-wide" style="margin-top: 10px; text-align: center; display: block; border-radius: 12px; font-weight: 700;" href="{{ url_for('register') }}">
             New traveller? Create account <span>↗</span>
           </a>
 
         {% elif package.available == 0 %}
-          <span class="button button-disabled button-wide">Currently fully booked</span>
+          <span class="button button-disabled button-wide" style="border-radius: 12px; text-align: center; display: block;">Currently fully booked</span>
         {% else %}
-          <a class="button button-dark button-wide" href="{{ url_for('dashboard', view='packages') }}">
+          <a class="button button-dark button-wide" style="border-radius: 12px; text-align: center; display: block;" href="{{ url_for('dashboard', view='packages') }}">
             Return to trip management <span>↗</span>
           </a>
         {% endif %}
 
         <!-- Direct WhatsApp booking assistance -->
-        <a class="button button-whatsapp button-wide" href="https://wa.me/919108367516?text=Hello%20TravelEasy%2C%20I%20am%20interested%20in%20booking%20the%20trip%20'{{ package.title|urlencode }}'%20({{ package.duration }}).%20Please%20guide%20me." target="_blank" rel="noopener noreferrer">
-          💬 Instant WhatsApp Booking ↗
+        <a class="btn-whatsapp-booking" href="https://wa.me/919108367516?text=Hello%20TravelEasy%2C%20I%20am%20interested%20in%20booking%20the%20trip%20'{{ package.title|urlencode }}'%20({{ package.duration }}).%20Please%20guide%20me." target="_blank" rel="noopener noreferrer">
+          <span>💬</span> Instant WhatsApp Booking ↗
         </a>
 
-        <p class="trip-booking-disclaimer">
+        <p style="font-size: 11px; color: #64748b; line-height: 1.45; text-align: center; margin: 14px 0 0;">
           Reservations are directly saved in the system. The travel desk will confirm your preferred dates, stay details, and schedule.
         </p>
-        <a class="trip-contact-link" href="{{ url_for('public_home') }}#contact">Have special requests? Contact our desk ↗</a>
       </aside>
     </div>
   </main>
 
-  <footer class="trip-detail-footer">
-    <a href="{{ url_for('public_home') }}">TravelEasy</a>
-    <span>Travel around the world · Iconic Escapes &amp; Shrines</span>
-    <a href="{{ url_for('public_home') }}#important-details">Booking &amp; refund info</a>
+  <!-- Unified TravelEasy Footer -->
+  <footer class="traveleasy-footer">
+    <div class="footer-container">
+      <div>
+        <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 44px; filter: brightness(0) invert(1); margin-bottom: 14px;">
+        <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin: 0;">
+          TravelEasy · Travel around the world.<br>
+          Philippines, Kashmir, Dubai, Bali, Goa, Kerala, Agra, Amritsar, Kevadia, Thailand &amp; beyond.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="{{ url_for('public_home') }}#trips">India</a></li>
+          <li><a href="{{ url_for('public_home', region='international') }}#trips">International</a></li>
+          <li><a href="{{ url_for('public_home') }}#trips">Tour Packages</a></li>
+          <li><a href="{{ url_for('public_home') }}#deals">Deals</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>TravelEasy</h4>
+        <ul>
+          <li><a href="{{ url_for('public_home') }}#thought-journey">About Us</a></li>
+          <li><a href="{{ url_for('login') }}">Login / Register</a></li>
+          <li><a href="{{ url_for('referral_program') }}">Referral Program</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="tel:+919876543210">☎ +91 98765 43210</a></li>
+          <li><a href="mailto:info@traveleasy.in">✉ info@traveleasy.in</a></li>
+          <li><span style="font-size: 13px; color: #94a3b8;">📍 Hassan, Karnataka</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 TravelEasy. All rights reserved.</span>
+      <span>Verified Bookings &amp; 24/7 Concierge Support</span>
+    </div>
   </footer>
 
   <script>
@@ -712,6 +1658,18 @@
       recalculatePricing();
     }
 
+    function skipTransport() {
+      currentTransportName = 'Skipped / Self-Arranged';
+      currentTransportDelta = 0;
+      document.querySelectorAll('.transport-card').forEach(c => c.classList.remove('active'));
+      const btn = document.getElementById('skip-transport-btn');
+      if (btn) {
+        btn.style.background = '#095ec2';
+        btn.style.color = '#ffffff';
+      }
+      recalculatePricing();
+    }
+
     function recalculatePricing() {
       let count = parseInt(travellersInput ? travellersInput.value : 1, 10);
       if (isNaN(count) || count < 1) count = 1;
@@ -726,129 +1684,99 @@
       if (liveTotal) liveTotal.textContent = formattedTotal;
       if (qrAmountDisplay) qrAmountDisplay.textContent = formattedTotal;
       if (fareBaseDisplay) fareBaseDisplay.textContent = formattedBase;
-      if (fareTravellerLabel) fareTravellerLabel.textContent = `${count} ${count === 1 ? 'Traveller' : 'Travellers'}`;
+      if (fareTravellerLabel) fareTravellerLabel.textContent = `${count} ${count === 1 ? 'Traveller' : 'Travellers'} Base:`;
 
       if (fareTransportLabel && fareTransportDisplay) {
-        if (currentTransportName.includes('No Transport') || currentTransportName.includes('Skip') || currentTransportName.includes('Self')) {
+        if (currentTransportName.includes('Skip') || currentTransportName.includes('Self')) {
           fareTransportLabel.textContent = 'Transport:';
-          fareTransportDisplay.textContent = 'Skipped / Self-Arranged (₹0)';
-          fareTransportDisplay.style.color = '#526657';
+          fareTransportDisplay.textContent = 'Skipped (₹0)';
+          fareTransportDisplay.style.color = '#64748b';
         } else {
           fareTransportLabel.textContent = `Transport (${currentTransportName}):`;
           if (currentTransportDelta > 0) {
             fareTransportDisplay.textContent = `+₹${Math.round(totalTransport).toLocaleString('en-IN')}`;
-            fareTransportDisplay.style.color = '#c27803';
-          } else if (currentTransportDelta < 0) {
-            fareTransportDisplay.textContent = `-₹${Math.round(Math.abs(totalTransport)).toLocaleString('en-IN')}`;
-            fareTransportDisplay.style.color = '#15803d';
+            fareTransportDisplay.style.color = '#095ec2';
           } else {
             fareTransportDisplay.textContent = 'Included (₹0)';
-            fareTransportDisplay.style.color = '#1e3f28';
+            fareTransportDisplay.style.color = '#059669';
           }
         }
       }
 
-      updatePayButton();
-    }
-
-    function skipTransport() {
-      const radio = document.getElementById('tr-input-skip');
-      if (radio) {
-        radio.checked = true;
-        selectTransport('No Transport Required (Self-Arranged)', 0, radio);
+      const payBtn = document.getElementById('pay-confirm-btn');
+      if (payBtn) {
+        payBtn.textContent = `Pay ${formattedTotal} & Confirm Booking ↗`;
       }
     }
 
-    function setUpiId(vpa) {
-      const inp = document.getElementById('upi_id_input');
-      if (inp) {
-        inp.value = vpa;
-        inp.focus();
-      }
-    }
-
-    function copyDeskUpi() {
-      const vpa = 'traveleasy.travel@icici';
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(vpa).then(() => {
-          const btn = document.getElementById('copy-vpa-btn');
-          if (btn) {
-            const original = btn.textContent;
-            btn.textContent = '✓ Copied VPA!';
-            setTimeout(() => { btn.textContent = original; }, 2000);
-          }
-        });
-      }
-      setUpiId(vpa);
-    }
-
-    function triggerUpiIntent(appName, scheme) {
-      const inp = document.getElementById('upi_id_input');
-      if (inp) {
-        inp.value = `traveller@${scheme}`;
-      }
-      const totalStr = liveTotal ? liveTotal.textContent : '₹0';
-      alert(`⚡ Launching ${appName}...\nAmount: ${totalStr}\nVPA: traveleasy.travel@icici\nOnce paid in ${appName}, click "Pay & Confirm Booking" to receive your digital voucher.`);
-    }
-
-    function simulateQrScan() {
-      const inp = document.getElementById('upi_id_input');
-      if (inp) inp.value = 'scanned.verified@okhdfcbank';
-      alert('⚡ QR Code Scanned Successfully! Verified with BHIM UPI Gateway. Click "Pay & Confirm Booking" to complete reservation.');
-    }
-
-    function handlePaymentChange(method) {
+    function switchPaymentTab(method) {
       currentMethod = method;
-      document.querySelectorAll('.pay-method-card').forEach(c => c.classList.remove('active'));
-      const activeCard = document.getElementById('card-opt-' + method);
-      if (activeCard) activeCard.classList.add('active');
+      const selInput = document.getElementById('selected-payment-method');
+      if (selInput) selInput.value = method;
+
+      document.querySelectorAll('.payment-tab-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('tab-btn-' + method);
+      if (activeBtn) activeBtn.classList.add('active');
 
       ['upi', 'card', 'netbanking', 'pay_later'].forEach(m => {
         const sub = document.getElementById('subfield-' + m);
         if (sub) sub.style.display = (m === method) ? 'block' : 'none';
       });
 
-      updatePayButton();
-    }
+      const payBtn = document.getElementById('pay-confirm-btn');
+      if (payBtn) {
+        let count = parseInt(travellersInput ? travellersInput.value : 1, 10);
+        if (isNaN(count) || count < 1) count = 1;
+        const basePerPax = (parseInt(basePriceElem ? basePriceElem.getAttribute('data-price-paise') : 0, 10) || 0) / 100;
+        const grandTotal = Math.max(500, (basePerPax + currentTransportDelta) * count);
+        const formattedTotal = '₹' + Math.round(grandTotal).toLocaleString('en-IN');
 
-    function updatePayButton() {
-      const btn = document.getElementById('pay-confirm-btn');
-      if (!btn || !liveTotal) return;
-      if (currentMethod === 'pay_later') {
-        btn.innerHTML = 'Confirm Reservation (Pay Later) ↗';
-      } else {
-        btn.innerHTML = 'Pay ' + liveTotal.textContent + ' &amp; Confirm Booking ↗';
+        if (method === 'pay_later') {
+          payBtn.textContent = 'Hold Reservation (Pay Later) ↗';
+        } else {
+          payBtn.textContent = `Pay ${formattedTotal} & Confirm Booking ↗`;
+        }
       }
     }
 
-    // Card Number Auto-formatting (XXXX XXXX XXXX XXXX)
-    const cardInput = document.querySelector('input[name="card_number"]');
-    if (cardInput) {
-      cardInput.addEventListener('input', function(e) {
-        let val = e.target.value.replace(/\D/g, '').substring(0, 16);
-        let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
-        e.target.value = formatted;
+    function setUpiId(vpa) {
+      const upiInput = document.getElementById('upi_id_input');
+      if (upiInput) {
+        upiInput.value = vpa;
+        upiInput.focus();
+      }
+    }
+
+    function copyDeskUpi() {
+      navigator.clipboard.writeText('traveleasy.travel@icici').then(() => {
+        const btn = document.getElementById('copy-vpa-btn');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = '✓ Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 2000);
+        }
       });
     }
 
-    // Session Countdown Timer (10 minutes)
-    let sessionSeconds = 599;
-    const timerElem = document.getElementById('payment-timer');
-    if (timerElem) {
-      setInterval(() => {
-        if (sessionSeconds <= 0) {
-          timerElem.textContent = '00:00 (Expired)';
-          return;
-        }
-        sessionSeconds--;
-        const mins = String(Math.floor(sessionSeconds / 60)).padStart(2, '0');
-        const secs = String(sessionSeconds % 60).padStart(2, '0');
-        timerElem.textContent = `${mins}:${secs}`;
-      }, 1000);
+    function triggerUpiIntent(appName, handle) {
+      const upiInput = document.getElementById('upi_id_input');
+      if (upiInput) {
+        upiInput.value = `traveller@ok${handle}`;
+      }
+      alert(`Opening ${appName} UPI Intent for instant verified payment to TravelEasy.`);
     }
 
-    // Initialize pricing on load
-    recalculatePricing();
+    function simulateQrScan() {
+      const upiInput = document.getElementById('upi_id_input');
+      if (upiInput) {
+        upiInput.value = 'qr.scan.paid@okicici';
+      }
+      const payBtn = document.getElementById('pay-confirm-btn');
+      if (payBtn) {
+        payBtn.style.background = '#15803d';
+        payBtn.textContent = '✓ Verified QR Scan — Confirm Booking Now ↗';
+      }
+    }
   </script>
 </body>
 </html>
