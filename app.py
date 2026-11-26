@@ -304,6 +304,17 @@ def initialize_db() -> None:
             if col not in b_cols:
                 db.execute(f"ALTER TABLE bookings ADD COLUMN {col} TEXT")
 
+        # Ensure new columns exist on packages table for rich card formatting
+        p_cols = [r[1] for r in db.execute("PRAGMA table_info(packages)").fetchall()]
+        for col, col_def in [
+            ("origin", "TEXT DEFAULT 'Bengaluru'"),
+            ("original_price_paise", "INTEGER DEFAULT 0"),
+            ("upcoming_dates", "TEXT DEFAULT ''"),
+            ("trust_text", "TEXT DEFAULT '150+ travelers can''t be wrong – book your trip today!'")
+        ]:
+            if col not in p_cols:
+                db.execute(f"ALTER TABLE packages ADD COLUMN {col} {col_def}")
+
         db.execute("""CREATE TABLE IF NOT EXISTS sent_emails (
             id INTEGER PRIMARY KEY,
             booking_id INTEGER REFERENCES bookings(id),
@@ -520,8 +531,14 @@ def logout() -> Any:
 def public_home() -> Any:
     destination = request.args.get("destination", "").strip()
     category = request.args.get("category", "").strip()
+    origin = request.args.get("origin", "").strip()
+    query_text = request.args.get("q", "").strip()
+
     destinations = g.db.execute(
         "SELECT DISTINCT destination FROM packages WHERE status='active' ORDER BY destination"
+    ).fetchall()
+    origins = g.db.execute(
+        "SELECT DISTINCT origin FROM packages WHERE status='active' AND origin IS NOT NULL ORDER BY origin"
     ).fetchall()
     categories = g.db.execute(
         "SELECT DISTINCT category FROM packages WHERE status='active' ORDER BY category"
@@ -529,11 +546,18 @@ def public_home() -> Any:
     package_query = "SELECT *, capacity-reserved AS available FROM packages WHERE status='active'"
     package_args: list[str] = []
     if destination:
-        package_query += " AND destination=?"
-        package_args.append(destination)
+        package_query += " AND (destination LIKE ? OR title LIKE ?)"
+        package_args.extend([f"%{destination}%", f"%{destination}%"])
+    if origin:
+        package_query += " AND (origin LIKE ?)"
+        package_args.append(f"%{origin}%")
     if category:
         package_query += " AND category=?"
         package_args.append(category)
+    if query_text:
+        package_query += " AND (title LIKE ? OR destination LIKE ? OR description LIKE ? OR origin LIKE ?)"
+        package_args.extend([f"%{query_text}%", f"%{query_text}%", f"%{query_text}%", f"%{query_text}%"])
+
     packages = g.db.execute(package_query + " ORDER BY id", package_args).fetchall()
     marquee_packages = g.db.execute(
         """SELECT *, capacity-reserved AS available FROM packages
@@ -557,8 +581,9 @@ def public_home() -> Any:
 
     return render_template(
         "public_home.html", packages=packages, reviews=reviews, review_count=review_count,
-        destinations=destinations, categories=categories,
-        selected_destination=destination, selected_category=category,
+        destinations=destinations, origins=origins, categories=categories,
+        selected_destination=destination, selected_origin=origin, selected_category=category,
+        query_text=query_text,
         marquee_packages=marquee_packages, tourist_landmarks=tourist_landmarks,
     )
 

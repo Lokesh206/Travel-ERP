@@ -7,19 +7,19 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>{{ view|replace('_',' ')|title }} · Wanderwise Travel Desk</title>
+  <title>{{ view|replace('_',' ')|title }} · TravelEasy Travel Desk</title>
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=3">
 </head>
 <body class="app-page">
   <aside class="sidebar">
-    <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark">w.</span> wanderwise</a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 34px; vertical-align: middle;"></a>
     <div class="workspace-label">WORKSPACE</div>
     <nav class="nav-menu">
       <a class="nav-link {{ 'active' if view == 'overview' }}" href="{{ url_for('dashboard', view='overview') }}"><span>◫</span> Overview</a>
@@ -58,7 +58,7 @@
         </div>
         <form method="post" action="{{ url_for('logout') }}" style="margin-left: auto;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="sidebar-signout-btn" type="submit" aria-label="Sign out" title="Sign out of Wanderwise">🚪 Sign Out</button>
+          <button class="sidebar-signout-btn" type="submit" aria-label="Sign out" title="Sign out of TravelEasy">🚪 Sign Out</button>
         </form>
       </div>
     </div>
@@ -69,7 +69,7 @@
     <div class="mobile-drawer-panel" onclick="event.stopPropagation()">
       <div class="mobile-drawer-header">
         <a class="brand brand-light" href="{{ url_for('dashboard') }}">
-          <span class="brand-mark">w.</span> wanderwise
+          <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 32px; filter: brightness(0) invert(1);">
         </a>
         <button type="button" class="mobile-drawer-close" onclick="closeMobileDrawer()" aria-label="Close menu">✕</button>
       </div>
@@ -2181,7 +2181,7 @@
     {% endif %}
 
     <footer class="app-footer">
-      <span>✳ &nbsp;Wanderwise Travel ERP · Enterprise Administrator Portal</span>
+      <span>✳ &nbsp;TravelEasy Travel ERP · Enterprise Administrator Portal</span>
       <span>Verified Bookings, Tour Packages &amp; Commission Ledger</span>
     </footer>
 

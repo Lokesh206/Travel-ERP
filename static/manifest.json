@@ -1,7 +1,7 @@
 {
-  "short_name": "Wanderwise",
-  "name": "Wanderwise Travel ERP · Indian Tourism & Heritage Operations",
-  "description": "Unified travel commerce and back-office agency operations platform for Indian tourist landmarks and pilgrimages.",
+  "short_name": "TravelEasy",
+  "name": "TravelEasy · Travel around the world",
+  "description": "Travel around the world with TravelEasy. Thoughtfully planned tours, upcoming departure schedules, and verified bookings.",
   "icons": [
     {
       "src": "/static/gallery-monument.jpg",

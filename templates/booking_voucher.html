@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#193826">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Travel Voucher &amp; E-Ticket #{{ booking.reference }} · Wanderwise Travel ERP</title>
+  <title>Travel Voucher &amp; E-Ticket #{{ booking.reference }} · TravelEasy Travel ERP</title>
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -350,9 +350,9 @@
   <article class="voucher-card">
     <header class="voucher-header">
       <div class="voucher-brand">
-        <div class="voucher-logo-badge">W.</div>
+        <div class="voucher-logo-badge">TE</div>
         <div>
-          <h1>Wanderwise Travel ERP</h1>
+          <h1>TravelEasy Travel ERP</h1>
           <p>Official Travel Voucher &amp; E-Ticket Confirmation</p>
         </div>
       </div>
@@ -427,7 +427,7 @@
             </div>
             <div class="detail-row">
               <span class="detail-label">Booking Channel:</span>
-              <span class="detail-val">{% if booking.agent_name %}{{ booking.agent_name }} ({{ booking.agent_code }}){% else %}Wanderwise Direct Portal{% endif %}</span>
+              <span class="detail-val">{% if booking.agent_name %}{{ booking.agent_name }} ({{ booking.agent_code }}){% else %}TravelEasy Direct Portal{% endif %}</span>
             </div>
           </div>
         </div>
@@ -517,7 +517,7 @@
         <h4>24/7 Travel Desk &amp; Emergency Support</h4>
         <p>Emergency Helpline: <strong>+91 1800 200 4888</strong><br>
         WhatsApp Concierge: <strong>+91 98450 12345</strong><br>
-        Email: <strong>traveldesk@wanderwise.local</strong></p>
+        Email: <strong>traveldesk@traveleasy.local</strong></p>
       </div>
     </footer>
   </article>

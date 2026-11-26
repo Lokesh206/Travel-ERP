@@ -7,47 +7,65 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Thoughtfully planned trips, clear pricing and a travel team that cares. Explore India's iconic tourist destinations and sacred heritage places with Wanderwise.">
-  <title>Wanderwise · Tourist Places & Escapes Across India</title>
+  <meta name="description" content="TravelEasy - Travel around the world. Thoughtfully planned domestic and international holidays, upcoming 5-month departure schedules, transparent pricing, and 24/7 dedicated travel desk support.">
+  <title>TravelEasy · Travel around the world</title>
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=2">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=3">
 </head>
 <body class="website-page">
-  <header class="site-header">
-    <a class="brand" href="{{ url_for('public_home') }}"><span class="brand-mark">w.</span> wanderwise</a>
-    <nav class="site-nav" aria-label="Main navigation">
-      <a href="#trips">Our trips</a>
-      <a href="#gallery">Tourist places</a>
-      <a href="#reviews">Traveller stories</a>
-      <a href="#contact">Contact</a>
-      <a href="#important-details">Important details</a>
+  <!-- TravelEasy Header (Image 4 Style) -->
+  <header class="site-header traveleasy-header">
+    <a class="brand traveleasy-brand" href="{{ url_for('public_home') }}" title="TravelEasy · Travel around the world">
+      <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy Logo" class="traveleasy-logo-img">
+    </a>
+
+    <nav class="site-nav traveleasy-nav" id="traveleasy-nav-menu" aria-label="Main navigation">
+      <a class="nav-item active-nav-tab" href="{{ url_for('public_home') }}">
+        <span>Home</span>
+        <span class="active-orange-bar"></span>
+      </a>
+      <a class="nav-item" href="#trips">Domestic <span class="nav-caret">⌵</span></a>
+      <a class="nav-item" href="#trips">International <span class="nav-caret">⌵</span></a>
+      <a class="nav-item" href="#trips">Tour Packages <span class="nav-caret">⌵</span></a>
+      <a class="nav-item" href="#gallery">Travel Blog</a>
+      <a class="nav-item" href="#thought-journey">About Us</a>
+      <a class="nav-item" href="#contact">Contact</a>
+      <a class="nav-item" href="{{ url_for('login') }}?role=partner">Partner Program</a>
     </nav>
-    <details class="site-info-menu">
-      <summary aria-label="Open travel information menu" title="Travel information">☰</summary>
-      <div class="site-info-popover">
-        <a href="#trips">Browse available trips</a>
-        <a href="#gallery">Tourist places marquee gallery</a>
-        <a href="#reviews">Verified traveller stories</a>
-        <a href="#contact">Contact the travel desk</a>
-        <a href="#important-details">Important details &amp; policies</a>
-      </div>
-    </details>
-    <div class="site-actions">
+
+    <div class="header-right-actions">
+      <button type="button" class="header-search-circle" onclick="focusHeroSearch()" title="Search packages" aria-label="Search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+
       {% if g.user %}
-        <a class="site-login-link" href="{{ url_for('dashboard') }}">My dashboard ({{ g.user.name.split()[0] }}) ↗</a>
-        <a class="site-logout-link" href="{{ url_for('logout') }}" title="Sign out of Wanderwise">Log out 🚪</a>
+        <a class="traveleasy-login-pill" href="{{ url_for('dashboard') }}" title="Go to Dashboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          <span>{{ g.user.name.split()[0] }}</span>
+        </a>
+        <a class="traveleasy-logout-btn" href="{{ url_for('logout') }}" title="Sign out of TravelEasy">🚪</a>
       {% else %}
-        <a class="site-login-link" href="{{ url_for('login') }}">Sign in</a>
-        <a class="button button-dark site-top-cta" href="{{ url_for('register') }}">Join us <span>↗</span></a>
+        <a class="traveleasy-login-pill" href="{{ url_for('login') }}" title="Sign in or Register">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+          <span>Login / Register</span>
+        </a>
       {% endif %}
+
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="toggleNavMenu()">☰</button>
     </div>
-    <button class="mobile-menu-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
   </header>
 
   <main>
@@ -55,94 +73,238 @@
       {% for category, message in messages %}<div class="site-flash flash-{{ category }}">{{ message }}</div>{% endfor %}
     {% endwith %}
 
-    <section class="site-hero">
+    <!-- Hero Section -->
+    <section class="site-hero traveleasy-hero">
       <div class="hero-copy">
-        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> SMALL-GROUP ESCAPES · THOUGHTFULLY PLANNED</span>
-        <h1>Somewhere<br>is calling.<br><em>Let’s go.</em></h1>
-        <p>Unhurried days, holy shrines, iconic wonders, and the kind of thoughtful details that make an Indian journey truly yours.</p>
+        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> SMALL-GROUP ESCAPES · 5-MONTH DEPARTURES</span>
+        <h1>Travel around<br>the world.<br><em>TravelEasy.</em></h1>
+        <p>Iconic world wonders, sacred heritage shrines, confirmed stays, meals, and 24/7 dedicated travel desk support.</p>
         <div class="hero-actions">
-          <a class="button button-green" href="#trips">Find your somewhere <span>↘</span></a>
-          <a class="hero-secondary" href="#gallery">Explore tourist places <span>↓</span></a>
+          <a class="button button-orange" href="#trips">Browse 16 Packages <span>↘</span></a>
+          <a class="hero-secondary" href="#thought-journey">Our Travel Thought <span>↓</span></a>
         </div>
         <div class="hero-footnote"><span class="hero-footnote-mark">✳</span> Thoughtful trips. No guesswork. Just go.</div>
       </div>
-      <div class="hero-art" role="img" aria-label="India travel collage featuring heritage sites, monuments, temples, and landscapes">
+      <div class="hero-art" role="img" aria-label="TravelEasy scenic collage">
         <div class="hero-art-label"><span>THE GOOD KIND OF GETTING AWAY</span><strong>Out of office.<br>Into the moment.</strong></div>
-        <div class="hero-art-location"><span>↗</span><div><strong>Iconic India Journeys</strong><small>Handpicked tourist landmarks & pilgrimages</small></div></div>
+        <div class="hero-art-location"><span>↗</span><div><strong>16 Curated Destinations</strong><small>Domestic &amp; International Journeys</small></div></div>
       </div>
     </section>
 
-    <form class="trip-search" method="get" action="#trips">
-      <label><span class="search-icon">⌕</span><span class="search-field-copy">WHERE TO?<select name="destination"><option value="">All destinations</option>{% for item in destinations %}<option value="{{ item.destination }}" {% if selected_destination == item.destination %}selected{% endif %}>{{ item.destination }}</option>{% endfor %}</select></span></label>
-      <span class="search-divider"></span>
-      <label><span class="search-icon">✳</span><span class="search-field-copy">YOUR KIND OF TRIP<select name="category"><option value="">Every experience</option>{% for item in categories %}<option value="{{ item.category }}" {% if selected_category == item.category %}selected{% endif %}>{{ item.category }}</option>{% endfor %}</select></span></label>
-      <button class="button button-dark" type="submit">Search trips <span>↗</span></button>
-      {% if selected_destination or selected_category %}<a class="search-reset" href="{{ url_for('public_home') }}#trips">Clear filters</a>{% endif %}
-    </form>
+    <!-- Hero Search Widget (Image 3 Style) -->
+    <section class="hero-search-wrapper" id="hero-search-section">
+      <div class="hero-search-card" id="hero-search-box">
+        <!-- Top Pill Tabs matching Image 3 -->
+        <div class="hero-search-tabs-row">
+          <button type="button" class="search-tab-pill tab-flights {% if not selected_category %}active{% endif %}" onclick="selectSearchTab('', this)">Flights</button>
+          <button type="button" class="search-tab-pill tab-hotels {% if selected_category == 'Luxury' %}active{% endif %}" onclick="selectSearchTab('Luxury', this)">Hotels</button>
+          <button type="button" class="search-tab-pill tab-packages {% if selected_category == 'Heritage' %}active{% endif %}" onclick="selectSearchTab('Heritage', this)">Holiday Packages</button>
+          <button type="button" class="search-tab-pill tab-bus {% if selected_category == 'Pilgrimage' %}active{% endif %}" onclick="selectSearchTab('Pilgrimage', this)">Bus</button>
+          <button type="button" class="search-tab-pill tab-visa {% if selected_category == 'International' %}active{% endif %}" onclick="selectSearchTab('International', this)">Visa</button>
+          <button type="button" class="search-tab-pill tab-activities {% if selected_category == 'Adventure' %}active{% endif %}" onclick="selectSearchTab('Adventure', this)">Activities</button>
+        </div>
 
-    <section class="trust-strip" id="how-it-works">
-      <div><span class="trust-icon">✳</span><p><strong>Thoughtfully picked</strong><span>Iconic wonders & sacred shrines.</span></p></div>
-      <div><span class="trust-icon">⌁</span><p><strong>Clear from the start</strong><span>Real prices, confirmed stays & meals.</span></p></div>
-      <div><span class="trust-icon">♡</span><p><strong>People who care</strong><span>Travel desk support on Call & WhatsApp.</span></p></div>
+        <!-- 5-Field Input Strip matching Image 3 -->
+        <form class="hero-search-form-row" method="get" action="#trips">
+          <input type="hidden" name="category" id="hero-category-input" value="{{ selected_category or '' }}">
+          
+          <div class="search-field-pill">
+            <span class="field-glyph">↕</span>
+            <div class="field-meta">
+              <label for="search-origin">From</label>
+              <select name="origin" id="search-origin">
+                <option value="">Leaving from</option>
+                {% for o in origins %}
+                  <option value="{{ o.origin }}" {% if selected_origin == o.origin %}selected{% endif %}>{{ o.origin }}</option>
+                {% endfor %}
+                <option value="Bengaluru" {% if selected_origin == 'Bengaluru' %}selected{% endif %}>Bengaluru</option>
+                <option value="Delhi" {% if selected_origin == 'Delhi' %}selected{% endif %}>Delhi</option>
+                <option value="Mumbai" {% if selected_origin == 'Mumbai' %}selected{% endif %}>Mumbai</option>
+                <option value="Chennai" {% if selected_origin == 'Chennai' %}selected{% endif %}>Chennai</option>
+                <option value="Kolkata" {% if selected_origin == 'Kolkata' %}selected{% endif %}>Kolkata</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="search-field-pill">
+            <span class="field-glyph">↕</span>
+            <div class="field-meta">
+              <label for="search-dest">To</label>
+              <select name="destination" id="search-dest">
+                <option value="">Going to</option>
+                {% for d in destinations %}
+                  <option value="{{ d.destination }}" {% if selected_destination == d.destination %}selected{% endif %}>{{ d.destination }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="search-field-pill">
+            <span class="field-glyph">📅</span>
+            <div class="field-meta">
+              <label for="search-departure-date">Departure</label>
+              <input type="text" id="search-departure-date" placeholder="Select date" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
+            </div>
+          </div>
+
+          <div class="search-field-pill">
+            <span class="field-glyph">📅</span>
+            <div class="field-meta">
+              <label for="search-return-date">Return</label>
+              <input type="text" id="search-return-date" placeholder="Select date" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'">
+            </div>
+          </div>
+
+          <div class="search-field-pill">
+            <span class="field-glyph">♟</span>
+            <div class="field-meta">
+              <label for="search-traveller-select">Travellers</label>
+              <select id="search-traveller-select">
+                <option>1 Traveller</option>
+                <option selected>2 Travellers</option>
+                <option>3 Travellers</option>
+                <option>4 Travellers</option>
+                <option>5+ Travellers</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="hero-search-action-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Search Now</span>
+          </button>
+        </form>
+
+        {% if selected_destination or selected_origin or selected_category %}
+          <div class="hero-search-active-filter">
+            <span>Filtered by: <strong>{{ selected_origin or '' }} {{ '→ ' ~ selected_destination if selected_destination else (selected_category or '') }}</strong></span>
+            <a href="{{ url_for('public_home') }}#trips" class="clear-search-pill">Clear filters ✕</a>
+          </div>
+        {% endif %}
+      </div>
     </section>
 
-    <!-- SECTION 1: Pick a place. We'll mind the details. (Image 1 Style) -->
+    <!-- SECTION: A Thought for Every Journey (Image 2 Style) -->
+    <section class="thought-journey-section" id="thought-journey">
+      <div class="thought-journey-container">
+        <span class="thought-eyebrow">A THOUGHT FOR EVERY JOURNEY</span>
+        <h2 class="thought-kannada-heading">ಪ್ರತಿಯೊಂದು ಪ್ರಯಾಣಕ್ಕೂ ಒಂದು ಸುಂದರ ಚಿಂತನೆ</h2>
+        <div class="thought-orange-divider"></div>
+
+        <div class="thought-cards-grid">
+          <!-- English Thought Card -->
+          <article class="thought-quote-card">
+            <p class="thought-quote-text">
+              Travel is not just about visiting new places; it is about creating memories, discovering new perspectives, and finding joy in every journey. Every destination has a story, and every journey becomes a memory to cherish.
+            </p>
+            <div class="thought-quote-author">— Mr. Lokesh</div>
+          </article>
+
+          <!-- Kannada Thought Card -->
+          <article class="thought-quote-card kannada-thought-card">
+            <p class="thought-quote-text kannada-quote-text">
+              ಪ್ರಯಾಣವೆಂದರೆ ಕೇವಲ ಹೊಸ ಸ್ಥಳಗಳನ್ನು ನೋಡುವುದಲ್ಲ; ಹೊಸ ಅನುಭವಗಳನ್ನು ಪಡೆಯುವುದು, ಹೊಸ ದೃಷ್ಟಿಕೋನಗಳನ್ನು ಕಂಡುಕೊಳ್ಳುವುದು ಮತ್ತು ಜೀವನದ ಸುಂದರ ನೆನಪುಗಳನ್ನು ಸಂಗ್ರಹಿಸುವುದು. ಪ್ರತಿಯೊಂದು ಸ್ಥಳಕ್ಕೂ ಒಂದು ಕಥೆಯಿದೆ, ಪ್ರತಿಯೊಂದು ಪ್ರಯಾಣವೂ ಒಂದು ಸ್ಮರಣೆಯಾಗುತ್ತದೆ.
+            </p>
+            <div class="thought-quote-author kannada-author-text">— ಶ್ರೀ. ಲೋಕೇಶ್</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-strip" id="how-it-works">
+      <div><span class="trust-icon">✳</span><p><strong>Thoughtfully picked</strong><span>Iconic wonders &amp; sacred shrines.</span></p></div>
+      <div><span class="trust-icon">⌁</span><p><strong>Clear from the start</strong><span>Real prices, confirmed stays &amp; meals.</span></p></div>
+      <div><span class="trust-icon">♡</span><p><strong>People who care</strong><span>Travel desk support on Call &amp; WhatsApp.</span></p></div>
+    </section>
+
+    <!-- SECTION 1: Pick a place. We'll mind the details. (Image 1 Style Cards) -->
     <section class="site-section trips-section" id="trips">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">A FEW PLACES WE LOVE</span>
+          <span class="eyebrow">A FEW PLACES WE LOVE · 5-MONTH UPCOMING CALENDAR</span>
           <h2>Pick a place.<br><em>We’ll mind the details.</em></h2>
         </div>
         <p>From world-renowned monuments to sacred pilgrimages, each package includes stays, meals, activities, and private transfers.
-          {% if selected_destination or selected_category %}<br><span class="filter-caption">Showing {{ packages|length }} matching {{ 'trip' if packages|length == 1 else 'trips' }}.</span>{% endif %}
+          {% if selected_destination or selected_category or selected_origin %}<br><span class="filter-caption">Showing {{ packages|length }} matching {{ 'trip' if packages|length == 1 else 'trips' }}.</span>{% endif %}
         </p>
       </div>
 
-      <div class="public-trip-grid">
+      <div class="public-trip-grid image1-grid-layout">
         {% for package in packages %}
-          <article class="public-trip-card">
-            <div class="public-trip-art" style="position: relative !important; display: block !important; width: 100% !important; height: 220px !important; overflow: hidden !important; border-radius: 12px 12px 0 0 !important; background: #1e3325 url('{{ url_for('static', filename=package.image_file or 'gallery-monument.jpg') }}') center/cover no-repeat !important; padding: 0 !important; margin: 0 !important;">
-              <img class="public-trip-photo" src="{{ url_for('static', filename=package.image_file or 'gallery-monument.jpg') }}" alt="{{ package.title }}" loading="eager" style="position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; z-index: 1 !important; border: 0 !important;">
-              <div class="photo-gradient-overlay" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,35,27,0.18) 0%, rgba(20,35,27,0.02) 42%, rgba(20,35,27,0.68) 100%); z-index: 2; pointer-events: none;"></div>
-              <span class="destination-category" style="position: absolute; top: 12px; left: 12px; z-index: 3;">{{ package.category }}</span>
-              <span class="public-trip-symbol" style="position: absolute; top: 12px; right: 12px; z-index: 3;">✳</span>
-              <span class="public-trip-duration" style="position: absolute; bottom: 12px; left: 14px; z-index: 3;">{{ package.duration }}</span>
+          <article class="public-trip-card image1-card">
+            <!-- Top Photo Area (Collage / Photo with rounded top) -->
+            <div class="image1-photo-container">
+              <img class="image1-img" src="{{ url_for('static', filename=package.image_file or 'place-philippines.jpg') }}" alt="{{ package.title }}" loading="lazy">
+              <span class="image1-category-badge">{{ package.category }}</span>
             </div>
-            <div class="public-trip-body">
-              <span class="eyebrow">{{ package.destination }}</span>
-              <h3>{{ package.title }}</h3>
-              <p>{{ package.description }}</p>
 
-              {% if package.activities %}
-                <div class="trip-activities-preview" title="{{ package.activities }}">
-                  <span class="activities-icon">✨</span>
-                  <span class="activities-text">{{ package.activities }}</span>
+            <!-- Card Body Area matching Image 1 -->
+            <div class="image1-body">
+              <h3 class="image1-title" title="{{ package.title }}">{{ package.title }}</h3>
+
+              <!-- Split 2-Column Meta Grid -->
+              <div class="image1-meta-split">
+                <div class="image1-meta-left">
+                  <div class="meta-line">
+                    <span class="meta-icon">📍</span>
+                    <span class="meta-text" title="{{ package.origin or 'Bengaluru' }} – {{ package.destination }}">{{ package.origin or 'Bengaluru' }} – {{ package.destination }}</span>
+                  </div>
+                  <div class="meta-line">
+                    <span class="meta-icon">🕒</span>
+                    <span class="meta-text">{{ package.duration }}</span>
+                  </div>
                 </div>
-              {% endif %}
 
-              <div class="public-trip-meta">
-                <strong>{{ (package.price_paise / 100)|inr }} <span>/ person</span></strong>
-                <span>{{ package.available }} {{ 'seats' if package.available != 1 else 'seat' }} left</span>
+                <div class="image1-meta-right">
+                  <div class="price-strikethrough">
+                    Price <del>{{ (package.original_price_paise / 100)|inr if package.original_price_paise else ((package.price_paise * 1.05) / 100)|inr }}</del>/pp
+                  </div>
+                  <div class="price-highlight">
+                    {{ (package.price_paise / 100)|inr }}<span>/pp</span>
+                  </div>
+                  <div class="seats-left-pill">
+                    {{ package.available }} Seats Left
+                  </div>
+                </div>
               </div>
 
-              <div class="public-trip-actions">
-                <a class="button button-dark button-wide trip-find-btn" href="{{ url_for('trip_details', package_id=package.id) }}">
-                  Find the trip <span>↗</span>
+              <!-- Upcoming 5-Month Scheduled Departure Dates -->
+              <div class="image1-schedule-row">
+                <span class="schedule-icon">📅</span>
+                <div class="schedule-chips-wrap">
+                  {% set date_list = (package.upcoming_dates or '09 Dec, 14 Jan, 11 Feb, 18 Mar, 15 Apr').split(',') %}
+                  {% for dt in date_list %}
+                    <span class="schedule-date-chip {% if loop.first %}chip-current{% endif %}" title="Scheduled Departure">{{ dt.strip() }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Trust Guarantee Bar matching Image 1 -->
+              <div class="image1-trust-strip">
+                {{ package.trust_text or "150+ travelers can't be wrong – book your trip today!" }}
+              </div>
+
+              <!-- Action Buttons matching Image 1 (Call + View More) -->
+              <div class="image1-actions-row">
+                <a class="btn-image1-call" href="tel:+919108367516" title="Call Travel Desk">
+                  <span class="btn-phone-symbol">📞</span>
+                  <span>Call</span>
                 </a>
-                {% if package.official_url %}
-                  <a class="official-portal-link" href="{{ package.official_url }}" target="_blank" rel="noopener noreferrer">
-                    🏛️ Official Portal <span>↗</span>
-                  </a>
-                {% endif %}
+                <a class="btn-image1-viewmore" href="{{ url_for('trip_details', package_id=package.id) }}">
+                  View More
+                </a>
               </div>
             </div>
           </article>
         {% else %}
           <div class="no-public-trips">
             <span>✳</span>
-            <h3>{{ 'No trips match those filters yet.' if selected_destination or selected_category else 'New trips are on their way.' }}</h3>
-            <p>{{ 'Try another destination or experience, or clear the filters.' if selected_destination or selected_category else 'Check back soon or get in touch and we’ll help plan something lovely.' }}</p>
-            {% if selected_destination or selected_category %}<a class="text-link" href="{{ url_for('public_home') }}#trips">Clear filters ↗</a>{% endif %}
+            <h3>{{ 'No trips match those filters yet.' if selected_destination or selected_category or selected_origin else 'New trips are on their way.' }}</h3>
+            <p>{{ 'Try another destination, origin or category, or clear the filters.' if selected_destination or selected_category or selected_origin else 'Check back soon or get in touch and we’ll help plan something lovely.' }}</p>
+            {% if selected_destination or selected_category or selected_origin %}<a class="text-link" href="{{ url_for('public_home') }}#trips">Clear filters ↗</a>{% endif %}
           </div>
         {% endfor %}
       </div>
@@ -509,34 +671,62 @@
     </div>
   </details>
 
-  <footer class="site-footer">
+  <footer class="site-footer traveleasy-footer">
     <div class="footer-main">
-      <a class="brand brand-light" href="{{ url_for('public_home') }}"><span class="brand-mark">w.</span> wanderwise</a>
-      <p>Here’s to going places.<br>Taj Mahal, Golden Temple, Statue of Unity, Sacred Shrines &amp; beyond.</p>
+      <a class="brand brand-light traveleasy-footer-brand" href="{{ url_for('public_home') }}">
+        <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 48px; width: auto; filter: brightness(0) invert(1);">
+      </a>
+      <p>Travel around the world.<br>Philippines, Kashmir, Dubai, Bali, Goa, Kerala, Agra, Amritsar, Kevadia, Thailand &amp; beyond.</p>
       <a class="footer-contact-link" href="#contact">Contact the travel desk ↗</a>
     </div>
     <div class="footer-bottom">
-      <span>© {{ today[:4] }} Wanderwise · Travel beautifully.</span>
+      <span>© {{ today[:4] if today else '2026' }} TravelEasy · Travel around the world.</span>
       {% if g.user %}
         <span>Signed in as <strong>{{ g.user.name }}</strong> ({{ g.user.role|title }}) · <a href="{{ url_for('logout') }}" style="color: #f7a699; font-weight: 700;">Log Out 🚪</a></span>
       {% else %}
-        <a href="{{ url_for('login') }}">Staff &amp; traveller sign in ↗</a>
+        <a href="{{ url_for('login') }}">Staff, Partner &amp; Traveller Sign In ↗</a>
       {% endif %}
-      <span>Verified Bookings &amp; Travel Desk Support</span>
+      <span>Verified Bookings &amp; 24/7 Travel Desk Support</span>
     </div>
   </footer>
 
   <script>
+    function toggleNavMenu() {
+      const nav = document.getElementById('traveleasy-nav-menu');
+      const toggle = document.querySelector('.mobile-menu-toggle');
+      if (!nav) return;
+      const isOpen = nav.classList.contains('nav-open');
+      if (isOpen) {
+        nav.classList.remove('nav-open');
+        toggle?.setAttribute('aria-expanded', 'false');
+      } else {
+        nav.classList.add('nav-open');
+        toggle?.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    function focusHeroSearch() {
+      const searchBox = document.getElementById('hero-search-box');
+      if (searchBox) {
+        searchBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const originSelect = document.getElementById('search-origin');
+        if (originSelect) originSelect.focus();
+      }
+    }
+
+    function selectSearchTab(category, btn) {
+      const categoryInput = document.getElementById('hero-category-input');
+      if (categoryInput) {
+        categoryInput.value = category;
+      }
+      document.querySelectorAll('.search-tab-pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
     document.querySelectorAll('.site-nav a').forEach((link) => link.addEventListener('click', () => {
       document.querySelector('.site-nav')?.classList.remove('nav-open');
       document.querySelector('.mobile-menu-toggle')?.setAttribute('aria-expanded', 'false');
     }));
-    document.querySelector('.mobile-menu-toggle')?.addEventListener('click', (event) => {
-      const nav = document.querySelector('.site-nav');
-      const expanded = event.currentTarget.getAttribute('aria-expanded') === 'true';
-      event.currentTarget.setAttribute('aria-expanded', String(!expanded));
-      nav?.classList.toggle('nav-open', !expanded);
-    });
 
     // Top policies interactive checkbox & accordion handler
     function handlePolicyCheck(input, id) {

@@ -8,19 +8,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="{{ package.title }} — trip duration, stays, meals, activities and online booking.">
-  <title>{{ package.title }} · Wanderwise</title>
+  <title>{{ package.title }} · TravelEasy</title>
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=6">
-  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=3">
 </head>
 <body class="website-page trip-details-page">
   <header class="site-header">
-    <a class="brand" href="{{ url_for('public_home') }}"><span class="brand-mark">w.</span> wanderwise</a>
+    <a class="brand" href="{{ url_for('public_home') }}"><img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 38px; vertical-align: middle;"></a>
     <nav class="site-nav" aria-label="Main navigation">
       <a href="{{ url_for('public_home') }}#trips">Our trips</a>
       <a href="{{ url_for('public_home') }}#gallery">Tourist places</a>
@@ -30,7 +30,7 @@
     <div class="site-actions">
       {% if g.user %}
         <a class="site-login-link" href="{{ url_for('dashboard') }}">My dashboard ({{ g.user.name.split()[0] }}) ↗</a>
-        <a class="site-logout-link" href="{{ url_for('logout') }}" title="Sign out of Wanderwise">Log out 🚪</a>
+        <a class="site-logout-link" href="{{ url_for('logout') }}" title="Sign out of TravelEasy">Log out 🚪</a>
       {% else %}
         <a class="site-login-link" href="{{ url_for('login') }}">Sign in</a>
         <a class="button button-dark site-top-cta" href="{{ url_for('register') }}">Join us <span>↗</span></a>
@@ -105,7 +105,7 @@
           <span class="eyebrow">WHAT’S INCLUDED</span>
           <h2>The Thoughtful Details</h2>
           <p class="trip-preline">{{ package.inclusions }}</p>
-          <p class="trip-confirmation-note">All monument entries, priority temple darshan passes, and private guide arrangements are handled by the Wanderwise travel desk.</p>
+          <p class="trip-confirmation-note">All monument entries, priority temple darshan passes, and private guide arrangements are handled by the TravelEasy travel desk.</p>
         </section>
 
         <!-- Day-by-Day Itinerary Section -->
@@ -411,7 +411,7 @@
                   <button type="button" class="upi-chip" onclick="setUpiId('lokesh@okhdfcbank')" style="background: #f4f8f4; border: 1px solid #d3e2d5; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #22432b;">🟢 GPay (lokesh@okhdfcbank)</button>
                   <button type="button" class="upi-chip" onclick="setUpiId('9845012345@ybl')" style="background: #f4f8f4; border: 1px solid #d3e2d5; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #22432b;">🟣 PhonePe (@ybl)</button>
                   <button type="button" class="upi-chip" onclick="setUpiId('9845012345@paytm')" style="background: #f4f8f4; border: 1px solid #d3e2d5; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #22432b;">🔵 Paytm (@paytm)</button>
-                  <button type="button" class="upi-chip" onclick="setUpiId('wanderwise.travel@icici')" style="background: #fdf6e7; border: 1px solid #ecd39c; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #7d4d03; font-weight: 700;">🏢 Travel Desk (wanderwise.travel@icici)</button>
+                  <button type="button" class="upi-chip" onclick="setUpiId('traveleasy.travel@icici')" style="background: #fdf6e7; border: 1px solid #ecd39c; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; color: #7d4d03; font-weight: 700;">🏢 Travel Desk (traveleasy.travel@icici)</button>
                 </div>
 
                 <input type="text" id="upi_id_input" name="upi_id" placeholder="e.g. name@okhdfcbank" value="{% if g.user %}{{ g.user.name.split()[0].lower() }}@okaxis{% else %}traveler@okhdfcbank{% endif %}" style="height: 38px; font-size: 12px; width: 100%;">
@@ -474,7 +474,7 @@
         {% endif %}
 
         <!-- Direct WhatsApp booking assistance -->
-        <a class="button button-whatsapp button-wide" href="https://wa.me/919108367516?text=Hello%20Wanderwise%2C%20I%20am%20interested%20in%20booking%20the%20trip%20'{{ package.title|urlencode }}'%20({{ package.duration }}).%20Please%20guide%20me." target="_blank" rel="noopener noreferrer">
+        <a class="button button-whatsapp button-wide" href="https://wa.me/919108367516?text=Hello%20TravelEasy%2C%20I%20am%20interested%20in%20booking%20the%20trip%20'{{ package.title|urlencode }}'%20({{ package.duration }}).%20Please%20guide%20me." target="_blank" rel="noopener noreferrer">
           💬 Instant WhatsApp Booking ↗
         </a>
 
@@ -487,9 +487,9 @@
   </main>
 
   <footer class="trip-detail-footer">
-    <a href="{{ url_for('public_home') }}">wanderwise</a>
-    <span>Taj Mahal · Golden Temple · Statue of Unity · Sacred Shrines</span>
-    <a href="{{ url_for('public_home') }}#policies">Booking & refund info</a>
+    <a href="{{ url_for('public_home') }}">TravelEasy</a>
+    <span>Travel around the world · Iconic Escapes &amp; Shrines</span>
+    <a href="{{ url_for('public_home') }}#important-details">Booking &amp; refund info</a>
   </footer>
 
   <script>
@@ -599,7 +599,7 @@
     }
 
     function copyDeskUpi() {
-      const vpa = 'wanderwise.travel@icici';
+      const vpa = 'traveleasy.travel@icici';
       if (navigator.clipboard) {
         navigator.clipboard.writeText(vpa).then(() => {
           const btn = document.getElementById('copy-vpa-btn');
@@ -619,7 +619,7 @@
         inp.value = `traveller@${scheme}`;
       }
       const totalStr = liveTotal ? liveTotal.textContent : '₹0';
-      alert(`⚡ Launching ${appName}...\nAmount: ${totalStr}\nVPA: wanderwise.travel@icici\nOnce paid in ${appName}, click "Pay & Confirm Booking" to receive your digital voucher.`);
+      alert(`⚡ Launching ${appName}...\nAmount: ${totalStr}\nVPA: traveleasy.travel@icici\nOnce paid in ${appName}, click "Pay & Confirm Booking" to receive your digital voucher.`);
     }
 
     function simulateQrScan() {
