@@ -83,39 +83,51 @@
     <section class="site-hero traveleasy-hero" id="hero-slideshow-wrap">
       <!-- Background Slideshow Track (Slow transition, High Image Quality) -->
       <div class="hero-slideshow-track" id="hero-slideshow-track">
-        <!-- Slide 0: Domestic Panorama (Himalayas, Delhi, Agra, Kerala, Rajasthan, Varanasi, Goa) -->
+        <!-- Slide 0: Domestic 4K Taj Mahal -->
         <div class="hero-slide active" data-slide="0" data-type="domestic">
-          <img src="{{ url_for('static', filename='hero-slide-domestic-3.jpg') }}" alt="Domestic States of India Collage" class="hero-slide-image">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-1.jpg') }}" alt="4K Ultra-HD Taj Mahal Agra" class="hero-slide-image">
           <div class="hero-slide-overlay"></div>
         </div>
 
-        <!-- Slide 1: International World Landmarks (Paris, Rome, Pisa, London, Hot Air Balloons) -->
+        <!-- Slide 1: International 4K Philippines Lagoon -->
         <div class="hero-slide" data-slide="1" data-type="international">
-          <img src="{{ url_for('static', filename='hero-slide-international-1.jpg') }}" alt="International World Destinations" class="hero-slide-image">
+          <img src="{{ url_for('static', filename='hero-slide-international-1.jpg') }}" alt="4K Ultra-HD Philippines El Nido" class="hero-slide-image">
           <div class="hero-slide-overlay"></div>
         </div>
 
-        <!-- Slide 2: Domestic India Map with States & Culture -->
+        <!-- Slide 2: Domestic 4K Kashmir Himalayas -->
         <div class="hero-slide" data-slide="2" data-type="domestic">
-          <img src="{{ url_for('static', filename='hero-slide-domestic-2.jpg') }}" alt="Map of Indian States & Landmarks" class="hero-slide-image">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-2.jpg') }}" alt="4K Ultra-HD Kashmir Himalayas" class="hero-slide-image">
           <div class="hero-slide-overlay"></div>
         </div>
 
-        <!-- Slide 3: International World Places Suitcase -->
+        <!-- Slide 3: International 4K Dubai Skyline -->
         <div class="hero-slide" data-slide="3" data-type="international">
-          <img src="{{ url_for('static', filename='hero-slide-international-2.jpg') }}" alt="International World Places Suitcase" class="hero-slide-image">
+          <img src="{{ url_for('static', filename='hero-slide-international-2.jpg') }}" alt="4K Ultra-HD Dubai Skyline" class="hero-slide-image">
           <div class="hero-slide-overlay"></div>
         </div>
 
-        <!-- Slide 4: Domestic Incredible India Seasons & Traveler Map -->
+        <!-- Slide 4: Domestic 4K Kerala Backwaters -->
         <div class="hero-slide" data-slide="4" data-type="domestic">
-          <img src="{{ url_for('static', filename='hero-slide-domestic-4.jpg') }}" alt="Incredible India Seasons and States" class="hero-slide-image">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-3.jpg') }}" alt="4K Ultra-HD Kerala Backwaters" class="hero-slide-image">
           <div class="hero-slide-overlay"></div>
         </div>
 
-        <!-- Slide 5: Domestic Heritage Monuments Globe -->
-        <div class="hero-slide" data-slide="5" data-type="domestic">
-          <img src="{{ url_for('static', filename='hero-slide-domestic-1.jpg') }}" alt="Indian Heritage Monuments Globe" class="hero-slide-image">
+        <!-- Slide 5: International 4K Swiss Alps -->
+        <div class="hero-slide" data-slide="5" data-type="international">
+          <img src="{{ url_for('static', filename='hero-slide-international-3.jpg') }}" alt="4K Ultra-HD Swiss Alps Europe" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+
+        <!-- Slide 6: Domestic 4K Rajasthan Amber Fort -->
+        <div class="hero-slide" data-slide="6" data-type="domestic">
+          <img src="{{ url_for('static', filename='hero-slide-domestic-4.jpg') }}" alt="4K Ultra-HD Amber Fort Jaipur" class="hero-slide-image">
+          <div class="hero-slide-overlay"></div>
+        </div>
+
+        <!-- Slide 7: International 4K Bali Ocean Temple -->
+        <div class="hero-slide" data-slide="7" data-type="international">
+          <img src="{{ url_for('static', filename='hero-slide-international-4.jpg') }}" alt="4K Ultra-HD Bali Tanah Lot" class="hero-slide-image">
           <div class="hero-slide-overlay"></div>
         </div>
       </div>
@@ -147,19 +159,21 @@
           <a class="button button-orange" href="#trips">Browse Packages <span>↘</span></a>
           <a class="hero-secondary" href="#thought-journey">Our Travel Thought <span>↓</span></a>
         </div>
-        <div class="hero-footnote"><span class="hero-footnote-mark">✳</span> Slow background slides · Enhanced picture quality · Real confirmed bookings</div>
+        <div class="hero-footnote"><span class="hero-footnote-mark">✳</span> Real 4K Ultra-HD photography (3840×2160) · High dynamic range · Slow cinematic motion</div>
       </div>
 
       <!-- Floating Slideshow Controls (Prev, Next, Play/Pause, Indicators) -->
       <div class="hero-slideshow-controls">
         <button type="button" class="slide-nav-btn slide-prev-btn" onclick="prevHeroSlide()" aria-label="Previous background slide">‹</button>
         <div class="slide-dots-group" id="slide-dots-group">
-          <span class="slide-dot active" onclick="jumpToHeroSlide(0)" title="Slide 1: Indian States Panorama"></span>
-          <span class="slide-dot" onclick="jumpToHeroSlide(1)" title="Slide 2: World Places & Landmarks"></span>
-          <span class="slide-dot" onclick="jumpToHeroSlide(2)" title="Slide 3: States of India Map"></span>
-          <span class="slide-dot" onclick="jumpToHeroSlide(3)" title="Slide 4: World Travel Suitcase"></span>
-          <span class="slide-dot" onclick="jumpToHeroSlide(4)" title="Slide 5: Seasons Across India"></span>
-          <span class="slide-dot" onclick="jumpToHeroSlide(5)" title="Slide 6: Indian Heritage Globe"></span>
+          <span class="slide-dot active" onclick="jumpToHeroSlide(0)" title="Slide 1: 4K Taj Mahal Agra"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(1)" title="Slide 2: 4K Philippines Lagoon"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(2)" title="Slide 3: 4K Kashmir Himalayas"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(3)" title="Slide 4: 4K Dubai Skyline"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(4)" title="Slide 5: 4K Kerala Backwaters"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(5)" title="Slide 6: 4K Swiss Alps"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(6)" title="Slide 7: 4K Amber Fort Jaipur"></span>
+          <span class="slide-dot" onclick="jumpToHeroSlide(7)" title="Slide 8: 4K Bali Ocean Temple"></span>
         </div>
         <button type="button" class="slide-nav-btn slide-next-btn" onclick="nextHeroSlide()" aria-label="Next background slide">›</button>
         <button type="button" class="slide-playpause-btn" id="slide-playpause-btn" onclick="toggleSlidePlayPause()" title="Pause/Play background slideshow">⏸</button>
@@ -861,14 +875,16 @@
       window.location.href = window.location.pathname + '#trips';
     }
 
-    // Hero Background Slideshow Engine (Slow, Enhanced Quality, Domestic & International)
+    // Hero Background Slideshow Engine (Slow, Enhanced 4K UHD Quality, Domestic & International)
     const heroSlidesData = [
-      { flag: '🇮🇳', title: 'DOMESTIC: DIFFERENT STATES ACROSS INDIA', detail: 'Himalayas · Delhi · Agra · Kerala · Rajasthan · Varanasi · Goa' },
-      { flag: '🌍', title: 'INTERNATIONAL: ICONIC WORLD DESTINATIONS', detail: 'Paris · Rome · Pisa · London · Global Skylines & Hot Air Balloons' },
-      { flag: '🇮🇳', title: 'DOMESTIC: CULTURAL HERITAGE & STATES OF INDIA', detail: 'Kashmir Valley · Golden Temple · Kerala Lagoons · Rajasthan Forts' },
-      { flag: '🌍', title: 'INTERNATIONAL: GLOBAL ISLAND & CITY ESCAPES', detail: 'Philippines · Bali · Dubai · Thailand · Singapore · Vietnam' },
-      { flag: '🇮🇳', title: 'DOMESTIC: INCREDIBLE INDIAN SEASONS', detail: 'Monsoon Retreats · Winter Snow Adventures · Royal Heritage Trails' },
-      { flag: '🇮🇳', title: 'DOMESTIC: TIMELESS HERITAGE MONUMENTS', detail: 'Statue of Unity · Taj Mahal · Qutub Minar · Gateway of India' }
+      { flag: '🇮🇳', title: 'DOMESTIC 4K: TAJ MAHAL & YAMUNA REFLECTION', detail: 'Agra · Uttar Pradesh · Mughal Architecture & Iconic Reflection Pool' },
+      { flag: '🌍', title: 'INTERNATIONAL 4K: PHILIPPINES TURQUOISE LAGOONS', detail: 'El Nido · Palawan · Limestone Karsts & Crystal Waters' },
+      { flag: '🇮🇳', title: 'DOMESTIC 4K: KASHMIR VALLEY & HIMALAYAN PEAKS', detail: 'Srinagar · Dal Lake · Snow-Capped Alpine Vistas' },
+      { flag: '🌍', title: 'INTERNATIONAL 4K: DUBAI FUTURISTIC SKYLINE', detail: 'Burj Khalifa · Marina Promenade & Desert Sunsets' },
+      { flag: '🇮🇳', title: 'DOMESTIC 4K: KERALA BACKWATERS & EMERALD PALMS', detail: 'Alappuzha · Houseboat Cruises · Serene Tropical Canals' },
+      { flag: '🌍', title: 'INTERNATIONAL 4K: SWISS ALPS & MOUNTAIN TRAILS', detail: 'Europe · Alpine Glaciers & Scenic Panoramic Railways' },
+      { flag: '🇮🇳', title: 'DOMESTIC 4K: ROYAL AMBER FORT & RAJASTHAN PALACES', detail: 'Jaipur · Golden Sandstone Architecture & Royal Heritage' },
+      { flag: '🌍', title: 'INTERNATIONAL 4K: BALI TANAH LOT & OCEAN WAVES', detail: 'Indonesia · Sacred Cliff Temples & Tropical Sunset Coast' }
     ];
 
     let currentSlideIdx = 0;
