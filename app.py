@@ -40,8 +40,15 @@ CREATE TABLE IF NOT EXISTS agents (
     id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
     code TEXT NOT NULL UNIQUE,
-    level INTEGER NOT NULL CHECK (level BETWEEN 1 AND 4),
+    level INTEGER NOT NULL DEFAULT 1,
+    depth INTEGER NOT NULL DEFAULT 1,
+    path TEXT NOT NULL DEFAULT '/',
     parent_id INTEGER REFERENCES agents(id),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('pending_approval', 'active', 'rejected', 'suspended')),
+    phone TEXT,
+    approved_by INTEGER REFERENCES users(id),
+    approved_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     CHECK (parent_id IS NULL OR parent_id != id)
 );
 CREATE TABLE IF NOT EXISTS packages (
@@ -145,6 +152,32 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     record_id TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS ledger_accounts (
+    id INTEGER PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('asset', 'liability', 'equity', 'revenue', 'expense')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS ledger_transactions (
+    id INTEGER PRIMARY KEY,
+    tx_ref TEXT NOT NULL UNIQUE,
+    booking_id INTEGER REFERENCES bookings(id),
+    total_paise INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS ledger_entries (
+    id INTEGER PRIMARY KEY,
+    transaction_id INTEGER NOT NULL REFERENCES ledger_transactions(id) ON DELETE CASCADE,
+    account_id INTEGER NOT NULL REFERENCES ledger_accounts(id),
+    agent_id INTEGER REFERENCES agents(id),
+    debit_paise INTEGER NOT NULL DEFAULT 0,
+    credit_paise INTEGER NOT NULL DEFAULT 0,
+    entry_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS bookings_customer_idx ON bookings(customer_id, created_at);
 CREATE INDEX IF NOT EXISTS bookings_agent_idx ON bookings(agent_id, created_at);
 CREATE INDEX IF NOT EXISTS sent_emails_booking_idx ON sent_emails(booking_ref, created_at);
@@ -152,6 +185,13 @@ CREATE INDEX IF NOT EXISTS wallet_agent_idx ON wallet_transactions(agent_id, cre
 CREATE INDEX IF NOT EXISTS withdrawals_agent_idx ON withdrawals(agent_id, created_at);
 CREATE INDEX IF NOT EXISTS reviews_created_idx ON reviews(created_at);
 CREATE INDEX IF NOT EXISTS inquiries_created_idx ON contact_inquiries(created_at);
+CREATE INDEX IF NOT EXISTS agents_path_idx ON agents(path);
+CREATE INDEX IF NOT EXISTS agents_parent_idx ON agents(parent_id);
+CREATE INDEX IF NOT EXISTS agents_status_idx ON agents(status);
+CREATE INDEX IF NOT EXISTS ledger_tx_booking_idx ON ledger_transactions(booking_id);
+CREATE INDEX IF NOT EXISTS ledger_entries_tx_idx ON ledger_entries(transaction_id);
+CREATE INDEX IF NOT EXISTS ledger_entries_account_idx ON ledger_entries(account_id);
+CREATE INDEX IF NOT EXISTS ledger_entries_agent_idx ON ledger_entries(agent_id);
 """
 
 
@@ -344,6 +384,62 @@ def initialize_db() -> None:
             if col not in p_cols:
                 db.execute(f"ALTER TABLE packages ADD COLUMN {col} {col_def}")
 
+        # Ensure hierarchy and materialized path columns exist on agents table
+        a_cols = [r[1] for r in db.execute("PRAGMA table_info(agents)").fetchall()]
+        if "path" not in a_cols:
+            db.execute("PRAGMA foreign_keys = OFF")
+            db.execute("""
+            CREATE TABLE IF NOT EXISTS agents_migrated (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+                code TEXT NOT NULL UNIQUE,
+                level INTEGER NOT NULL DEFAULT 1,
+                depth INTEGER NOT NULL DEFAULT 1,
+                path TEXT NOT NULL DEFAULT '/',
+                parent_id INTEGER REFERENCES agents(id),
+                status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('pending_approval', 'active', 'rejected', 'suspended')),
+                phone TEXT,
+                approved_by INTEGER REFERENCES users(id),
+                approved_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                CHECK (parent_id IS NULL OR parent_id != id)
+            )
+            """)
+            db.execute("""
+            INSERT INTO agents_migrated (id, user_id, code, level, depth, path, parent_id, status)
+            SELECT id, user_id, code, level, 1, '/' || id || '/', parent_id, 'active' FROM agents
+            """)
+            db.execute("DROP TABLE agents")
+            db.execute("ALTER TABLE agents_migrated RENAME TO agents")
+            db.execute("CREATE INDEX IF NOT EXISTS agents_path_idx ON agents(path)")
+            db.execute("CREATE INDEX IF NOT EXISTS agents_parent_idx ON agents(parent_id)")
+            db.execute("CREATE INDEX IF NOT EXISTS agents_status_idx ON agents(status)")
+            db.execute("PRAGMA foreign_keys = ON")
+
+            # Re-compute path and depth recursively
+            all_agents = db.execute("SELECT id, parent_id FROM agents").fetchall()
+            by_parent = {}
+            for a in all_agents:
+                by_parent.setdefault(a["parent_id"], []).append(a["id"])
+
+            def set_tree(aid, parent_path, parent_depth):
+                cur_path = f"{parent_path}{aid}/"
+                cur_depth = parent_depth + 1
+                db.execute("UPDATE agents SET path=?, depth=?, level=? WHERE id=?", (cur_path, cur_depth, cur_depth, aid))
+                for child_id in by_parent.get(aid, []):
+                    set_tree(child_id, cur_path, cur_depth)
+
+            for root_id in by_parent.get(None, []):
+                set_tree(root_id, "/", 0)
+
+        # Seed default double-entry ledger accounts
+        ledger_base_accounts = [
+            ("REV_BOOKINGS", "Customer Booking Revenue", "revenue"),
+            ("ESCROW_OPERATIONS", "Company Tour Operations Escrow", "liability"),
+            ("COMM_OWNER", "Platform Owner Guaranteed Commission (10%)", "liability"),
+        ]
+        db.executemany("INSERT OR IGNORE INTO ledger_accounts(code, name, type) VALUES (?, ?, ?)", ledger_base_accounts)
+
         db.execute("""CREATE TABLE IF NOT EXISTS sent_emails (
             id INTEGER PRIMARY KEY,
             booking_id INTEGER REFERENCES bookings(id),
@@ -462,6 +558,126 @@ def money_to_paise(value: str) -> int:
     return int(amount * 100)
 
 
+def generate_unique_referral_code(db: sqlite3.Connection) -> str:
+    """Generate a guaranteed unique partner referral code in format TE-XXXXX."""
+    for _ in range(500):
+        candidate = f"TE-{secrets.randbelow(90000) + 10000}"
+        if not db.execute("SELECT 1 FROM agents WHERE code=?", (candidate,)).fetchone():
+            return candidate
+    return f"TE-{secrets.token_hex(3).upper()}"
+
+
+def get_or_create_ledger_account(db: sqlite3.Connection, code: str, name: str, acct_type: str) -> int:
+    acc = db.execute("SELECT id FROM ledger_accounts WHERE code=?", (code,)).fetchone()
+    if acc:
+        return acc["id"]
+    cur = db.execute(
+        "INSERT INTO ledger_accounts (code, name, type) VALUES (?, ?, ?)",
+        (code, name, acct_type),
+    )
+    return cur.lastrowid
+
+
+def process_booking_ledger(db: sqlite3.Connection, booking_id: int) -> int | None:
+    """
+    Multi-tiered agency commission and balanced double-entry ledger engine.
+    - Owner flat 10% guaranteed cut.
+    - Booking agent flat 10% cut regardless of level.
+    - For intermediate levels up to depth 4: cascading overrides based on distance from booking:
+      - Distance 1: 2%
+      - Distance 2: 3%
+      - Distance 3: 4%
+    - Hard limit at level 5: beyond depth 4 (at level 5+), all intermediate overrides drop to zero.
+    - All financial entries processed within atomic database transactions with exact balance assertion.
+    """
+    booking = db.execute("SELECT * FROM bookings WHERE id=?", (booking_id,)).fetchone()
+    if not booking:
+        return None
+
+    # Idempotent: don't double-process the same booking
+    existing = db.execute("SELECT id FROM ledger_transactions WHERE booking_id=?", (booking_id,)).fetchone()
+    if existing:
+        return existing["id"]
+
+    total_paise = booking["total_paise"]
+    tx_ref = f"TX-BKG-{booking['reference']}"
+
+    agent = None
+    if booking["agent_id"]:
+        agent = db.execute("SELECT * FROM agents WHERE id=?", (booking["agent_id"],)).fetchone()
+
+    # Ledger Accounts
+    rev_acct = get_or_create_ledger_account(db, "REV_BOOKINGS", "Customer Booking Revenue", "revenue")
+    owner_acct = get_or_create_ledger_account(db, "COMM_OWNER", "Platform Owner Guaranteed Commission (10%)", "liability")
+    escrow_acct = get_or_create_ledger_account(db, "ESCROW_OPERATIONS", "Company Tour Operations Escrow", "liability")
+
+    cur = db.execute(
+        "INSERT INTO ledger_transactions (tx_ref, booking_id, total_paise, description) VALUES (?, ?, ?, ?)",
+        (tx_ref, booking_id, total_paise, f"Settlement for Booking {booking['reference']}")
+    )
+    tx_id = cur.lastrowid
+
+    entries = []
+    # 1. DEBIT: Total booking customer payment
+    entries.append((tx_id, rev_acct, None, total_paise, 0, "booking_revenue", f"Revenue collected for {booking['reference']}"))
+
+    # 2. CREDITS:
+    # A. Guaranteed Owner flat 10% cut
+    owner_cut = (total_paise * 10) // 100
+    entries.append((tx_id, owner_acct, None, 0, owner_cut, "owner_cut", f"Guaranteed Platform Owner Flat Cut (10%) - {booking['reference']}"))
+
+    # B. Guaranteed Booking Agent flat 10% cut (regardless of level)
+    agent_cut = 0
+    if agent and agent["status"] == "active":
+        agent_cut = (total_paise * 10) // 100
+        agent_acct = get_or_create_ledger_account(db, f"COMM_AGENT_{agent['id']}", f"Partner {agent['code']} Commission Account", "liability")
+        entries.append((tx_id, agent_acct, agent["id"], 0, agent_cut, "booking_agent_cut", f"Booking Agent Flat Cut (10%) - Code {agent['code']} (Depth {agent['depth']})"))
+        db.execute(
+            "INSERT OR IGNORE INTO wallet_transactions(agent_id, amount_paise, kind, reference) VALUES (?, ?, 'commission', ?)",
+            (agent["id"], agent_cut, booking["reference"])
+        )
+
+    # C. Cascading overrides for intermediate levels up to depth 4
+    # Hard limit at level 5: beyond depth 4 (at level 5+), intermediate overrides drop to zero!
+    overrides_total = 0
+    if agent and agent["depth"] <= 4:
+        path_parts = [int(p) for p in agent["path"].strip("/").split("/") if p and int(p) != agent["id"]]
+        ancestor_ids = list(reversed(path_parts)) # distance 1 is direct parent, dist 2 is grandparent, etc.
+        override_schedule = {1: 2, 2: 3, 3: 4} # Dist 1: 2%, Dist 2: 3%, Dist 3: 4%
+        for dist, sup_id in enumerate(ancestor_ids, start=1):
+            rate = override_schedule.get(dist, 0)
+            if rate > 0:
+                sup = db.execute("SELECT * FROM agents WHERE id=?", (sup_id,)).fetchone()
+                if sup and sup["status"] == "active":
+                    sup_cut = (total_paise * rate) // 100
+                    overrides_total += sup_cut
+                    sup_acct = get_or_create_ledger_account(db, f"COMM_AGENT_{sup['id']}", f"Partner {sup['code']} Commission Account", "liability")
+                    entries.append((tx_id, sup_acct, sup["id"], 0, sup_cut, "cascade_override", f"Cascade Override (Dist {dist}: {rate}%) from Booking {booking['reference']}"))
+                    db.execute(
+                        "INSERT OR IGNORE INTO wallet_transactions(agent_id, amount_paise, kind, reference) VALUES (?, ?, 'override', ?)",
+                        (sup["id"], sup_cut, f"{booking['reference']}-D{dist}")
+                    )
+
+    # D. Company Tour Operations Escrow gets the remainder
+    company_escrow = total_paise - (owner_cut + agent_cut + overrides_total)
+    entries.append((tx_id, escrow_acct, None, 0, company_escrow, "company_operations", f"Company Net Tour Operations Escrow for {booking['reference']}"))
+
+    # E. Exact Ledger Balance Verification (Assertion)
+    total_debits = sum(e[3] for e in entries)
+    total_credits = sum(e[4] for e in entries)
+    if total_debits != total_credits:
+        raise ValueError(f"Ledger Imbalance Detected: Debits ({total_debits}) != Credits ({total_credits})")
+
+    # Insert balanced ledger lines atomically
+    db.executemany(
+        """INSERT INTO ledger_entries (transaction_id, account_id, agent_id, debit_paise, credit_paise, entry_type, description)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        entries
+    )
+
+    return tx_id
+
+
 def get_my_agent() -> sqlite3.Row | None:
     return g.db.execute("SELECT * FROM agents WHERE user_id=?", (g.user["id"],)).fetchone()
 
@@ -485,16 +701,37 @@ def login() -> Any:
     if g.user:
         return redirect(safe_local_next(request.args.get("next")) or url_for("dashboard"))
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
+        identifier = request.form.get("email", "").strip()
         password = request.form.get("password", "")
-        user = g.db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        # Allow login via Email OR Partner Referral ID
+        user = g.db.execute(
+            """SELECT u.*, a.id AS agent_id, a.code AS agent_code, a.status AS agent_status, a.depth AS agent_depth
+               FROM users u
+               LEFT JOIN agents a ON a.user_id = u.id
+               WHERE LOWER(u.email) = LOWER(?) OR UPPER(a.code) = UPPER(?)""",
+            (identifier, identifier),
+        ).fetchone()
+
         if user and check_password_hash(user["password_hash"], password):
+            # Check partner two-step validation status
+            if user["role"] == "agent":
+                if user["agent_status"] == "pending_approval":
+                    flash("Your partner application is pending Owner approval. You can log in once your application is approved and your unique Referral Code is activated.", "error")
+                    return render_template("login.html", register=False)
+                elif user["agent_status"] == "rejected":
+                    flash("Your partner application was reviewed and not approved by the Owner.", "error")
+                    return render_template("login.html", register=False)
+                elif user["agent_status"] == "suspended":
+                    flash("Your partner account is suspended. Please contact the administrator.", "error")
+                    return render_template("login.html", register=False)
+
             next_url = safe_local_next(request.form.get("next") or request.args.get("next"))
             session.clear()
             session["user_id"] = user["id"]
             session["csrf_token"] = secrets.token_urlsafe(32)
             return redirect(next_url or url_for("dashboard"))
-        flash("That email and password combination wasn’t recognized.", "error")
+
+        flash("That email/referral ID and password combination wasn’t recognized.", "error")
     return render_template("login.html", register=False)
 
 
@@ -508,10 +745,11 @@ def register() -> Any:
         password = request.form.get("password", "")
         role = request.form.get("role", "customer")
         referral = request.form.get("referral", "").strip().upper()
+        phone = request.form.get("phone", "").strip()
         if not name or len(name) > 80 or "@" not in email or len(email) > 254:
             flash("Add a valid name and email address.", "error")
-        elif len(password) < 10:
-            flash("Choose a password with at least 10 characters.", "error")
+        elif len(password) < 8:
+            flash("Choose a password with at least 8 characters.", "error")
         elif role not in ("customer", "agent"):
             flash("Choose a valid account type.", "error")
         elif g.db.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
@@ -519,12 +757,9 @@ def register() -> Any:
         else:
             parent = None
             if referral:
-                parent = g.db.execute("SELECT * FROM agents WHERE code=?", (referral,)).fetchone()
+                parent = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=? AND status='active'", (referral,)).fetchone()
                 if parent is None:
-                    flash("We couldn’t find that referral code.", "error")
-                    return render_template("login.html", register=True)
-                if role == "agent" and parent["level"] < 2:
-                    flash("That partner is at the bottom of the referral ladder and can’t refer another agent.", "error")
+                    flash("We couldn’t find that active sponsor referral code.", "error")
                     return render_template("login.html", register=True)
             try:
                 with g.db:
@@ -532,21 +767,141 @@ def register() -> Any:
                         "INSERT INTO users(name,email,password_hash,role) VALUES(?,?,?,?)",
                         (name, email, generate_password_hash(password), role),
                     )
+                    user_id = cursor.lastrowid
                     if role == "agent":
-                        agent_code = f"WW-{cursor.lastrowid + 1000:04d}"
+                        temp_code = f"PENDING-{secrets.token_hex(3).upper()}"
+                        depth = (parent["depth"] + 1) if parent else 1
+                        parent_path = parent["path"] if parent else "/"
                         g.db.execute(
-                            "INSERT INTO agents(user_id,code,level,parent_id) VALUES(?,?,?,?)",
-                            (cursor.lastrowid, agent_code, max(1, (parent["level"] - 1) if parent else 1),
-                             parent["id"] if parent else None),
+                            """INSERT INTO agents(user_id, code, level, depth, path, parent_id, status, phone)
+                               VALUES(?,?,?,?,?,?,'pending_approval',?)""",
+                            (user_id, temp_code, depth, depth, parent_path, parent["id"] if parent else None, phone or None),
                         )
-                    audit("Account registered", role, cursor.lastrowid)
-                flash("Your account is ready. Sign in to get started.", "success")
+                        audit("Partner application registered", role, user_id)
+                        flash("Your partner application has been submitted and is pending Owner approval! Once approved, your unique Referral Code will be generated and you can log in using your Referral Code and password.", "success")
+                        return redirect(url_for("login"))
+                    audit("Account registered", role, user_id)
+                flash("Your customer account is ready. Sign in to get started.", "success")
                 return redirect(url_for("login", next=safe_local_next(
                     request.form.get("next") or request.args.get("next")
                 )))
             except sqlite3.IntegrityError:
                 flash("We couldn’t create that account. Please check the details and try again.", "error")
     return render_template("login.html", register=True)
+
+
+@app.route("/referral-program/join", methods=["GET", "POST"])
+@app.route("/partner/apply", methods=["GET", "POST"])
+def partner_apply() -> Any:
+    """Dedicated route for new recruits to register under the Referral Program."""
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        phone = request.form.get("phone", "").strip()
+        password = request.form.get("password", "")
+        password_confirm = request.form.get("password_confirm", "")
+        sponsor_code = request.form.get("sponsor_code", "").strip().upper()
+
+        if not name or len(name) > 80:
+            flash("Please enter your full name.", "error")
+        elif "@" not in email or len(email) > 254:
+            flash("Please enter a valid email address.", "error")
+        elif not phone or len(phone) < 7:
+            flash("Please provide a valid contact phone number.", "error")
+        elif len(password) < 8:
+            flash("Choose a password with at least 8 characters.", "error")
+        elif password != password_confirm:
+            flash("Passwords do not match.", "error")
+        elif g.db.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
+            flash("An account with that email already exists. Sign in or use another email.", "error")
+        else:
+            parent = None
+            if sponsor_code:
+                parent = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=? AND status='active'", (sponsor_code,)).fetchone()
+                if parent is None:
+                    flash(f"Sponsor referral code '{sponsor_code}' was not found or is not currently active.", "error")
+                    return redirect(url_for("referral_program", ref=sponsor_code) + "#join-partner")
+            try:
+                with g.db:
+                    cur_u = g.db.execute(
+                        "INSERT INTO users(name, email, password_hash, role) VALUES(?,?,?,'agent')",
+                        (name, email, generate_password_hash(password))
+                    )
+                    user_id = cur_u.lastrowid
+                    temp_code = f"PENDING-{secrets.token_hex(3).upper()}"
+                    depth = (parent["depth"] + 1) if parent else 1
+                    parent_path = parent["path"] if parent else "/"
+                    cur_a = g.db.execute(
+                        """INSERT INTO agents(user_id, code, level, depth, path, parent_id, status, phone)
+                           VALUES (?, ?, ?, ?, ?, ?, 'pending_approval', ?)""",
+                        (user_id, temp_code, depth, depth, parent_path, parent["id"] if parent else None, phone)
+                    )
+                    agent_id = cur_a.lastrowid
+                    audit("Partner recruit application initiated", "agent", agent_id)
+                flash("Application submitted successfully! Your partner registration is pending Owner review. Once approved, your unique Referral Code will be generated and you can log in using your Referral Code and password.", "success")
+                return redirect(url_for("login"))
+            except sqlite3.IntegrityError:
+                flash("We couldn't process your application. Please check your details and try again.", "error")
+    return redirect(url_for("referral_program") + "#join-partner")
+
+
+@app.post("/admin/partners/<int:agent_id>/approve")
+@login_required
+def approve_partner(agent_id: int) -> Any:
+    """Owner explicit approval for new partner recruit."""
+    if g.user["role"] != "admin":
+        abort(403)
+    agent = g.db.execute(
+        """SELECT a.*, u.name, u.email FROM agents a
+           JOIN users u ON u.id = a.user_id WHERE a.id=?""", (agent_id,)
+    ).fetchone()
+    if not agent:
+        abort(404)
+    if agent["status"] != "pending_approval":
+        flash("This partner is not currently awaiting approval.", "error")
+        return redirect(url_for("dashboard", view="partners"))
+
+    # Generate guaranteed unique referral code
+    new_code = generate_unique_referral_code(g.db)
+    # Calculate materialized path and depth from immediate superior
+    if agent["parent_id"]:
+        parent = g.db.execute("SELECT path, depth FROM agents WHERE id=?", (agent["parent_id"],)).fetchone()
+        path = f"{parent['path']}{agent['id']}/" if parent else f"/{agent['id']}/"
+        depth = (parent["depth"] + 1) if parent else 1
+    else:
+        path = f"/{agent['id']}/"
+        depth = 1
+
+    with g.db:
+        g.db.execute(
+            """UPDATE agents SET code=?, path=?, depth=?, level=?, status='active',
+               approved_by=?, approved_at=datetime('now') WHERE id=?""",
+            (new_code, path, depth, depth, g.user["id"], agent_id)
+        )
+        get_or_create_ledger_account(g.db, f"COMM_AGENT_{agent_id}", f"Partner {new_code} Commission Account", "liability")
+        audit(f"Partner {new_code} approved by Owner", "agent", agent_id)
+
+    flash(f"Partner {agent['name']} approved! Unique Referral Code {new_code} generated. Partner is now active and can log in using their Referral Code.", "success")
+    return redirect(url_for("dashboard", view="partners"))
+
+
+@app.post("/admin/partners/<int:agent_id>/reject")
+@login_required
+def reject_partner(agent_id: int) -> Any:
+    """Owner rejection of pending partner recruit."""
+    if g.user["role"] != "admin":
+        abort(403)
+    agent = g.db.execute(
+        """SELECT a.*, u.name FROM agents a
+           JOIN users u ON u.id = a.user_id WHERE a.id=?""", (agent_id,)
+    ).fetchone()
+    if not agent:
+        abort(404)
+    with g.db:
+        g.db.execute("UPDATE agents SET status='rejected' WHERE id=?", (agent_id,))
+        audit("Partner recruit rejected by Owner", "agent", agent_id)
+    flash(f"Partner application for {agent['name']} has been rejected.", "info")
+    return redirect(url_for("dashboard", view="partners"))
 
 
 @app.route("/logout", methods=["GET", "POST"])
@@ -883,6 +1238,78 @@ def dashboard() -> Any:
            GROUP BY a.id ORDER BY total_volume DESC, booking_count DESC LIMIT 5"""
     ).fetchall() if role == "admin" else []
 
+    # Multi-tier hierarchy, approvals, and double-entry ledger queries
+    pending_partners = g.db.execute(
+        """SELECT a.id, a.code, a.depth, a.status, a.phone, a.created_at,
+                  u.name, u.email,
+                  p.code AS sponsor_code, pu.name AS sponsor_name, p.depth AS sponsor_depth
+           FROM agents a
+           JOIN users u ON u.id = a.user_id
+           LEFT JOIN agents p ON p.id = a.parent_id
+           LEFT JOIN users pu ON pu.id = p.user_id
+           WHERE a.status = 'pending_approval'
+           ORDER BY a.created_at ASC"""
+    ).fetchall() if role == "admin" else []
+
+    hierarchy_agents = g.db.execute(
+        """SELECT a.id, a.code, a.depth, a.level, a.path, a.status, a.phone, a.created_at, a.approved_at,
+                  u.name, u.email,
+                  p.code AS parent_code, pu.name AS parent_name,
+                  (SELECT COUNT(*) FROM agents c WHERE c.parent_id = a.id AND c.status = 'active') AS direct_recruits,
+                  (SELECT COUNT(*) FROM agents d WHERE d.path LIKE a.path || '%' AND d.id != a.id AND d.status = 'active') AS total_downline,
+                  (SELECT COALESCE(SUM(credit_paise), 0) FROM ledger_entries le WHERE le.agent_id = a.id) AS total_commission_earned
+           FROM agents a
+           JOIN users u ON u.id = a.user_id
+           LEFT JOIN agents p ON p.id = a.parent_id
+           LEFT JOIN users pu ON pu.id = p.user_id
+           WHERE a.status = 'active'
+           ORDER BY a.depth ASC, a.id ASC"""
+    ).fetchall() if role == "admin" else []
+
+    ledger_transactions_list = g.db.execute(
+        """SELECT lt.id, lt.tx_ref, lt.booking_id, lt.total_paise, lt.description, lt.created_at,
+                  b.reference AS booking_ref, b.guest_name,
+                  (SELECT COUNT(*) FROM ledger_entries WHERE transaction_id = lt.id) AS entries_count
+           FROM ledger_transactions lt
+           LEFT JOIN bookings b ON b.id = lt.booking_id
+           ORDER BY lt.created_at DESC LIMIT 30"""
+    ).fetchall() if role == "admin" else []
+
+    my_sponsor = None
+    downline_recruits = []
+    ledger_earnings = []
+    if my_agent:
+        if my_agent["parent_id"]:
+            my_sponsor = g.db.execute(
+                """SELECT a.code, a.depth, u.name, u.email FROM agents a
+                   JOIN users u ON u.id=a.user_id WHERE a.id=?""",
+                (my_agent["parent_id"],)
+            ).fetchone()
+        downline_recruits = g.db.execute(
+            """SELECT a.id, a.code, a.depth, a.level, a.path, a.status, a.phone, a.created_at,
+                      u.name, u.email,
+                      (a.depth - ?) AS relative_distance,
+                      (SELECT COUNT(*) FROM agents c WHERE c.parent_id = a.id AND c.status = 'active') AS child_recruits,
+                      (SELECT COALESCE(SUM(credit_paise), 0) FROM ledger_entries le WHERE le.agent_id = a.id) AS downline_commissions
+               FROM agents a
+               JOIN users u ON u.id = a.user_id
+               WHERE a.path LIKE ? AND a.id != ?
+               ORDER BY a.depth ASC, a.created_at DESC""",
+            (my_agent["depth"], f"{my_agent['path']}%", my_agent["id"])
+        ).fetchall()
+        ledger_earnings = g.db.execute(
+            """SELECT le.*, lt.tx_ref, b.reference AS booking_ref, b.total_paise AS booking_amount
+               FROM ledger_entries le
+               JOIN ledger_transactions lt ON lt.id = le.transaction_id
+               LEFT JOIN bookings b ON b.id = lt.booking_id
+               WHERE le.agent_id = ?
+               ORDER BY le.created_at DESC LIMIT 50""",
+            (my_agent["id"],)
+        ).fetchall()
+
+    stats["pending_partners"] = len(pending_partners) if role == "admin" else 0
+    stats["total_active_partners"] = len(hierarchy_agents) if role == "admin" else 0
+
     return render_template(
         "dashboard.html", view=view, packages=packages, all_packages=all_packages, bookings=bookings, stats=stats,
         my_agent=my_agent, agents=agents, rules=rules, withdrawals=withdrawals,
@@ -891,6 +1318,9 @@ def dashboard() -> Any:
         inquiries=inquiries, public_reviews=public_reviews, sent_emails=sent_emails,
         transport_stats=transport_stats, status_stats=status_stats,
         package_occupancy=package_occupancy, partner_sales=partner_sales,
+        pending_partners=pending_partners, hierarchy_agents=hierarchy_agents,
+        ledger_transactions_list=ledger_transactions_list, my_sponsor=my_sponsor,
+        downline_recruits=downline_recruits, ledger_earnings=ledger_earnings,
     )
 
 
@@ -991,9 +1421,9 @@ def create_booking() -> Any:
                 guest_name = guest_name or g.user["name"]
                 guest_email = guest_email or g.user["email"]
                 if referral:
-                    agent = g.db.execute("SELECT * FROM agents WHERE code=?", (referral,)).fetchone()
+                    agent = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=? AND status='active'", (referral,)).fetchone()
                     if agent is None:
-                        raise ValueError("That agent referral code wasn’t found.")
+                        raise ValueError("That partner referral code wasn’t found or is not currently active.")
 
             reservation = g.db.execute(
                 "UPDATE packages SET reserved=reserved+? WHERE id=? AND status='active' AND capacity-reserved>=?",
@@ -1065,6 +1495,7 @@ def create_booking() -> Any:
             send_booking_email(booking_record, "booking_confirmed" if status == "confirmed" else "booking_reserved")
 
             if status == "confirmed":
+                process_booking_ledger(g.db, booking_id)
                 audit(f"Booking {reference} confirmed with payment ({method_name})", "booking", reference)
                 flash(f"Payment of ₹{total_amount / 100:,.0f} successful via {method_name}! Booking {reference} confirmed. Confirmation email & travel voucher sent to {guest_email}.", "success")
             else:
@@ -1099,6 +1530,7 @@ def pay_booking(booking_id: int) -> Any:
                 "UPDATE bookings SET status='confirmed', payment_method=?, payment_ref=? WHERE id=? AND status='pending'",
                 (pay_method, txn_ref, booking_id)
             )
+            process_booking_ledger(g.db, booking_id)
             audit(f"Payment recorded via {pay_method} (Ref: {txn_ref})", "booking", booking["reference"])
             
             # Fetch updated booking and send confirmation email
@@ -1137,28 +1569,7 @@ def update_booking(booking_id: int) -> Any:
                 if booking["status"] != "confirmed":
                     raise ValueError("Only confirmed bookings can be marked completed.")
                 g.db.execute("UPDATE bookings SET status='completed' WHERE id=?", (booking_id,))
-                if booking["agent_id"]:
-                    agent_id = booking["agent_id"]
-                    amount = booking["total_paise"]
-                    for _ in range(4):
-                        agent = g.db.execute(
-                            "SELECT id,level,parent_id FROM agents WHERE id=?", (agent_id,)
-                        ).fetchone()
-                        if agent is None:
-                            break
-                        rule = g.db.execute(
-                            "SELECT rate_bps FROM commission_rules WHERE level=?", (agent["level"],)
-                        ).fetchone()
-                        commission = (amount * rule["rate_bps"] // 10000) if rule else 0
-                        if commission:
-                            g.db.execute(
-                                """INSERT OR IGNORE INTO wallet_transactions(agent_id,amount_paise,kind,reference)
-                                   VALUES(?,?,'commission',?)""",
-                                (agent_id, commission, booking["reference"]),
-                            )
-                        if not agent["parent_id"]:
-                            break
-                        agent_id = agent["parent_id"]
+                process_booking_ledger(g.db, booking_id)
 
                 # Dispatch Journey Completion Certificate & Report Email to traveller
                 comp_b = g.db.execute(

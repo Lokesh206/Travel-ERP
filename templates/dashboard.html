@@ -33,8 +33,8 @@
       {% if g.user.role == 'admin' %}
         <div class="workspace-label nav-spacer">ADMINISTRATION</div>
         <a class="nav-link {{ 'active' if view == 'analytics' }}" href="{{ url_for('dashboard', view='analytics') }}"><span>📊</span> Visual Analytics <span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">Live</span></a>
-        <a class="nav-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}"><span>♧</span> Travel partners <span class="nav-count">{{ agents|length }}</span></a>
-        <a class="nav-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}"><span>◈</span> Commission ladder</a>
+        <a class="nav-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}"><span>♧</span> Partner Hierarchy {% if stats.pending_partners %}<span class="nav-count" style="background: #e11d48; color: #ffffff;">{{ stats.pending_partners }} new</span>{% else %}<span class="nav-count">{{ hierarchy_agents|length }}</span>{% endif %}</a>
+        <a class="nav-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}"><span>◈</span> Commission &amp; Ledger</a>
         <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Payouts queue {% if stats.pending_withdrawals %}<span class="nav-count" style="background: #faeae7; color: #a4594c;">{{ stats.pending_withdrawals }}</span>{% endif %}</a>
         <a class="nav-link {{ 'active' if view == 'inquiries' }}" href="{{ url_for('dashboard', view='inquiries') }}"><span>✉</span> Contact inbox {% if stats.new_inquiries %}<span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">{{ stats.new_inquiries }}</span>{% endif %}</a>
         <a class="nav-link {{ 'active' if view == 'emails' }}" href="{{ url_for('dashboard', view='emails') }}"><span>📧</span> Dispatched Emails <span class="nav-count">{{ sent_emails|length }}</span></a>
@@ -114,10 +114,10 @@
         {% if g.user.role == 'admin' %}
           <div class="mobile-drawer-section-label">Administration</div>
           <a class="mobile-drawer-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}">
-            <span class="link-icon">♧</span> Travel Partners <span class="link-count">{{ agents|length }}</span>
+            <span class="link-icon">♧</span> Partner Hierarchy {% if stats.pending_partners %}<span class="link-count" style="background: #e11d48; color: #fff;">{{ stats.pending_partners }} new</span>{% else %}<span class="link-count">{{ hierarchy_agents|length }}</span>{% endif %}
           </a>
           <a class="mobile-drawer-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}">
-            <span class="link-icon">◈</span> Commission Ladder
+            <span class="link-icon">◈</span> Commission &amp; Ledger
           </a>
           <a class="mobile-drawer-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}">
             <span class="link-icon">◉</span> Payouts Queue {% if stats.pending_withdrawals %}<span class="link-count">{{ stats.pending_withdrawals }}</span>{% endif %}
@@ -307,8 +307,8 @@
             <span class="tab-badge">{{ bookings|length }}</span>
           </a>
           <a class="admin-tab-btn" href="{{ url_for('dashboard', view='agents') }}">
-            <span>♧ Partners Network</span>
-            <span class="tab-badge">{{ agents|length }}</span>
+            <span>♧ Partner Hierarchy</span>
+            {% if stats.pending_partners %}<span class="tab-badge" style="background: #e11d48; color: #fff;">{{ stats.pending_partners }} new</span>{% else %}<span class="tab-badge">{{ hierarchy_agents|length }}</span>{% endif %}
           </a>
           <a class="admin-tab-btn" href="{{ url_for('dashboard', view='wallet') }}">
             <span>💰 Payout Queue</span>
@@ -319,7 +319,7 @@
             {% if stats.new_inquiries %}<span class="tab-badge" style="background: #2e5c38; color: #fff;">{{ stats.new_inquiries }}</span>{% endif %}
           </a>
           <a class="admin-tab-btn" href="{{ url_for('dashboard', view='commissions') }}">
-            <span>⚙ Commission Ladder</span>
+            <span>◈ Commission &amp; Ledger</span>
           </a>
           <a class="admin-tab-btn" href="{{ url_for('dashboard', view='audit') }}">
             <span>◷ Audit Trail</span>
@@ -1513,115 +1513,384 @@
     <!-- =================================================================== -->
     <!-- VIEW: AGENTS / PARTNERS -->
     <!-- =================================================================== -->
+    <!-- =================================================================== -->
+    <!-- VIEW: AGENTS (MULTI-TIERED HIERARCHY & TWO-STEP APPROVALS) -->
+    <!-- =================================================================== -->
     {% elif view == 'agents' %}
       <section class="page-heading">
         <div>
-          <span class="eyebrow">FOUR LEVELS. ONE TRAVEL CIRCLE.</span>
-          <h1>People Who <em>Make It Happen.</em></h1>
-          <p class="muted">A clear line of sight across all partner codes, tiers, and referral networks.</p>
+          <span class="eyebrow">TWO-STEP VALIDATION · INFINITE BRANCHING HIERARCHY</span>
+          <h1>Partner Hierarchy &amp; <em>Approvals.</em></h1>
+          <p class="muted">Adjacency list &amp; materialized path model. New recruits are initiated by superiors and explicitly approved by the Owner.</p>
         </div>
       </section>
-      <section class="agent-grid">
-        {% for agent in agents %}
-          <article class="panel agent-card">
-            <div class="agent-card-top">
-              <span class="avatar avatar-large">{{ agent.name[:1] }}</span>
-              <span class="level-badge">LEVEL {{ agent.level }}</span>
-            </div>
-            <h3>{{ agent.name }}</h3>
-            <span class="agent-code">{{ agent.code }}</span>
-            <p>{{ agent.email }}</p>
-            <div class="agent-card-foot">
-              <span>REFERRALS IN TEAM</span>
-              <strong>{{ agent.team_size }}</strong>
-            </div>
-          </article>
-        {% else %}
-          <div class="panel empty-state"><p>No partners found.</p></div>
-        {% endfor %}
+
+      <!-- 1. PENDING RECRUITS SECTION (TWO-STEP OWNER APPROVAL) -->
+      <section class="panel table-panel" style="margin-bottom: 24px; border-left: 4px solid #f5a623;">
+        <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span class="eyebrow" style="color: #d97706;">STRICT TWO-STEP VERIFICATION</span>
+            <h2>Pending Partner Applications ({% if pending_partners %}{{ pending_partners|length }}{% else %}0{% endif %})</h2>
+            <p class="muted" style="font-size: 13px; margin: 2px 0 0;">Applications submitted via Referral Program awaiting explicit Owner approval. Unique referral codes will be generated upon approval.</p>
+          </div>
+          {% if pending_partners %}
+            <span class="badge" style="background: #fef3c7; color: #b45309; padding: 6px 12px; border-radius: 9999px; font-weight: 700; font-size: 12px;">Action Required</span>
+          {% endif %}
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>APPLICANT</th>
+                <th>CONTACT PHONE</th>
+                <th>IMMEDIATE SUPERIOR (SPONSOR)</th>
+                <th>SUBMITTED</th>
+                <th style="text-align: right;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in pending_partners %}
+                <tr>
+                  <td>
+                    <strong>{{ p.name }}</strong><br>
+                    <small style="color: #64748b;">{{ p.email }}</small>
+                  </td>
+                  <td>{{ p.phone or '—' }}</td>
+                  <td>
+                    {% if p.sponsor_code %}
+                      <span class="level-badge" style="background: #e0f2fe; color: #0369a1;">SUPERIOR: {{ p.sponsor_code }}</span><br>
+                      <small style="color: #475569;">{{ p.sponsor_name }} (Tier {{ p.sponsor_depth }})</small>
+                    {% else %}
+                      <span class="level-badge" style="background: #f1f5f9; color: #475569;">Direct Platform Recruit</span>
+                    {% endif %}
+                  </td>
+                  <td><small>{{ p.created_at[:16] }}</small></td>
+                  <td style="text-align: right;">
+                    <div style="display: inline-flex; gap: 8px;">
+                      <form method="post" action="{{ url_for('approve_partner', agent_id=p.id) }}" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="button button-small" style="background: #095ec2; color: #fff; border: none; padding: 6px 14px; border-radius: 9999px; font-weight: 700; cursor: pointer;">✓ Approve &amp; Issue Code</button>
+                      </form>
+                      <form method="post" action="{{ url_for('reject_partner', agent_id=p.id) }}" style="display: inline;" onsubmit="return confirm('Reject this application?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="button button-small" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 9999px; font-weight: 600; cursor: pointer;">✗ Reject</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="5" class="empty-cell" style="text-align: center; padding: 24px; color: #64748b;">
+                    ✓ All partner applications are up to date. New recruits registering via the Referral Program will appear here for Owner approval.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. ACTIVE AGENCY TREE & MATERIALIZED PATH HIERARCHY -->
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">INFINITE BRANCHING AGENCY TREE</span>
+            <h2>Active Travel Agency Hierarchy ({{ hierarchy_agents|length }} Partners)</h2>
+            <p class="muted" style="font-size: 13px; margin: 2px 0 0;">Materialized paths (e.g. /1/2/4/) enable O(1) ancestor lookup, multi-tier downline queries, and infinite depth branching.</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>PARTNER NAME</th>
+                <th>UNIQUE REFERRAL CODE</th>
+                <th>HIERARCHY TIER</th>
+                <th>MATERIALIZED PATH</th>
+                <th>IMMEDIATE SUPERIOR</th>
+                <th>DIRECT RECRUITS</th>
+                <th>TOTAL DOWNLINE</th>
+                <th>LIFETIME COMMISSIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in hierarchy_agents %}
+                <tr>
+                  <td>
+                    <strong>{{ a.name }}</strong><br>
+                    <small style="color: #64748b;">{{ a.email }}</small>
+                  </td>
+                  <td>
+                    <code style="background: #eef2ff; color: #3730a3; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 12.5px;">{{ a.code }}</code>
+                  </td>
+                  <td>
+                    <span class="level-badge" style="background: {% if a.depth == 1 %}#dbeafe; color: #1e40af;{% elif a.depth == 2 %}#e0e7ff; color: #3730a3;{% elif a.depth <= 4 %}#fef3c7; color: #92400e;{% else %}#f1f5f9; color: #475569;{% endif %}">
+                      TIER {{ a.depth }}
+                    </span>
+                  </td>
+                  <td>
+                    <small style="font-family: monospace; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">{{ a.path }}</small>
+                  </td>
+                  <td>
+                    {% if a.parent_code %}
+                      <span style="font-size: 13px; font-weight: 600;">{{ a.parent_name }}</span><br>
+                      <small style="color: #64748b;">({{ a.parent_code }})</small>
+                    {% else %}
+                      <em style="color: #095ec2; font-weight: 600; font-size: 12.5px;">Platform Owner Root</em>
+                    {% endif %}
+                  </td>
+                  <td><strong>{{ a.direct_recruits }}</strong></td>
+                  <td><strong>{{ a.total_downline }}</strong></td>
+                  <td>
+                    <strong style="color: #047857;">{{ (a.total_commission_earned / 100)|inr }}</strong>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="8" class="empty-cell">No active partners found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </section>
 
     <!-- =================================================================== -->
     <!-- VIEW: COMMISSIONS -->
     <!-- =================================================================== -->
+    <!-- =================================================================== -->
+    <!-- VIEW: COMMISSIONS & BALANCED DOUBLE-ENTRY LEDGER -->
+    <!-- =================================================================== -->
     {% elif view == 'commissions' %}
       <section class="page-heading">
         <div>
-          <span class="eyebrow">CLEAR RULES. TRUSTED REWARDS.</span>
-          <h1>Commission <em>Ladder.</em></h1>
-          <p class="muted">Set the rates for each referral level. Rates are automatically credited to the wallet when a confirmed booking is completed.</p>
+          <span class="eyebrow">BALANCED DOUBLE-ENTRY LEDGER ENGINE</span>
+          <h1>Commission Architecture &amp; <em>Financial Ledger.</em></h1>
+          <p class="muted">Guaranteed flat 10% Owner cut, flat 10% Booking Agent cut, cascading overrides up to depth 4, and hard limit at Level 5.</p>
         </div>
       </section>
-      <section class="content-grid commission-grid">
-        <div class="panel">
-          <div class="panel-heading">
-            <div>
-              <span class="eyebrow">YOUR COMMISSION LADDER</span>
-              <h2>Share of each completed trip</h2>
-            </div>
-          </div>
-          <form method="post" action="{{ url_for('update_commissions') }}" class="commission-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            {% for rule in rules %}
-              <label class="commission-row">
-                <span class="level-badge">LEVEL {{ rule.level }}</span>
-                <span>{{ ['Travel circle starter','Growing together','Trusted guide','Circle founder'][rule.level - 1] }}</span>
-                <span class="percent-field">
-                  <input name="level_{{ rule.level }}" type="number" min="0" max="100" step="0.01" value="{{ '%.2f'|format(rule.rate_bps / 100) }}" required>
-                  <b>%</b>
-                </span>
-              </label>
-            {% endfor %}
-            <div class="commission-note">Commissions are credited atomic upon completing a trip. Changes here apply to upcoming completions.</div>
-            <button class="button button-dark" type="submit">Save commission rules ↗</button>
-          </form>
-        </div>
 
-        <div class="panel illustration-panel">
-          <span class="illustration-spark">✳</span>
-          <span class="eyebrow">HOW IT ADDS UP</span>
-          <h2>Every step of the journey counts.</h2>
-          <p>When an admin marks a referred booking complete, each eligible agent in the referral chain earns their configured percentage.</p>
-          <div class="commission-example">
-            <span>EXAMPLE · ₹25,000 BOOKING</span>
-            {% for rule in rules %}
-              <div>
-                <span>Level {{ rule.level }}</span>
-                <strong>{{ (2500000 * rule.rate_bps / 10000 / 100)|inr }}</strong>
-              </div>
-            {% endfor %}
+      <!-- Commission Rules Breakdown Cards -->
+      <section class="content-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="panel" style="border-top: 4px solid #095ec2;">
+          <span class="eyebrow" style="color: #095ec2;">GUARANTEED FLAT CUT</span>
+          <h3 style="margin: 6px 0 8px; font-size: 18px;">Platform Owner: 10%</h3>
+          <p style="font-size: 13px; color: #64748b; margin: 0;">Guaranteed flat ten percent cut of every completed booking credited to the Platform Owner Commission liability account, regardless of booking depth.</p>
+        </div>
+        <div class="panel" style="border-top: 4px solid #059669;">
+          <span class="eyebrow" style="color: #059669;">DIRECT PRODUCER REWARD</span>
+          <h3 style="margin: 6px 0 8px; font-size: 18px;">Booking Agent: 10%</h3>
+          <p style="font-size: 13px; color: #64748b; margin: 0;">Guaranteed flat ten percent cut credited directly to the booking partner's wallet account, regardless of their position or depth in the hierarchy.</p>
+        </div>
+        <div class="panel" style="border-top: 4px solid #f5a623;">
+          <span class="eyebrow" style="color: #d97706;">CASCADING OVERRIDES</span>
+          <h3 style="margin: 6px 0 8px; font-size: 18px;">Levels 1 to 4: 2% · 3% · 4%</h3>
+          <p style="font-size: 13px; color: #64748b; margin: 0;">Ancestors receive configured percentage shares based on distance from the booking: Distance 1 = 2%, Distance 2 = 3%, Distance 3 = 4%.</p>
+        </div>
+        <div class="panel" style="border-top: 4px solid #dc2626;">
+          <span class="eyebrow" style="color: #dc2626;">DEPTH BOUNDARY CONSTRAINT</span>
+          <h3 style="margin: 6px 0 8px; font-size: 18px;">Level 5 Hard Limit: 0% Overrides</h3>
+          <p style="font-size: 13px; color: #64748b; margin: 0;">Enforces a hard limit at level five; beyond depth four, all intermediate overrides drop to zero, ensuring only Owner (10%) and Booking Agent (10%) receive cuts.</p>
+        </div>
+      </section>
+
+      <!-- Live Double-Entry Ledger Transactions Table -->
+      <section class="panel table-panel">
+        <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span class="eyebrow">DOUBLE-ENTRY LEDGER AUDIT</span>
+            <h2>Atomic Ledger Transactions ({% if ledger_transactions_list %}{{ ledger_transactions_list|length }}{% else %}0{% endif %} Recorded)</h2>
+            <p class="muted" style="font-size: 13px; margin: 2px 0 0;">All transactions are processed inside atomic database transactions guaranteeing exact debit = credit balance.</p>
           </div>
+          <span class="badge" style="background: #eef7eb; color: #2d6b3c; padding: 4px 10px; border-radius: 9999px; font-weight: 700; font-size: 12px;">Balanced 100%</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>TRANSACTION REF</th>
+                <th>BOOKING REF</th>
+                <th>GUEST NAME</th>
+                <th>BOOKING TOTAL</th>
+                <th>LEDGER LINES</th>
+                <th>STATUS</th>
+                <th>TIMESTAMP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tx in ledger_transactions_list %}
+                <tr>
+                  <td><code>{{ tx.tx_ref }}</code></td>
+                  <td><strong>{{ tx.booking_ref }}</strong></td>
+                  <td>{{ tx.guest_name or 'Traveller' }}</td>
+                  <td><strong>{{ (tx.total_paise / 100)|inr }}</strong></td>
+                  <td>{{ tx.entries_count }} entries</td>
+                  <td>
+                    <span class="level-badge" style="background: #ecfdf5; color: #047857; font-weight: 700;">Balanced (Dr = Cr)</span>
+                  </td>
+                  <td><small>{{ tx.created_at[:16] }}</small></td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="7" class="empty-cell" style="text-align: center; padding: 24px; color: #64748b;">
+                    No ledger transactions recorded yet. When a confirmed booking is settled, balanced double-entry ledger lines are posted here in real-time.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </section>
 
     <!-- =================================================================== -->
     <!-- VIEW: TEAM (AGENT DOWNLINE) -->
     <!-- =================================================================== -->
+    <!-- =================================================================== -->
+    <!-- VIEW: TEAM (PARTNER HIERARCHY & DOWNLINE PORTAL) -->
+    <!-- =================================================================== -->
     {% elif view == 'team' %}
       <section class="page-heading">
         <div>
-          <span class="eyebrow">YOUR PEOPLE, YOUR JOURNEY</span>
-          <h1>Good things <em>travel together.</em></h1>
-          <p class="muted">Your referral circle, a few steps at a time.</p>
+          <span class="eyebrow">YOUR AGENCY CIRCLE · MATERIALIZED PATH</span>
+          <h1>My Partner Hierarchy &amp; <em>Downline.</em></h1>
+          <p class="muted">Track your recruited travel partners, hierarchy tier, and cascading overrides in real-time.</p>
         </div>
       </section>
-      <section class="panel table-panel">
+
+      <!-- Partner Header Card with Unique Referral Code -->
+      {% if my_agent %}
+        <section class="panel" style="background: linear-gradient(135deg, #095ec2 0%, #003e8a 100%); color: #ffffff; padding: 24px 28px; border-radius: 16px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div>
+              <span class="badge" style="background: rgba(255,255,255,0.2); color: #ffffff; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 800;">
+                ACTIVE PARTNER · TIER {{ my_agent.depth }}
+              </span>
+              <h2 style="color: #ffffff; margin: 8px 0 4px; font-size: 24px;">Unique Referral ID: <span style="color: #f5a623;">{{ my_agent.code }}</span></h2>
+              <p style="margin: 0; font-size: 13.5px; color: #cbd5e1;">
+                {% if my_sponsor %}
+                  Immediate Superior: <strong>{{ my_sponsor.name }}</strong> ({{ my_sponsor.code }}) · Tier {{ my_sponsor.depth }}
+                {% else %}
+                  Immediate Superior: <strong>Platform Owner Direct</strong>
+                {% endif %}
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button type="button" onclick="navigator.clipboard.writeText('{{ my_agent.code }}'); alert('Referral ID {{ my_agent.code }} copied to clipboard!');" class="button" style="background: #f5a623; color: #0f2942; font-weight: 800; border: none; padding: 10px 18px; border-radius: 9999px; cursor: pointer;">
+                📋 Copy Referral ID
+              </button>
+              <a href="{{ url_for('referral_program') }}?ref={{ my_agent.code }}#join-partner" target="_blank" class="button" style="background: rgba(255,255,255,0.18); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); font-weight: 700; padding: 10px 18px; border-radius: 9999px; text-decoration: none;">
+                Invite Recruits ↗
+              </a>
+            </div>
+          </div>
+        </section>
+      {% endif %}
+
+      <!-- Downline Recruits Table -->
+      <section class="panel table-panel" style="margin-bottom: 24px;">
         <div class="panel-heading">
-          <div><span class="eyebrow">YOUR DOWNLINE</span><h2>{{ team|length }} travel partners</h2></div>
+          <div>
+            <span class="eyebrow">INFINITE BRANCHING DOWNLINE</span>
+            <h2>My Recruited Travel Partners ({% if downline_recruits %}{{ downline_recruits|length }}{% else %}0{% endif %})</h2>
+            <p class="muted" style="font-size: 13px; margin: 2px 0 0;">All partners in your referral branch. You receive cascading overrides from bookings generated up to depth 4!</p>
+          </div>
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>NAME</th><th>PARTNER ID</th><th>LEVEL</th><th>CONNECTED</th></tr></thead>
+            <thead>
+              <tr>
+                <th>PARTNER NAME</th>
+                <th>REFERRAL CODE</th>
+                <th>RELATIONSHIP / DISTANCE</th>
+                <th>HIERARCHY TIER</th>
+                <th>DOWNLINE TEAM</th>
+                <th>STATUS</th>
+                <th>JOINED</th>
+              </tr>
+            </thead>
             <tbody>
-              {% for person in team %}
+              {% for rec in downline_recruits %}
                 <tr>
-                  <td><strong>{{ person.name }}</strong></td>
-                  <td>{{ person.code }}</td>
-                  <td><span class="level-badge">LEVEL {{ person.level }}</span></td>
-                  <td>Step {{ person.depth }}</td>
+                  <td>
+                    <strong>{{ rec.name }}</strong><br>
+                    <small style="color: #64748b;">{{ rec.email }}</small>
+                  </td>
+                  <td><code>{{ rec.code }}</code></td>
+                  <td>
+                    {% if rec.relative_distance == 1 %}
+                      <span class="level-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700;">Direct Recruit (Dist 1 · 2% Override)</span>
+                    {% elif rec.relative_distance == 2 %}
+                      <span class="level-badge" style="background: #fef3c7; color: #b45309; font-weight: 700;">Sub-Recruit (Dist 2 · 3% Override)</span>
+                    {% elif rec.relative_distance == 3 %}
+                      <span class="level-badge" style="background: #fae8ff; color: #86198f; font-weight: 700;">Sub-Recruit (Dist 3 · 4% Override)</span>
+                    {% else %}
+                      <span class="level-badge" style="background: #f1f5f9; color: #475569;">Extended Downline (Dist {{ rec.relative_distance }})</span>
+                    {% endif %}
+                  </td>
+                  <td><span class="level-badge">Tier {{ rec.depth }}</span></td>
+                  <td><strong>{{ rec.child_recruits }}</strong> members</td>
+                  <td>
+                    <span class="badge" style="background: {% if rec.status == 'active' %}#dcfce7; color: #15803d;{% else %}#fef3c7; color: #b45309;{% endif %} padding: 3px 8px; border-radius: 9999px; font-size: 11px; font-weight: 700;">
+                      {{ rec.status.title() }}
+                    </span>
+                  </td>
+                  <td><small>{{ rec.created_at[:10] }}</small></td>
                 </tr>
               {% else %}
-                <tr><td colspan="4" class="empty-cell">Your travel circle is just getting started. Share your partner ID: <strong>{{ my_agent.code if my_agent else '' }}</strong></td></tr>
+                <tr>
+                  <td colspan="7" class="empty-cell" style="text-align: center; padding: 24px;">
+                    Your referral downline is ready to grow. Share your unique code <strong>{{ my_agent.code if my_agent else '' }}</strong> to invite new partners and earn cascading overrides!
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Partner Ledger Commission Credits -->
+      <section class="panel table-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">LEDGER CREDITS</span>
+            <h2>My Commission &amp; Override History ({% if ledger_earnings %}{{ ledger_earnings|length }}{% else %}0{% endif %})</h2>
+            <p class="muted" style="font-size: 13px; margin: 2px 0 0;">Itemized ledger entries credited to your partner wallet from direct bookings and cascading team overrides.</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>TRANSACTION REF</th>
+                <th>BOOKING REF</th>
+                <th>COMMISSION TYPE</th>
+                <th>DESCRIPTION</th>
+                <th>AMOUNT CREDITED</th>
+                <th>DATE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for le in ledger_earnings %}
+                <tr>
+                  <td><code>{{ le.tx_ref }}</code></td>
+                  <td><strong>{{ le.booking_ref }}</strong></td>
+                  <td>
+                    {% if le.entry_type == 'booking_agent_cut' %}
+                      <span class="level-badge" style="background: #dcfce7; color: #15803d; font-weight: 700;">Direct Cut (10%)</span>
+                    {% else %}
+                      <span class="level-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700;">Cascade Override</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ le.description }}</td>
+                  <td><strong style="color: #047857;">{{ (le.credit_paise / 100)|inr }}</strong></td>
+                  <td><small>{{ le.created_at[:16] }}</small></td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6" class="empty-cell" style="text-align: center; padding: 20px;">
+                    No commission ledger entries yet. Your 10% direct cuts and cascading overrides will appear here as bookings are settled.
+                  </td>
+                </tr>
               {% endfor %}
             </tbody>
           </table>
@@ -1671,7 +1940,7 @@
                   <td>{{ inquiry.created_at }}</td>
                   <td><span class="status-badge status-{{ 'pending' if inquiry.status == 'new' else 'completed' }}">{{ inquiry.status|title }}</span></td>
                   <td class="action-cell">
-                    <a class="mini-action" href="mailto:{{ inquiry.email }}?subject=Re: {{ inquiry.subject }} - Wanderwise Travel Desk" title="Reply via email">
+                    <a class="mini-action" href="mailto:{{ inquiry.email }}?subject=Re: {{ inquiry.subject }} - TravelEasy Travel Desk" title="Reply via email">
                       Email Reply ✉
                     </a>
                     {% if inquiry.status == 'new' %}
@@ -2114,7 +2383,7 @@
                   </tr>
                   <tr style="background: #eef7eb;">
                     <td style="padding: 6px 4px;"><strong>Platform</strong></td>
-                    <td style="padding: 6px 4px;">Wanderwise Gross Retained Margin</td>
+                    <td style="padding: 6px 4px;">TravelEasy Gross Retained Margin</td>
                     <td style="padding: 6px 4px;">9,150 bps</td>
                     <td style="padding: 6px 4px;"><strong style="color: #25422e;">91.5%</strong></td>
                   </tr>

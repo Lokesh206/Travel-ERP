@@ -629,6 +629,174 @@
       .ref-footer-container { grid-template-columns: 1fr; }
       .ref-footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
     }
+    /* Partner Application Modal & Hierarchy Terms */
+    .partner-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 41, 66, 0.78);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .partner-modal-card {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 680px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .partner-modal-header {
+      background: linear-gradient(135deg, #095ec2 0%, #003e8a 100%);
+      color: #ffffff;
+      padding: 24px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .partner-modal-header h3 {
+      margin: 8px 0 4px;
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .partner-modal-header p {
+      margin: 0;
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.4;
+    }
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #ffffff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .partner-apply-form {
+      padding: 24px 28px;
+    }
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    .form-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-field-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .form-field-group label .req {
+      color: #e11d48;
+    }
+    .form-field-group label .optional {
+      font-weight: 400;
+      color: #64748b;
+      font-size: 11px;
+    }
+    .form-field-group input {
+      padding: 10px 14px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #0f2942;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-field-group input:focus {
+      outline: none;
+      border-color: #095ec2;
+      box-shadow: 0 0 0 3px rgba(9, 94, 194, 0.15);
+    }
+    .field-hint {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.3;
+    }
+    .partner-terms-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin: 14px 0 20px;
+      font-size: 12.5px;
+      color: #334155;
+    }
+    .partner-terms-box p {
+      margin: 0 0 6px;
+      font-weight: 700;
+      color: #0f2942;
+    }
+    .partner-terms-box ul {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.5;
+    }
+    .modal-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+      border: none;
+      padding: 11px 20px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+    }
+    .btn-submit-apply {
+      background: linear-gradient(135deg, #f5a623 0%, #e09415 100%);
+      color: #0f2942;
+      border: none;
+      padding: 12px 26px;
+      border-radius: 9999px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(245, 166, 35, 0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-submit-apply:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(245, 166, 35, 0.45);
+    }
+    @media (max-width: 640px) {
+      .form-row-2 { grid-template-columns: 1fr; gap: 12px; }
+      .modal-actions-row { flex-direction: column; width: 100%; }
+      .btn-cancel, .btn-submit-apply { width: 100%; text-align: center; }
+    }
   </style>
 </head>
 <body>
@@ -673,8 +841,8 @@
           Turn your travel network into an opportunity. Refer friends, family and fellow travellers to TravelEasy and grow with every successful journey.
         </p>
         <div class="ref-hero-cta-group">
-          <!-- Button links directly to login page -->
-          <a class="btn-gold" href="{{ url_for('login') }}?role=agent">
+          <!-- Button opens partner application modal with two-step validation -->
+          <a class="btn-gold" href="#join-partner" onclick="openPartnerModal(event)">
             Join the Referral Program &rarr;
           </a>
           <a class="btn-outline-white" href="#how-it-works">
@@ -857,8 +1025,8 @@
         <h3>Ready to share your next journey?</h3>
         <p>Join TravelEasy's Referral Program and start building your referral journey today.</p>
       </div>
-      <!-- Button links directly to login page -->
-      <a class="btn-gold" href="{{ url_for('login') }}?role=agent">
+      <!-- Button opens partner application modal with two-step validation -->
+      <a class="btn-gold" href="#join-partner" onclick="openPartnerModal(event)">
         Join Now &rarr;
       </a>
     </div>
@@ -940,5 +1108,98 @@
     </div>
   </footer>
 
+  <!-- Partner Registration Application Modal (Strict Two-Step Validation) -->
+  <div id="partner-apply-modal" class="partner-modal-backdrop" style="display: none;" onclick="if(event.target===this)closePartnerModal()">
+    <div class="partner-modal-card" id="join-partner">
+      <div class="partner-modal-header">
+        <div>
+          <span class="badge-premium" style="background: rgba(255,255,255,0.2); color: #ffffff; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 800;">TRAVEL AGENCY REFERRAL HIERARCHY</span>
+          <h3 style="margin: 8px 0 4px; font-size: 22px; font-weight: 800; color: #ffffff;">Apply to Join the Partner Program</h3>
+          <p style="margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.4;">Strict Two-Step Validation: New recruits are initiated by their immediate superior and explicitly reviewed and approved by the Owner.</p>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closePartnerModal()" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form method="post" action="{{ url_for('partner_apply') }}" class="partner-apply-form" id="partner-apply-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-row-2">
+          <div class="form-field-group">
+            <label for="apply-name">Your Full Name <span class="req">*</span></label>
+            <input type="text" id="apply-name" name="name" required placeholder="e.g. Rahul Sharma" maxlength="80">
+          </div>
+          <div class="form-field-group">
+            <label for="apply-email">Email Address <span class="req">*</span></label>
+            <input type="email" id="apply-email" name="email" required placeholder="e.g. rahul@example.com" maxlength="254">
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-field-group">
+            <label for="apply-phone">Contact Phone Number <span class="req">*</span></label>
+            <input type="tel" id="apply-phone" name="phone" required placeholder="e.g. +91 98765 43210" maxlength="20">
+          </div>
+          <div class="form-field-group">
+            <label for="apply-sponsor">Referred Person Code (Superior Referral ID) <span class="optional">(optional)</span></label>
+            <input type="text" id="apply-sponsor" name="sponsor_code" placeholder="e.g. WW-1001 or TE-1001" value="{{ request.args.get('ref', '') }}">
+            <small class="field-hint">Enter your immediate superior's code, or leave blank if direct under Owner.</small>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-field-group">
+            <label for="apply-password">Create Login Password <span class="req">*</span></label>
+            <input type="password" id="apply-password" name="password" required minlength="8" placeholder="At least 8 characters">
+            <small class="field-hint">Remember this password: you will sign in with your generated Referral ID and this password.</small>
+          </div>
+          <div class="form-field-group">
+            <label for="apply-password-confirm">Confirm Password <span class="req">*</span></label>
+            <input type="password" id="apply-password-confirm" name="password_confirm" required minlength="8" placeholder="Re-enter password">
+          </div>
+        </div>
+
+        <div class="partner-terms-box">
+          <p><strong>Commission Engine &amp; Ledger Terms:</strong></p>
+          <ul>
+            <li>Guaranteed <strong>flat 10% cut</strong> for Booking Agent &amp; <strong>flat 10% cut</strong> for Owner on every booking.</li>
+            <li>Cascading overrides up to depth 4 based on distance: Dist 1: <strong>2%</strong>, Dist 2: <strong>3%</strong>, Dist 3: <strong>4%</strong>.</li>
+            <li>Level 5 hard limit: Beyond depth 4, intermediate overrides drop to zero.</li>
+            <li>Upon Owner approval, your unique Referral Code will be generated and you can log in immediately.</li>
+          </ul>
+        </div>
+
+        <div class="modal-actions-row">
+          <button type="button" class="btn-cancel" onclick="closePartnerModal()">Cancel</button>
+          <button type="submit" class="btn-submit-apply">Submit Application for Owner Approval &rarr;</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openPartnerModal(e) {
+      if (e) e.preventDefault();
+      var modal = document.getElementById('partner-apply-modal');
+      if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      }
+    }
+    function closePartnerModal() {
+      var modal = document.getElementById('partner-apply-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+      }
+    }
+    // Auto-open if #join-partner or ?apply=1 or ?ref= in URL
+    document.addEventListener('DOMContentLoaded', function() {
+      var hash = window.location.hash;
+      var params = new URLSearchParams(window.location.search);
+      if (hash === '#join-partner' || params.has('apply') || params.has('ref')) {
+        openPartnerModal();
+      }
+    });
+  </script>
 </body>
 </html>
