@@ -1008,10 +1008,10 @@ def partner_apply() -> Any:
             audit("Partner recruit application initiated", "agent", agent_id)
 
         # EXIT THE REGISTRATION LOOP CLEANLY:
-        # Display clear confirmation banner on home page with applicant instructions
+        # Redirect to login page with clear flash instructions (keeps public website clean)
         bank_info = f" Bank Payout: {bank_name}." if bank_name else ""
         flash(f"Application Submitted Successfully! Partner application for {name} (Class: L{depth} Agent) is now in the Owner Review Queue (Pending Owner Approval).{bank_info} Once approved by the Platform Owner, your unique Referral Code (TE-L{depth}-XXXX) will be generated and you will be able to log in with your email/referral ID.", "success")
-        return redirect(url_for("public_home", application_submitted="1"))
+        return redirect(url_for("login"))
     except sqlite3.IntegrityError:
         flash("We couldn't process your application. Please check your details and try again.", "error")
         return redirect(url_for("partner_register_page", ref=sponsor_code))
@@ -1262,7 +1262,7 @@ def submit_review(booking_id: int) -> Any:
 @app.get("/bookings/<string:reference>/voucher")
 def booking_voucher(reference: str) -> Any:
     booking = g.db.execute(
-        """SELECT b.*, p.title, p.destination, p.duration, p.category, p.image_file,
+        """SELECT b.*, p.title, p.destination, p.duration, p.category, p.image_file, p.price_paise,
                   d.stay_type, d.meal_plan, d.transport, d.inclusions, d.itinerary,
                   u.name AS customer_name, u.email AS customer_email,
                   a.code AS agent_code, au.name AS agent_name
@@ -1626,15 +1626,27 @@ def create_booking() -> Any:
             )
             if reservation.rowcount != 1:
                 raise ValueError("Those seats have just been booked. Please choose another date or package.")
-            reference = f"WW-{secrets.token_hex(4).upper()}"
+            reference = f"TE-{secrets.token_hex(4).upper()}"
             transport_delta = 0
-            if "flight" in transport_mode.lower():
-                transport_delta = 450000
-            elif "volvo" in transport_mode.lower():
-                transport_delta = -100000
-            elif any(k in transport_mode.lower() for k in ["skip", "no transport", "self", "none", "not required"]):
+            mode_lower = transport_mode.lower()
+            if any(k in mode_lower for k in ["skip", "self", "no transport", "none", "not required", "without"]):
                 transport_delta = 0
-                transport_mode = "No Transport Required (Self-Arranged)"
+                transport_mode = "Skip Vehicle / Self-Arranged (₹0)"
+            elif "tempo" in mode_lower or "traveller" in mode_lower:
+                transport_delta = 450000
+                transport_mode = "Executive Tempo Traveller (12-Seater)"
+            elif "suv" in mode_lower or "innova" in mode_lower or "ertiga" in mode_lower:
+                transport_delta = 300000
+                transport_mode = "Premium SUV (Innova Crysta)"
+            elif "sedan" in mode_lower or "dzire" in mode_lower or "etios" in mode_lower:
+                transport_delta = 150000
+                transport_mode = "Chauffeur Sedan (Dzire / Etios)"
+            elif "flight" in mode_lower:
+                transport_delta = 550000
+                transport_mode = "Flight Transfers (Economy)"
+            elif "rail" in mode_lower or "vande" in mode_lower:
+                transport_delta = 0
+                transport_mode = "Vande Bharat Express / AC Rail"
 
             total_amount = max(50000, (package["price_paise"] + transport_delta) * travellers)
 

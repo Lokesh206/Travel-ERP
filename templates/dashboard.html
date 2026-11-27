@@ -685,9 +685,9 @@
 
       {% elif g.user.role == 'agent' %}
         <!-- DEDICATED PARTNER COMMAND OVERVIEW -->
-        <section class="welcome-row" style="background: linear-gradient(135deg, #095ec2 0%, #003e8a 100%); color: #ffffff; border-radius: 18px; padding: 26px 30px; margin-bottom: 24px; box-shadow: 0 10px 25px -5px rgba(9, 94, 194, 0.25);">
-          <div style="flex: 1;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <section class="welcome-row agent-welcome-banner" style="background: linear-gradient(135deg, #095ec2 0%, #003e8a 100%); color: #ffffff; border-radius: 18px; padding: 24px 28px; margin-bottom: 24px; box-shadow: 0 10px 25px -5px rgba(9, 94, 194, 0.25); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+          <div style="flex: 1 1 540px; min-width: 280px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
               {% set my_class = classify_agent(my_agent.code, my_agent.depth) %}
               <span class="badge" style="background: rgba(255,255,255,0.22); color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">
                 ACCREDITED TRAVEL PARTNER · CLASS: {{ my_class.class_name }} · LEVEL {{ my_agent.depth }} PARTNER (TIER {{ my_agent.depth }})
@@ -699,37 +699,37 @@
               Your TravelEasy Partner Command Desk. You earn guaranteed flat <strong>10% direct booking commission</strong>, cascading overrides up to depth 4, and instant payouts to your bank account.
             </p>
             
-            <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: rgba(0,0,0,0.2); padding: 10px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);">
-              <div>
+            <div style="display: flex; align-items: stretch; gap: 12px; flex-wrap: wrap; margin-top: 12px;">
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.18); padding: 8px 14px; border-radius: 10px; flex: 1 1 180px;">
                 <span style="font-size: 10px; color: #cbd5e1; text-transform: uppercase; font-weight: 700; display: block;">YOUR LEVEL REFERRAL CODE</span>
                 <span style="font-family: monospace; font-size: 18px; font-weight: 800; color: #f5a623;">{{ my_agent.code }}</span>
                 <span style="background: rgba(255,255,255,0.2); color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; margin-left: 6px;">{{ my_class.class_name }}</span>
               </div>
-              <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 14px;">
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.18); padding: 8px 14px; border-radius: 10px; flex: 1 1 180px;">
                 <span style="font-size: 10px; color: #cbd5e1; text-transform: uppercase; font-weight: 700; display: block;">IMMEDIATE SUPERIOR</span>
-                <span style="font-size: 13px; font-weight: 700; color: #ffffff;">
+                <span style="font-size: 13px; font-weight: 700; color: #ffffff; display: block; margin-top: 2px;">
                   {% if my_sponsor %}{{ my_sponsor.name }} ({{ my_sponsor.code }}) · L{{ my_sponsor.depth }}{% else %}Platform Owner Direct{% endif %}
                 </span>
               </div>
-              <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 14px;">
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.18); padding: 8px 14px; border-radius: 10px; flex: 1 1 180px;">
                 <span style="font-size: 10px; color: #cbd5e1; text-transform: uppercase; font-weight: 700; display: block;">HIERARCHY PATH</span>
-                <span style="font-family: monospace; font-size: 12px; color: #e2e8f0;">{{ my_agent.path }}</span>
+                <span style="font-family: monospace; font-size: 12px; color: #e2e8f0; display: block; margin-top: 4px;">{{ my_agent.path }}</span>
               </div>
             </div>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 10px; align-self: center;">
-            <button type="button" onclick="navigator.clipboard.writeText('{{ my_agent.code }}'); alert('Referral ID {{ my_agent.code }} copied to clipboard!');" class="button" style="background: #f5a623; color: #0f2942; font-weight: 800; border: none; padding: 10px 18px; border-radius: 9999px; cursor: pointer; text-align: center;">
+          <div style="display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; min-width: 200px;">
+            <button type="button" onclick="navigator.clipboard.writeText('{{ my_agent.code }}'); alert('Referral ID {{ my_agent.code }} copied to clipboard!');" class="button" style="background: #f5a623; color: #0f2942; font-weight: 800; border: none; padding: 10px 18px; border-radius: 9999px; cursor: pointer; text-align: center; box-shadow: 0 4px 12px rgba(245,166,35,0.35); white-space: nowrap;">
               📋 Copy Referral Code
             </button>
-            <button type="button" onclick="navigator.clipboard.writeText('{{ url_for('public_home', _external=True) }}?ref={{ my_agent.code }}'); alert('Public Referral Link copied to clipboard!');" class="button" style="background: rgba(255,255,255,0.18); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); font-weight: 700; padding: 9px 18px; border-radius: 9999px; cursor: pointer; text-align: center;">
+            <button type="button" onclick="navigator.clipboard.writeText('{{ url_for('public_home', _external=True) }}?ref={{ my_agent.code }}'); alert('Public Referral Link copied to clipboard!');" class="button" style="background: rgba(255,255,255,0.18); color: #ffffff; border: 1px solid rgba(255,255,255,0.3); font-weight: 700; padding: 9px 18px; border-radius: 9999px; cursor: pointer; text-align: center; white-space: nowrap;">
               🔗 Copy Shareable Link
             </button>
           </div>
         </section>
 
         <!-- 4 PARTNER FINANCIAL & OPERATIONAL STATS -->
-        <section class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+        <section class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 24px;">
           <article class="stat-card" style="border-top: 4px solid #059669;">
             <div class="stat-top">
               <span>AVAILABLE IN WALLET</span>
@@ -774,7 +774,7 @@
         </section>
 
         <!-- PARTNER OVERVIEW TWO-COLUMN SPLIT -->
-        <section class="content-grid" style="grid-template-columns: 1.5fr 1fr; gap: 24px; margin-bottom: 28px;">
+        <section class="content-grid partner-split-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; margin-bottom: 28px;">
           <!-- Left: My Client Bookings & Direct Commission -->
           <div class="panel table-panel">
             <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
@@ -849,7 +849,7 @@
                 <input name="amount" type="number" step="0.01" min="1" max="{{ '%.2f'|format(available_balance / 100) }}" value="{{ '%.2f'|format(available_balance / 100) if available_balance > 0 else '0.00' }}" required style="font-size: 16px; font-weight: 800; color: #047857;">
               </label>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 8px;">
                 <label style="font-size: 11.5px; font-weight: 700;">Bank Name
                   <input name="bank_name" type="text" placeholder="e.g. State Bank of India" value="{{ my_agent.bank_name or '' }}" required style="font-size: 12px;">
                 </label>
@@ -858,7 +858,7 @@
                 </label>
               </div>
 
-              <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 8px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 8px;">
                 <label style="font-size: 11.5px; font-weight: 700;">Account Number
                   <input name="bank_account_number" type="text" placeholder="e.g. 50100234918231" value="{{ my_agent.bank_account_number or '' }}" required style="font-size: 12px;">
                 </label>
@@ -891,7 +891,7 @@
         </section>
 
         <!-- WALLET ITEMISED COMMISSIONS & DOWNLINE CIRCLE -->
-        <section class="content-grid" style="grid-template-columns: 1.2fr 1fr; gap: 24px; margin-bottom: 28px;">
+        <section class="content-grid partner-split-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; margin-bottom: 28px;">
           <!-- Itemised Wallet Credits -->
           <div class="panel">
             <div class="panel-heading">
@@ -1503,13 +1503,13 @@
               <input type="number" name="travellers" id="agent-guests-input" min="1" max="20" value="2" required style="height: 40px; width: 100%;" oninput="onAgentGuestsChange()">
             </div>
             <div>
-              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Transportation Mode</label>
+              <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Transportation &amp; Vehicle</label>
               <select name="transport_mode" id="agent-transport-select" style="height: 40px; width: 100%; border-radius: 6px; border: 1px solid #d4ded6;" onchange="onAgentGuestsChange()">
-                <option value="Private AC Sedan / SUV" data-delta="0">🚗 Private AC Sedan / SUV (Included ₹0)</option>
-                <option value="Vande Bharat Express / AC Rail" data-delta="0">🚆 Vande Bharat / AC Rail (Included ₹0)</option>
-                <option value="Flight Express Add-on" data-delta="4500">✈️ Flight Express Add-on (+₹4,500/pax)</option>
-                <option value="Luxury Volvo AC Sleeper" data-delta="-1000">🚌 Luxury Volvo AC Sleeper (Save ₹1,000/pax)</option>
-                <option value="No Transport Required (Self-Arranged)" data-delta="0">🚶 No Transport Required (Skip / Self-Arranged · ₹0)</option>
+                <option value="Skip Vehicle / Self-Arranged" data-delta="0">🚶 Skip Vehicle / Self-Arranged (₹0)</option>
+                <option value="Chauffeur Sedan (Dzire / Etios)" data-delta="1500" selected>🚗 Chauffeur Sedan (Dzire / Etios) (+₹1,500/guest)</option>
+                <option value="Premium SUV (Innova Crysta)" data-delta="3000">🚙 Premium SUV (Innova Crysta) (+₹3,000/guest)</option>
+                <option value="Executive Tempo Traveller (12-Seater)" data-delta="4500">🚐 Executive Tempo Traveller (12-Seater) (+₹4,500/guest)</option>
+                <option value="Flight Transfers (Economy)" data-delta="5500">✈️ Flight Transfers (Economy) (+₹5,500/guest)</option>
               </select>
             </div>
             <div>
