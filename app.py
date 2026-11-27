@@ -363,16 +363,16 @@ def initialize_db() -> None:
                 )
                 ids[email] = cursor.lastrowid
             db.execute("INSERT INTO agents(user_id,code,level) VALUES(?,?,?)",
-                       (ids["agent@wanderwise.local"], "WW-1001", 4))
-            root_agent = db.execute("SELECT id FROM agents WHERE code='WW-1001'").fetchone()["id"]
+                       (ids["agent@wanderwise.local"], "TE-L1-1001", 1))
+            root_agent = db.execute("SELECT id FROM agents WHERE code='TE-L1-1001'").fetchone()["id"]
             db.execute("INSERT INTO agents(user_id,code,level,parent_id) VALUES(?,?,?,?)",
-                       (ids["rohan@wanderwise.local"], "WW-1002", 3, root_agent))
-            second = db.execute("SELECT id FROM agents WHERE code='WW-1002'").fetchone()["id"]
+                       (ids["rohan@wanderwise.local"], "TE-L2-1002", 2, root_agent))
+            second = db.execute("SELECT id FROM agents WHERE code='TE-L2-1002'").fetchone()["id"]
             db.execute("INSERT INTO agents(user_id,code,level,parent_id) VALUES(?,?,?,?)",
-                       (ids["nisha@wanderwise.local"], "WW-1003", 2, second))
-            third = db.execute("SELECT id FROM agents WHERE code='WW-1003'").fetchone()["id"]
+                       (ids["nisha@wanderwise.local"], "TE-L3-1003", 3, second))
+            third = db.execute("SELECT id FROM agents WHERE code='TE-L3-1003'").fetchone()["id"]
             db.execute("INSERT INTO agents(user_id,code,level,parent_id) VALUES(?,?,?,?)",
-                       (ids["kabir@wanderwise.local"], "WW-1004", 1, third))
+                       (ids["kabir@wanderwise.local"], "TE-L4-1004", 4, third))
             db.execute("INSERT INTO audit_logs(actor_id,action,record_type,record_id) VALUES(?,?,?,?)",
                        (ids["admin@wanderwise.local"], "Clean workspace initialized", "system", "seed"))
 
@@ -460,6 +460,16 @@ def initialize_db() -> None:
             ("COMM_OWNER", "Platform Owner Guaranteed Commission (10%)", "liability"),
         ]
         db.executemany("INSERT OR IGNORE INTO ledger_accounts(code, name, type) VALUES (?, ?, ?)", ledger_base_accounts)
+
+        # Migrate legacy 'WW-' codes to clean 'TE-L{depth}-' format so referral code itself declares the class
+        legacy_agents = db.execute("SELECT id, code, depth FROM agents WHERE code LIKE 'WW-%'").fetchall()
+        for a in legacy_agents:
+            clean_num = a["code"].replace("WW-", "")
+            new_code = f"TE-L{a['depth']}-{clean_num}"
+            if not db.execute("SELECT 1 FROM agents WHERE code=?", (new_code,)).fetchone():
+                db.execute("UPDATE agents SET code=? WHERE id=?", (new_code, a["id"]))
+                db.execute("UPDATE ledger_accounts SET code=?, name=? WHERE code=?", 
+                           (f"COMM_AGENT_{a['id']}", f"Partner {new_code} Commission Account", f"COMM_AGENT_{a['id']}"))
 
         db.execute("""CREATE TABLE IF NOT EXISTS sent_emails (
             id INTEGER PRIMARY KEY,
@@ -577,6 +587,95 @@ def money_to_paise(value: str) -> int:
     if not amount.is_finite() or amount <= 0 or amount > Decimal("10000000"):
         raise ValueError("Amount must be greater than zero and at most ₹1 crore.")
     return int(amount * 100)
+
+
+def classify_referral_code(code: str, fallback_depth: int = 1) -> dict[str, Any]:
+    """Parse agent class, level, and badge presentation directly from their referral code."""
+    depth = fallback_depth or 1
+    if code:
+        m = re.search(r"L(\d+)", code, re.IGNORECASE)
+        if m:
+            depth = int(m.group(1))
+        elif "1001" in code:
+            depth = 1
+        elif "1002" in code:
+            depth = 2
+        elif "1003" in code:
+            depth = 3
+        elif "1004" in code:
+            depth = 4
+
+    classes = {
+        1: {
+            "class_name": "L1 Agent",
+            "tier_title": "Class L1 Agent · Direct Company Partner",
+            "badge_bg": "#dbeafe",
+            "badge_color": "#1e40af",
+            "badge_border": "#bfdbfe",
+            "is_direct": True,
+            "description": "Direct Platform Partner. Guaranteed flat 10% direct cut + cascading overrides."
+        },
+        2: {
+            "class_name": "L2 Agent",
+            "tier_title": "Class L2 Agent · Intermediate Sub-Agent",
+            "badge_bg": "#dcfce7",
+            "badge_color": "#166534",
+            "badge_border": "#bbf7d0",
+            "is_direct": False,
+            "description": "Recruited by L1 Partner. Guaranteed flat 10% direct cut + downline overrides."
+        },
+        3: {
+            "class_name": "L3 Agent",
+            "tier_title": "Class L3 Agent · Sub-Tier Agent",
+            "badge_bg": "#f3e8ff",
+            "badge_color": "#6b21a8",
+            "badge_border": "#e9d5ff",
+            "is_direct": False,
+            "description": "Recruited by L2 Partner. Guaranteed flat 10% direct cut + overrides."
+        },
+        4: {
+            "class_name": "L4 Agent",
+            "tier_title": "Class L4 Agent · Network Agent",
+            "badge_bg": "#fef3c7",
+            "badge_color": "#92400e",
+            "badge_border": "#fde68a",
+            "is_direct": False,
+            "description": "Recruited by L3 Partner. Guaranteed flat 10% direct cut."
+        },
+    }
+    info = classes.get(depth, {
+        "class_name": f"L{depth} Agent",
+        "tier_title": f"Class L{depth} Agent · Network Partner",
+        "badge_bg": "#f1f5f9",
+        "badge_color": "#334155",
+        "badge_border": "#cbd5e1",
+        "is_direct": False,
+        "description": "Guaranteed flat 10% direct booking cut."
+    })
+    info["depth"] = depth
+    return info
+
+app.jinja_env.globals["classify_agent"] = classify_referral_code
+app.jinja_env.filters["agent_class"] = lambda code, d=1: classify_referral_code(code, d)["class_name"]
+
+
+def find_agent_by_code(db: sqlite3.Connection, code: str) -> sqlite3.Row | None:
+    """Find agent by referral code, supporting level format (TE-L1-XXXX) and legacy aliases."""
+    if not code:
+        return None
+    code_clean = code.strip().upper()
+    # 1. Exact match
+    agent = db.execute("SELECT * FROM agents WHERE UPPER(code)=?", (code_clean,)).fetchone()
+    if agent:
+        return agent
+    # 2. Match by numeric suffix (e.g. WW-1001 matches TE-L1-1001)
+    suffix_match = re.search(r"(\d{4,6})$", code_clean)
+    if suffix_match:
+        suffix = suffix_match.group(1)
+        agent = db.execute("SELECT * FROM agents WHERE code LIKE ?", (f"%-{suffix}",)).fetchone()
+        if agent:
+            return agent
+    return None
 
 
 def generate_unique_referral_code(db: sqlite3.Connection, depth: int = 1) -> str:
@@ -726,25 +825,28 @@ def login() -> Any:
     if request.method == "POST":
         identifier = request.form.get("email", "").strip()
         password = request.form.get("password", "")
-        # Allow login via Email OR Partner Referral ID
-        user = g.db.execute(
-            """SELECT u.*, a.id AS agent_id, a.code AS agent_code, a.status AS agent_status, a.depth AS agent_depth
-               FROM users u
-               LEFT JOIN agents a ON a.user_id = u.id
-               WHERE LOWER(u.email) = LOWER(?) OR UPPER(a.code) = UPPER(?)""",
-            (identifier, identifier),
-        ).fetchone()
+        # Allow login via Email OR Partner Referral ID (supports TE-LX-XXXX, TE-XXXXX, and legacy WW-XXXX)
+        user = g.db.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (identifier,)).fetchone()
+        agent_row = None
+        if user:
+            agent_row = g.db.execute("SELECT * FROM agents WHERE user_id=?", (user["id"],)).fetchone()
+        else:
+            agent_row = find_agent_by_code(g.db, identifier)
+            if not agent_row:
+                agent_row = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=?", (identifier.upper(),)).fetchone()
+            if agent_row:
+                user = g.db.execute("SELECT * FROM users WHERE id=?", (agent_row["user_id"],)).fetchone()
 
         if user and check_password_hash(user["password_hash"], password):
             # Check partner two-step validation status
-            if user["role"] == "agent":
-                if user["agent_status"] == "pending_approval":
+            if user["role"] == "agent" and agent_row:
+                if agent_row["status"] == "pending_approval":
                     flash("Your partner application is pending Owner approval. You can log in once your application is approved and your unique Referral Code is activated.", "error")
                     return render_template("login.html", register=False)
-                elif user["agent_status"] == "rejected":
+                elif agent_row["status"] == "rejected":
                     flash("Your partner application was reviewed and not approved by the Owner.", "error")
                     return render_template("login.html", register=False)
-                elif user["agent_status"] == "suspended":
+                elif agent_row["status"] == "suspended":
                     flash("Your partner account is suspended. Please contact the administrator.", "error")
                     return render_template("login.html", register=False)
 
@@ -849,11 +951,22 @@ def partner_apply() -> Any:
     phone = request.form.get("phone", "").strip()
     password = request.form.get("password", "")
     password_confirm = request.form.get("password_confirm", "")
+    sponsor_choice = request.form.get("sponsor_choice", "").strip().lower()
     sponsor_code = request.form.get("sponsor_code", "").strip().upper()
     bank_name = request.form.get("bank_name", "").strip()
     bank_account_number = request.form.get("bank_account_number", "").strip()
     bank_ifsc = request.form.get("bank_ifsc", "").strip().upper()
     bank_account_holder = request.form.get("bank_account_holder", "").strip()
+
+    # If applicant explicitly chose direct or left sponsor code blank, they are a Direct Level 1 Partner!
+    parent = None
+    if sponsor_choice == "direct" or not sponsor_code:
+        sponsor_code = ""
+    else:
+        parent = find_agent_by_code(g.db, sponsor_code)
+        if parent is None or parent["status"] != "active":
+            flash(f"Sponsor referral code '{sponsor_code}' was not found or is not currently active. If you don't have a sponsor ID, choose 'Direct Level 1 Partner' to register directly.", "error")
+            return redirect(url_for("partner_register_page", ref=sponsor_code))
 
     if not name or len(name) > 80:
         flash("Please enter your full name.", "error")
@@ -873,13 +986,6 @@ def partner_apply() -> Any:
     elif g.db.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
         flash("An account with that email already exists. Sign in or use another email.", "error")
         return redirect(url_for("partner_register_page", ref=sponsor_code))
-
-    parent = None
-    if sponsor_code:
-        parent = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=? AND status='active'", (sponsor_code,)).fetchone()
-        if parent is None:
-            flash(f"Sponsor referral code '{sponsor_code}' was not found or is not currently active.", "error")
-            return redirect(url_for("partner_register_page", ref=sponsor_code))
 
     try:
         with g.db:
@@ -901,8 +1007,11 @@ def partner_apply() -> Any:
             agent_id = cur_a.lastrowid
             audit("Partner recruit application initiated", "agent", agent_id)
 
-        flash("Application submitted successfully! Your partner registration is now in the Owner Review Queue.", "success")
-        return redirect(url_for("partner_application_status", agent_id=agent_id))
+        # EXIT THE REGISTRATION LOOP CLEANLY:
+        # Display clear confirmation banner on home page with applicant instructions
+        bank_info = f" Bank Payout: {bank_name}." if bank_name else ""
+        flash(f"Application Submitted Successfully! Partner application for {name} (Class: L{depth} Agent) is now in the Owner Review Queue (Pending Owner Approval).{bank_info} Once approved by the Platform Owner, your unique Referral Code (TE-L{depth}-XXXX) will be generated and you will be able to log in with your email/referral ID.", "success")
+        return redirect(url_for("public_home", application_submitted="1"))
     except sqlite3.IntegrityError:
         flash("We couldn't process your application. Please check your details and try again.", "error")
         return redirect(url_for("partner_register_page", ref=sponsor_code))
@@ -920,9 +1029,10 @@ def approve_partner(agent_id: int) -> Any:
     ).fetchone()
     if not agent:
         abort(404)
+    target_view = request.args.get("from", "applications")
     if agent["status"] != "pending_approval":
         flash("This partner is not currently awaiting approval.", "error")
-        return redirect(url_for("dashboard", view="agents"))
+        return redirect(url_for("dashboard", view=target_view))
 
     # Calculate materialized path and depth from immediate superior
     if agent["parent_id"]:
@@ -945,8 +1055,8 @@ def approve_partner(agent_id: int) -> Any:
         get_or_create_ledger_account(g.db, f"COMM_AGENT_{agent_id}", f"Partner {new_code} Commission Account", "liability")
         audit(f"Partner {new_code} approved by Owner", "agent", agent_id)
 
-    flash(f"Partner {agent['name']} approved! Unique Level {depth} Referral Code {new_code} generated. Partner can now log in using either their Referral Code ({new_code}) or Email.", "success")
-    return redirect(url_for("dashboard", view="agents"))
+    flash(f"Partner {agent['name']} approved! Unique Level {depth} Referral Code {new_code} (Class: L{depth} Agent) generated. Partner can now log in using either their Referral Code ({new_code}) or Email.", "success")
+    return redirect(url_for("dashboard", view=target_view))
 
 
 @app.post("/admin/partners/<int:agent_id>/reject")
@@ -961,11 +1071,12 @@ def reject_partner(agent_id: int) -> Any:
     ).fetchone()
     if not agent:
         abort(404)
+    target_view = request.args.get("from", "applications")
     with g.db:
         g.db.execute("UPDATE agents SET status='rejected' WHERE id=?", (agent_id,))
         audit("Partner recruit rejected by Owner", "agent", agent_id)
     flash(f"Partner application for {agent['name']} has been rejected.", "info")
-    return redirect(url_for("dashboard", view="partners"))
+    return redirect(url_for("dashboard", view=target_view))
 
 
 @app.route("/logout", methods=["GET", "POST"])
@@ -1305,6 +1416,7 @@ def dashboard() -> Any:
     # Multi-tier hierarchy, approvals, and double-entry ledger queries
     pending_partners = g.db.execute(
         """SELECT a.id, a.code, a.depth, a.status, a.phone, a.created_at,
+                  a.bank_name, a.bank_account_number, a.bank_ifsc, a.bank_account_holder,
                   u.name, u.email,
                   p.code AS sponsor_code, pu.name AS sponsor_name, p.depth AS sponsor_depth
            FROM agents a
@@ -1312,7 +1424,7 @@ def dashboard() -> Any:
            LEFT JOIN agents p ON p.id = a.parent_id
            LEFT JOIN users pu ON pu.id = p.user_id
            WHERE a.status = 'pending_approval'
-           ORDER BY a.created_at ASC"""
+           ORDER BY a.created_at DESC"""
     ).fetchall() if role == "admin" else []
 
     hierarchy_agents = g.db.execute(
@@ -1504,8 +1616,8 @@ def create_booking() -> Any:
                 guest_name = guest_name or g.user["name"]
                 guest_email = guest_email or g.user["email"]
                 if referral:
-                    agent = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=? AND status='active'", (referral,)).fetchone()
-                    if agent is None:
+                    agent = find_agent_by_code(g.db, referral)
+                    if agent is None or agent["status"] != "active":
                         raise ValueError("That partner referral code wasn’t found or is not currently active.")
 
             reservation = g.db.execute(

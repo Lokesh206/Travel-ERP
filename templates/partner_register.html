@@ -258,6 +258,52 @@
       margin-top: 4px;
     }
 
+    /* Sponsorship Choice Cards */
+    .sponsorship-toggle-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .sponsorship-choice-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1.5px solid var(--te-border);
+      border-radius: 12px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .sponsorship-choice-card:hover {
+      border-color: #93c5fd;
+      background: #f8fafc;
+    }
+    .sponsorship-choice-card.selected {
+      border-color: #095ec2;
+      background: #eff6ff;
+    }
+    .sponsorship-choice-card input[type="radio"] {
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      accent-color: #095ec2;
+      cursor: pointer;
+    }
+    .choice-content strong {
+      display: block;
+      font-size: 13.5px;
+      color: #0f2942;
+      margin-bottom: 2px;
+    }
+    .choice-content p {
+      margin: 0;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
     /* Checkbox & Terms */
     .terms-box {
       background: #f8fafc;
@@ -510,16 +556,41 @@
           </div>
         </div>
 
-        <!-- 3. Hierarchy Link / Sponsor Referral Code -->
+        <!-- 3. Hierarchy Link / Partner Classification -->
         <div class="form-section-title">
           <span class="section-icon">♧</span>
-          <span>3. Referral Hierarchy (Immediate Superior)</span>
+          <span>3. Partner Classification &amp; Sponsorship</span>
         </div>
 
-        <div class="form-group">
-          <label for="reg-sponsor">Referred Person Code (Superior Referral ID) <span class="opt">(Optional)</span></label>
-          <input type="text" id="reg-sponsor" name="sponsor_code" placeholder="e.g. TE-L1-1001 or WW-1001" value="{{ sponsor_code_val or request.args.get('ref', '') }}">
-          <span class="field-hint">Enter the referral code of your immediate superior. If you are joining directly under the agency root, leave this blank (Level 1).</span>
+        <div class="sponsorship-toggle-wrap">
+          <!-- Choice 1: Direct L1 Partner (Default - NO PREVIOUS ID NEEDED!) -->
+          <label class="sponsorship-choice-card {{ 'selected' if not (sponsor_code_val or request.args.get('ref')) }}" id="choice-card-direct">
+            <input type="radio" name="sponsor_choice" value="direct" id="choice-direct" {{ 'checked' if not (sponsor_code_val or request.args.get('ref')) }} onchange="toggleSponsorInput()">
+            <div class="choice-content">
+              <strong>🌟 Direct Level 1 (L1) Partner (No Previous Referral ID Needed)</strong>
+              <p>I am applying directly under TravelEasy. I will be an independent <strong>Class L1 Agent</strong> with direct 10% commission on every booking and the ability to recruit sub-agents.</p>
+            </div>
+          </label>
+
+          <!-- Choice 2: Referred by existing partner -->
+          <label class="sponsorship-choice-card {{ 'selected' if (sponsor_code_val or request.args.get('ref')) }}" id="choice-card-referred">
+            <input type="radio" name="sponsor_choice" value="referred" id="choice-referred" {{ 'checked' if (sponsor_code_val or request.args.get('ref')) }} onchange="toggleSponsorInput()">
+            <div class="choice-content">
+              <strong>🤝 I was referred by an existing TravelEasy Partner</strong>
+              <p>If an existing accredited partner invited you, enter their Referral Code (e.g. TE-L1-XXXX) to join under their agency network.</p>
+            </div>
+          </label>
+        </div>
+
+        <div id="direct-l1-notice" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: {{ 'flex' if not (sponsor_code_val or request.args.get('ref')) else 'none' }}; align-items: center; gap: 10px; font-size: 12.5px; color: #166534;">
+          <span style="font-size: 18px;">✓</span>
+          <span><strong>No previous referral code needed!</strong> You are registering directly with the company as a <strong>Class L1 Agent</strong>. Upon Admin approval, your unique Level 1 Referral Code (e.g. <code>TE-L1-XXXX</code>) will be auto-generated.</span>
+        </div>
+
+        <div class="form-group" id="sponsor-input-group" style="display: {{ 'block' if (sponsor_code_val or request.args.get('ref')) else 'none' }};">
+          <label for="reg-sponsor">Sponsor's Referral Code *</label>
+          <input type="text" id="reg-sponsor" name="sponsor_code" placeholder="e.g. TE-L1-1001" value="{{ sponsor_code_val or request.args.get('ref', '') }}">
+          <span class="field-hint">Enter the referral code of your recruiter. Their tier determines your level (e.g. child of L1 becomes L2).</span>
         </div>
 
         <!-- 4. Bank Account Details for TravelEasy Wallet Transfers -->
@@ -624,6 +695,31 @@
     </aside>
 
   </main>
+
+  <script>
+    function toggleSponsorInput() {
+      const isDirect = document.getElementById('choice-direct').checked;
+      const directNotice = document.getElementById('direct-l1-notice');
+      const sponsorGroup = document.getElementById('sponsor-input-group');
+      const sponsorInput = document.getElementById('reg-sponsor');
+      const cardDirect = document.getElementById('choice-card-direct');
+      const cardReferred = document.getElementById('choice-card-referred');
+
+      if (isDirect) {
+        directNotice.style.display = 'flex';
+        sponsorGroup.style.display = 'none';
+        sponsorInput.value = '';
+        cardDirect.classList.add('selected');
+        cardReferred.classList.remove('selected');
+      } else {
+        directNotice.style.display = 'none';
+        sponsorGroup.style.display = 'block';
+        sponsorInput.focus();
+        cardDirect.classList.remove('selected');
+        cardReferred.classList.add('selected');
+      }
+    }
+  </script>
 
 </body>
 </html>

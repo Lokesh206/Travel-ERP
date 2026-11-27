@@ -79,6 +79,21 @@
       {% for category, message in messages %}<div class="site-flash flash-{{ category }}">{{ message }}</div>{% endfor %}
     {% endwith %}
 
+    {% if request.args.get('application_submitted') == '1' %}
+      <div style="background: linear-gradient(135deg, #095ec2 0%, #003e8a 100%); color: #ffffff; padding: 18px 24px; border-radius: 14px; margin: 20px auto; max-width: 1180px; box-shadow: 0 10px 25px -5px rgba(9, 94, 194, 0.3); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; border: 1px solid rgba(255,255,255,0.2);">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: #ffffff; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; flex-shrink: 0;">✓</div>
+          <div>
+            <strong style="font-size: 15.5px; display: block; margin-bottom: 2px;">Partner Application Submitted Successfully!</strong>
+            <span style="font-size: 13px; color: #e2e8f0; line-height: 1.45;">Your application is in the TravelEasy Admin Review Queue. You have exited the registration loop. Upon Owner approval, your unique Level Referral Code will be generated and you will be able to log in to your partner desk.</span>
+          </div>
+        </div>
+        <a href="{{ url_for('login') }}" style="background: #f5a623; color: #0f2942; font-weight: 800; padding: 10px 22px; border-radius: 9999px; text-decoration: none; font-size: 13.5px; white-space: nowrap; box-shadow: 0 4px 12px rgba(245, 166, 35, 0.35);">
+          Partner Login Desk &rarr;
+        </a>
+      </div>
+    {% endif %}
+
     <!-- Hero Section with Slow High-Quality Slideshow (Domestic & International) -->
     <section class="site-hero traveleasy-hero" id="hero-slideshow-wrap">
       <!-- Background Slideshow Track (Slow transition, High Image Quality) -->

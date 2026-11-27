@@ -104,7 +104,7 @@
             <label for="login-email">{{ 'Email Address' if register else 'Email Address or Partner Referral ID' }}</label>
             <div class="input-with-icon">
               <span class="input-icon-glyph">✉</span>
-              <input id="login-email" name="email" type="{{ 'email' if register else 'text' }}" autocomplete="username" placeholder="{{ 'e.g. name@example.com' if register else 'e.g. your@email.com or TE-1001' }}" required>
+              <input id="login-email" name="email" type="{{ 'email' if register else 'text' }}" autocomplete="username" placeholder="{{ 'e.g. name@example.com' if register else 'e.g. your@email.com or TE-L1-1001' }}" required>
             </div>
             {% if not register %}
               <small style="color: #64748b; font-size: 11px; margin-top: 4px; display: block;">Partners can sign in using their unique Level Referral Code (e.g. TE-L1-XXXX, TE-L2-XXXX, WW-1001) or Email, and password.</small>

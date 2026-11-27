@@ -33,7 +33,8 @@
       {% if g.user.role == 'admin' %}
         <div class="workspace-label nav-spacer">ADMINISTRATION</div>
         <a class="nav-link {{ 'active' if view == 'analytics' }}" href="{{ url_for('dashboard', view='analytics') }}"><span>📊</span> Visual Analytics <span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">Live</span></a>
-        <a class="nav-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}"><span>♧</span> Partner Hierarchy {% if stats.pending_partners %}<span class="nav-count" style="background: #e11d48; color: #ffffff;">{{ stats.pending_partners }} new</span>{% else %}<span class="nav-count">{{ hierarchy_agents|length }}</span>{% endif %}</a>
+        <a class="nav-link {{ 'active' if view == 'applications' }}" href="{{ url_for('dashboard', view='applications') }}" style="{% if stats.pending_partners %}background: #fff1f2; color: #be123c; font-weight: 700;{% endif %}"><span>📝</span> Agent Applications {% if stats.pending_partners %}<span class="nav-count" style="background: #e11d48; color: #ffffff; font-weight: 800;">{{ stats.pending_partners }} new</span>{% endif %}</a>
+        <a class="nav-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}"><span>♧</span> Partner Hierarchy <span class="nav-count">{{ hierarchy_agents|length }}</span></a>
         <a class="nav-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}"><span>◈</span> Commission &amp; Ledger</a>
         <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Payouts queue {% if stats.pending_withdrawals %}<span class="nav-count" style="background: #faeae7; color: #a4594c;">{{ stats.pending_withdrawals }}</span>{% endif %}</a>
         <a class="nav-link {{ 'active' if view == 'inquiries' }}" href="{{ url_for('dashboard', view='inquiries') }}"><span>✉</span> Contact inbox {% if stats.new_inquiries %}<span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">{{ stats.new_inquiries }}</span>{% endif %}</a>
@@ -113,8 +114,11 @@
 
         {% if g.user.role == 'admin' %}
           <div class="mobile-drawer-section-label">Administration</div>
+          <a class="mobile-drawer-link {{ 'active' if view == 'applications' }}" href="{{ url_for('dashboard', view='applications') }}">
+            <span class="link-icon">📝</span> Agent Applications {% if stats.pending_partners %}<span class="link-count" style="background: #e11d48; color: #fff; font-weight: 800;">{{ stats.pending_partners }} new</span>{% endif %}
+          </a>
           <a class="mobile-drawer-link {{ 'active' if view == 'agents' }}" href="{{ url_for('dashboard', view='agents') }}">
-            <span class="link-icon">♧</span> Partner Hierarchy {% if stats.pending_partners %}<span class="link-count" style="background: #e11d48; color: #fff;">{{ stats.pending_partners }} new</span>{% else %}<span class="link-count">{{ hierarchy_agents|length }}</span>{% endif %}
+            <span class="link-icon">♧</span> Partner Hierarchy <span class="link-count">{{ hierarchy_agents|length }}</span>
           </a>
           <a class="mobile-drawer-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}">
             <span class="link-icon">◈</span> Commission &amp; Ledger
@@ -289,10 +293,29 @@
           </article>
         </section>
 
+        {% if stats.pending_partners %}
+          <div style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #fecdd3; border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.1);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 24px;">🔔</span>
+              <div>
+                <strong style="color: #9f1239; font-size: 14.5px; display: block;">{{ stats.pending_partners }} New Partner Application{{ 's' if stats.pending_partners > 1 else '' }} Awaiting Owner Approval!</strong>
+                <span style="color: #881337; font-size: 12.5px;">Applicants are waiting for your explicit approval to auto-generate their Level Referral Code and activate their TravelEasy partner wallet.</span>
+              </div>
+            </div>
+            <a href="{{ url_for('dashboard', view='applications') }}" class="button" style="background: #e11d48; color: #ffffff; font-weight: 800; border-radius: 9999px; padding: 8px 18px; font-size: 13px; text-decoration: none;">
+              Review Applications Desk &rarr;
+            </a>
+          </div>
+        {% endif %}
+
         <!-- ADMIN QUICK TAB BAR -->
         <nav class="admin-tab-nav" aria-label="Admin quick tabs">
           <a class="admin-tab-btn {{ 'active' if view == 'overview' }}" href="{{ url_for('dashboard', view='overview') }}">
             <span>◫ Command Overview</span>
+          </a>
+          <a class="admin-tab-btn {{ 'active' if view == 'applications' }}" href="{{ url_for('dashboard', view='applications') }}" style="{% if stats.pending_partners %}background: #ffe4e6; color: #be123c; font-weight: 800; border: 1px solid #fecdd3;{% endif %}">
+            <span>📝 Agent Applications</span>
+            {% if stats.pending_partners %}<span class="tab-badge" style="background: #e11d48; color: #fff; font-weight: 800;">{{ stats.pending_partners }} new</span>{% endif %}
           </a>
           <a class="admin-tab-btn {{ 'active' if view == 'analytics' }}" href="{{ url_for('dashboard', view='analytics') }}">
             <span>📊 Visual Analytics</span>
@@ -308,7 +331,7 @@
           </a>
           <a class="admin-tab-btn" href="{{ url_for('dashboard', view='agents') }}">
             <span>♧ Partner Hierarchy</span>
-            {% if stats.pending_partners %}<span class="tab-badge" style="background: #e11d48; color: #fff;">{{ stats.pending_partners }} new</span>{% else %}<span class="tab-badge">{{ hierarchy_agents|length }}</span>{% endif %}
+            <span class="tab-badge">{{ hierarchy_agents|length }}</span>
           </a>
           <a class="admin-tab-btn" href="{{ url_for('dashboard', view='wallet') }}">
             <span>💰 Payout Queue</span>
@@ -665,8 +688,9 @@
         <section class="welcome-row" style="background: linear-gradient(135deg, #095ec2 0%, #003e8a 100%); color: #ffffff; border-radius: 18px; padding: 26px 30px; margin-bottom: 24px; box-shadow: 0 10px 25px -5px rgba(9, 94, 194, 0.25);">
           <div style="flex: 1;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              {% set my_class = classify_agent(my_agent.code, my_agent.depth) %}
               <span class="badge" style="background: rgba(255,255,255,0.22); color: #ffffff; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">
-                ACCREDITED TRAVEL PARTNER · LEVEL {{ my_agent.depth }} PARTNER (TIER {{ my_agent.depth }})
+                ACCREDITED TRAVEL PARTNER · CLASS: {{ my_class.class_name }} · LEVEL {{ my_agent.depth }} PARTNER (TIER {{ my_agent.depth }})
               </span>
               <span style="font-size: 11.5px; color: #a5f3fc; font-weight: 700;">● Active Status</span>
             </div>
@@ -679,6 +703,7 @@
               <div>
                 <span style="font-size: 10px; color: #cbd5e1; text-transform: uppercase; font-weight: 700; display: block;">YOUR LEVEL REFERRAL CODE</span>
                 <span style="font-family: monospace; font-size: 18px; font-weight: 800; color: #f5a623;">{{ my_agent.code }}</span>
+                <span style="background: rgba(255,255,255,0.2); color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; margin-left: 6px;">{{ my_class.class_name }}</span>
               </div>
               <div style="border-left: 1px solid rgba(255,255,255,0.2); padding-left: 14px;">
                 <span style="font-size: 10px; color: #cbd5e1; text-transform: uppercase; font-weight: 700; display: block;">IMMEDIATE SUPERIOR</span>
@@ -1820,6 +1845,216 @@
       {% endif %}
 
     <!-- =================================================================== -->
+    <!-- VIEW: AGENT APPLICATIONS (DEDICATED RECRUITMENT DESK) -->
+    <!-- =================================================================== -->
+    {% elif view == 'applications' %}
+      <section class="page-heading">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <span class="eyebrow" style="color: #e11d48;">DEDICATED RECRUITMENT DESK</span>
+            <h1>Agent Applications &amp; <em>Onboarding.</em></h1>
+            <p class="muted">Review, classify, and approve travel partner applicants. Referral codes are automatically generated based on their level (TE-L1-XXXX for direct, TE-L2-XXXX for subordinate, etc.).</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('dashboard', view='agents') }}" class="button button-secondary" style="border-radius: 9999px; font-weight: 700;">
+              <span>♧</span> View Active Hierarchy Tree
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 Top Stats Cards -->
+      <section class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+        <article class="stat-card" style="border-top: 4px solid #e11d48;">
+          <div class="stat-top">
+            <span>PENDING APPLICATIONS</span>
+            <span class="stat-icon" style="background: #ffe4e6; color: #e11d48;">⏳</span>
+          </div>
+          <strong style="color: #e11d48; font-size: 28px;">{{ pending_partners|length }}</strong>
+          <span class="stat-caption">Awaiting explicit Owner approval</span>
+        </article>
+        <article class="stat-card" style="border-top: 4px solid #095ec2;">
+          <div class="stat-top">
+            <span>ACTIVE ACCREDITED PARTNERS</span>
+            <span class="stat-icon" style="background: #dbeafe; color: #095ec2;">✓</span>
+          </div>
+          <strong style="color: #095ec2; font-size: 28px;">{{ hierarchy_agents|length }}</strong>
+          <span class="stat-caption">Generating client bookings &amp; commissions</span>
+        </article>
+        <article class="stat-card" style="border-top: 4px solid #059669;">
+          <div class="stat-top">
+            <span>DIRECT L1 PARTNERS</span>
+            <span class="stat-icon mint">🌟</span>
+          </div>
+          <strong style="color: #059669; font-size: 28px;">
+            {{ hierarchy_agents|selectattr('depth', 'equalto', 1)|list|length }}
+          </strong>
+          <span class="stat-caption">Direct Class L1 Company Partners</span>
+        </article>
+      </section>
+
+      <!-- Pending Applications Desk Table -->
+      <section class="panel table-panel" style="margin-bottom: 24px; border-left: 4px solid #e11d48;">
+        <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span class="eyebrow" style="color: #e11d48;">STRICT TWO-STEP OWNER VERIFICATION</span>
+            <h2>Submitted Agent Applications ({{ pending_partners|length }})</h2>
+            <p class="muted" style="font-size: 13px; margin: 2px 0 0;">These applicants have submitted registrations to become TravelEasy agents. Approve them to auto-generate their unique Level Referral Code and activate their portal.</p>
+          </div>
+          {% if pending_partners %}
+            <span class="badge" style="background: #ffe4e6; color: #be123c; padding: 6px 14px; border-radius: 9999px; font-weight: 800; font-size: 12px;">{{ pending_partners|length }} Action Required</span>
+          {% endif %}
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>APPLICANT PROFILE</th>
+                <th>CLASSIFICATION &amp; SPONSOR</th>
+                <th>AUTO CODE ON APPROVAL</th>
+                <th>REGISTERED BANK PAYOUT</th>
+                <th>APPLIED ON</th>
+                <th style="text-align: right;">DECISION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in pending_partners %}
+                {% set target_depth = (p.sponsor_depth + 1) if p.sponsor_depth else 1 %}
+                {% set info = classify_agent('TE-L' ~ target_depth, target_depth) %}
+                <tr>
+                  <td>
+                    <strong style="font-size: 14px; color: #0f2942;">{{ p.name }}</strong><br>
+                    <small style="color: #095ec2; font-weight: 600;">{{ p.email }}</small><br>
+                    <small style="color: #64748b;">📞 {{ p.phone or 'Not provided' }}</small>
+                  </td>
+                  <td>
+                    <span style="background: {{ info.badge_bg }}; color: {{ info.badge_color }}; border: 1px solid {{ info.badge_border }}; padding: 4px 10px; border-radius: 9999px; font-weight: 800; font-size: 11px; display: inline-block; margin-bottom: 4px;">
+                      CLASS: {{ info.class_name }}
+                    </span><br>
+                    {% if p.sponsor_code %}
+                      <small style="color: #475569; font-weight: 600;">Referred by {{ p.sponsor_name }}</small><br>
+                      <small style="color: #64748b;">Code: {{ p.sponsor_code }} (Tier {{ p.sponsor_depth }})</small>
+                    {% else %}
+                      <span style="color: #095ec2; font-weight: 700; font-size: 12px;">🌟 Direct Company Recruit (No Sponsor)</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span style="font-family: monospace; font-size: 13.5px; font-weight: 800; color: #095ec2; background: #eff6ff; border: 1px solid #bfdbfe; padding: 4px 8px; border-radius: 6px;">
+                      TE-L{{ target_depth }}-XXXX
+                    </span><br>
+                    <small style="color: #64748b;">Level {{ target_depth }} Unique Code</small>
+                  </td>
+                  <td>
+                    {% if p.bank_name %}
+                      <strong style="font-size: 12.5px;">{{ p.bank_name }}</strong><br>
+                      <small style="color: #475569;">A/C: {{ p.bank_account_number }}</small><br>
+                      <small style="color: #64748b;">IFSC: {{ p.bank_ifsc }} ({{ p.bank_account_holder }})</small>
+                    {% else %}
+                      <span style="color: #94a3b8; font-size: 12px; font-style: italic;">Will provide in portal</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <small style="font-weight: 600;">{{ p.created_at[:16] }}</small><br>
+                    <span class="status-badge status-pending" style="font-size: 10px;">Pending Owner Approval</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: inline-flex; flex-direction: column; gap: 6px;">
+                      <form method="post" action="{{ url_for('approve_partner', agent_id=p.id) }}?from=applications" style="margin: 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="button" style="background: #095ec2; color: #fff; border: none; padding: 7px 16px; border-radius: 9999px; font-weight: 800; font-size: 12px; cursor: pointer; width: 100%; white-space: nowrap;">
+                          ✓ Approve &amp; Generate Code
+                        </button>
+                      </form>
+                      <form method="post" action="{{ url_for('reject_partner', agent_id=p.id) }}?from=applications" style="margin: 0;" onsubmit="return confirm('Are you sure you want to reject {{ p.name }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="button" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; padding: 5px 12px; border-radius: 9999px; font-weight: 600; font-size: 11px; cursor: pointer; width: 100%;">
+                          ✗ Reject Application
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6" class="empty-cell" style="text-align: center; padding: 36px 20px; color: #64748b;">
+                    <span style="font-size: 32px; display: block; margin-bottom: 8px;">🎉</span>
+                    <strong style="color: #0f2942; font-size: 15px;">All agent applications are reviewed and processed!</strong><br>
+                    <span style="font-size: 13px;">When new recruits register via the Partner Program, their applications will appear here for your explicit approval and automated code generation.</span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Active Partners Directory -->
+      <section class="panel table-panel">
+        <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span class="eyebrow" style="color: #047857;">APPROVED &amp; ACTIVE ROSTER</span>
+            <h2>Accredited Partner Directory ({{ hierarchy_agents|length }} Agents)</h2>
+            <p class="muted" style="font-size: 13px; margin: 2px 0 0;">Classified by their referral codes. Each partner earns flat 10% direct cut + cascading overrides.</p>
+          </div>
+          <a href="{{ url_for('dashboard', view='agents') }}" class="button button-small" style="background: #f1f5f9; color: #1e293b; border-radius: 9999px; font-weight: 700;">
+            Full Hierarchy Tree &rarr;
+          </a>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>AGENT NAME</th>
+                <th>REFERRAL CODE &amp; CLASS</th>
+                <th>HIERARCHY TIER</th>
+                <th>IMMEDIATE SUPERIOR</th>
+                <th>DIRECT RECRUITS</th>
+                <th>DOWNLINE TEAM</th>
+                <th>COMMISSIONS</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in hierarchy_agents %}
+                {% set info = classify_agent(a.code, a.depth) %}
+                <tr>
+                  <td>
+                    <strong>{{ a.name }}</strong><br>
+                    <small style="color: #64748b;">{{ a.email }}</small>
+                  </td>
+                  <td>
+                    <code style="background: #f0fdf4; color: #166534; font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 13px; border: 1px solid #bbf7d0;">
+                      {{ a.code }}
+                    </code><br>
+                    <span style="background: {{ info.badge_bg }}; color: {{ info.badge_color }}; border: 1px solid {{ info.badge_border }}; padding: 2px 8px; border-radius: 9999px; font-weight: 800; font-size: 10.5px; display: inline-block; margin-top: 3px;">
+                      CLASS: {{ info.class_name }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="level-badge" style="background: {{ info.badge_bg }}; color: {{ info.badge_color }};">
+                      TIER {{ a.depth }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if a.parent_code %}
+                      <span style="font-weight: 600;">{{ a.parent_name }}</span><br>
+                      <small style="color: #64748b;">{{ a.parent_code }}</small>
+                    {% else %}
+                      <strong style="color: #095ec2; font-size: 12px;">🌟 Platform Direct</strong>
+                    {% endif %}
+                  </td>
+                  <td><strong>{{ a.direct_recruits }}</strong></td>
+                  <td><strong>{{ a.total_downline }}</strong></td>
+                  <td><strong style="color: #047857;">{{ (a.total_commission_earned / 100)|inr }}</strong></td>
+                  <td><span class="status-badge status-confirmed">Active</span></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    <!-- =================================================================== -->
     <!-- VIEW: AGENTS / PARTNERS -->
     <!-- =================================================================== -->
     <!-- =================================================================== -->
@@ -1930,10 +2165,14 @@
                     <small style="color: #64748b;">{{ a.email }}</small>
                   </td>
                   <td>
-                    <code style="background: #eef2ff; color: #3730a3; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 12.5px;">{{ a.code }}</code>
+                    <code style="background: #eef2ff; color: #3730a3; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 12.5px;">{{ a.code }}</code><br>
+                    {% set info = classify_agent(a.code, a.depth) %}
+                    <span style="background: {{ info.badge_bg }}; color: {{ info.badge_color }}; border: 1px solid {{ info.badge_border }}; padding: 2px 7px; border-radius: 9999px; font-weight: 800; font-size: 10px; display: inline-block; margin-top: 2px;">
+                      CLASS: {{ info.class_name }}
+                    </span>
                   </td>
                   <td>
-                    <span class="level-badge" style="background: {% if a.depth == 1 %}#dbeafe; color: #1e40af;{% elif a.depth == 2 %}#e0e7ff; color: #3730a3;{% elif a.depth <= 4 %}#fef3c7; color: #92400e;{% else %}#f1f5f9; color: #475569;{% endif %}">
+                    <span class="level-badge" style="background: {{ info.badge_bg }}; color: {{ info.badge_color }};">
                       TIER {{ a.depth }}
                     </span>
                   </td>
