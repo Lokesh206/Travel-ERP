@@ -46,6 +46,10 @@ CREATE TABLE IF NOT EXISTS agents (
     parent_id INTEGER REFERENCES agents(id),
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('pending_approval', 'active', 'rejected', 'suspended')),
     phone TEXT,
+    bank_name TEXT,
+    bank_account_number TEXT,
+    bank_ifsc TEXT,
+    bank_account_holder TEXT,
     approved_by INTEGER REFERENCES users(id),
     approved_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -140,6 +144,11 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     agent_id INTEGER NOT NULL REFERENCES agents(id),
     amount_paise INTEGER NOT NULL CHECK (amount_paise > 0),
     status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'completed')),
+    bank_name TEXT,
+    bank_account_number TEXT,
+    bank_ifsc TEXT,
+    bank_account_holder TEXT,
+    payout_reference TEXT,
     reviewed_by INTEGER REFERENCES users(id),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     reviewed_at TEXT
@@ -432,6 +441,18 @@ def initialize_db() -> None:
             for root_id in by_parent.get(None, []):
                 set_tree(root_id, "/", 0)
 
+        # Ensure bank columns exist on agents table
+        a_cols_now = [r[1] for r in db.execute("PRAGMA table_info(agents)").fetchall()]
+        for col in ["bank_name", "bank_account_number", "bank_ifsc", "bank_account_holder"]:
+            if col not in a_cols_now:
+                db.execute(f"ALTER TABLE agents ADD COLUMN {col} TEXT")
+
+        # Ensure bank columns exist on withdrawals table
+        w_cols_now = [r[1] for r in db.execute("PRAGMA table_info(withdrawals)").fetchall()]
+        for col in ["bank_name", "bank_account_number", "bank_ifsc", "bank_account_holder", "payout_reference"]:
+            if col not in w_cols_now:
+                db.execute(f"ALTER TABLE withdrawals ADD COLUMN {col} TEXT")
+
         # Seed default double-entry ledger accounts
         ledger_base_accounts = [
             ("REV_BOOKINGS", "Customer Booking Revenue", "revenue"),
@@ -558,13 +579,15 @@ def money_to_paise(value: str) -> int:
     return int(amount * 100)
 
 
-def generate_unique_referral_code(db: sqlite3.Connection) -> str:
-    """Generate a guaranteed unique partner referral code in format TE-XXXXX."""
+def generate_unique_referral_code(db: sqlite3.Connection, depth: int = 1) -> str:
+    """Generate a guaranteed unique partner referral code formatted distinctly per level: TE-L{depth}-XXXX."""
+    level_tag = f"TE-L{depth}"
     for _ in range(500):
-        candidate = f"TE-{secrets.randbelow(90000) + 10000}"
+        suffix = secrets.randbelow(9000) + 1000
+        candidate = f"{level_tag}-{suffix}"
         if not db.execute("SELECT 1 FROM agents WHERE code=?", (candidate,)).fetchone():
             return candidate
-    return f"TE-{secrets.token_hex(3).upper()}"
+    return f"{level_tag}-{secrets.token_hex(2).upper()}"
 
 
 def get_or_create_ledger_account(db: sqlite3.Connection, code: str, name: str, acct_type: str) -> int:
@@ -790,65 +813,105 @@ def register() -> Any:
     return render_template("login.html", register=True)
 
 
+@app.route("/referral-program/register", methods=["GET"])
+@app.route("/partner/register", methods=["GET"])
+def partner_register_page() -> Any:
+    """Dedicated page for new agents to register under the Referral Program."""
+    sponsor_code = request.args.get("ref", "").strip().upper()
+    return render_template("partner_register.html", sponsor_code_val=sponsor_code)
+
+
+@app.route("/partner/apply/status/<int:agent_id>", methods=["GET"])
+def partner_application_status(agent_id: int) -> Any:
+    """Status screen displayed upon submitting partner application awaiting Owner approval."""
+    agent = g.db.execute("SELECT * FROM agents WHERE id=?", (agent_id,)).fetchone()
+    if not agent:
+        abort(404)
+    agent_user = g.db.execute("SELECT * FROM users WHERE id=?", (agent["user_id"],)).fetchone()
+    sponsor = None
+    if agent["parent_id"]:
+        sponsor = g.db.execute(
+            """SELECT a.code, a.depth, u.name, u.email FROM agents a
+               JOIN users u ON u.id = a.user_id WHERE a.id=?""", (agent["parent_id"],)
+        ).fetchone()
+    return render_template("partner_application_success.html", agent=agent, agent_user=agent_user, sponsor=sponsor)
+
+
 @app.route("/referral-program/join", methods=["GET", "POST"])
 @app.route("/partner/apply", methods=["GET", "POST"])
 def partner_apply() -> Any:
     """Dedicated route for new recruits to register under the Referral Program."""
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        email = request.form.get("email", "").strip().lower()
-        phone = request.form.get("phone", "").strip()
-        password = request.form.get("password", "")
-        password_confirm = request.form.get("password_confirm", "")
-        sponsor_code = request.form.get("sponsor_code", "").strip().upper()
+    if request.method == "GET":
+        return redirect(url_for("partner_register_page", ref=request.args.get("ref", "")))
 
-        if not name or len(name) > 80:
-            flash("Please enter your full name.", "error")
-        elif "@" not in email or len(email) > 254:
-            flash("Please enter a valid email address.", "error")
-        elif not phone or len(phone) < 7:
-            flash("Please provide a valid contact phone number.", "error")
-        elif len(password) < 8:
-            flash("Choose a password with at least 8 characters.", "error")
-        elif password != password_confirm:
-            flash("Passwords do not match.", "error")
-        elif g.db.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
-            flash("An account with that email already exists. Sign in or use another email.", "error")
-        else:
-            parent = None
-            if sponsor_code:
-                parent = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=? AND status='active'", (sponsor_code,)).fetchone()
-                if parent is None:
-                    flash(f"Sponsor referral code '{sponsor_code}' was not found or is not currently active.", "error")
-                    return redirect(url_for("referral_program", ref=sponsor_code) + "#join-partner")
-            try:
-                with g.db:
-                    cur_u = g.db.execute(
-                        "INSERT INTO users(name, email, password_hash, role) VALUES(?,?,?,'agent')",
-                        (name, email, generate_password_hash(password))
-                    )
-                    user_id = cur_u.lastrowid
-                    temp_code = f"PENDING-{secrets.token_hex(3).upper()}"
-                    depth = (parent["depth"] + 1) if parent else 1
-                    parent_path = parent["path"] if parent else "/"
-                    cur_a = g.db.execute(
-                        """INSERT INTO agents(user_id, code, level, depth, path, parent_id, status, phone)
-                           VALUES (?, ?, ?, ?, ?, ?, 'pending_approval', ?)""",
-                        (user_id, temp_code, depth, depth, parent_path, parent["id"] if parent else None, phone)
-                    )
-                    agent_id = cur_a.lastrowid
-                    audit("Partner recruit application initiated", "agent", agent_id)
-                flash("Application submitted successfully! Your partner registration is pending Owner review. Once approved, your unique Referral Code will be generated and you can log in using your Referral Code and password.", "success")
-                return redirect(url_for("login"))
-            except sqlite3.IntegrityError:
-                flash("We couldn't process your application. Please check your details and try again.", "error")
-    return redirect(url_for("referral_program") + "#join-partner")
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    phone = request.form.get("phone", "").strip()
+    password = request.form.get("password", "")
+    password_confirm = request.form.get("password_confirm", "")
+    sponsor_code = request.form.get("sponsor_code", "").strip().upper()
+    bank_name = request.form.get("bank_name", "").strip()
+    bank_account_number = request.form.get("bank_account_number", "").strip()
+    bank_ifsc = request.form.get("bank_ifsc", "").strip().upper()
+    bank_account_holder = request.form.get("bank_account_holder", "").strip()
+
+    if not name or len(name) > 80:
+        flash("Please enter your full name.", "error")
+        return redirect(url_for("partner_register_page", ref=sponsor_code))
+    elif "@" not in email or len(email) > 254:
+        flash("Please enter a valid email address.", "error")
+        return redirect(url_for("partner_register_page", ref=sponsor_code))
+    elif not phone or len(phone) < 7:
+        flash("Please provide a valid contact phone number.", "error")
+        return redirect(url_for("partner_register_page", ref=sponsor_code))
+    elif len(password) < 8:
+        flash("Choose a password with at least 8 characters.", "error")
+        return redirect(url_for("partner_register_page", ref=sponsor_code))
+    elif password != password_confirm:
+        flash("Passwords do not match.", "error")
+        return redirect(url_for("partner_register_page", ref=sponsor_code))
+    elif g.db.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
+        flash("An account with that email already exists. Sign in or use another email.", "error")
+        return redirect(url_for("partner_register_page", ref=sponsor_code))
+
+    parent = None
+    if sponsor_code:
+        parent = g.db.execute("SELECT * FROM agents WHERE UPPER(code)=? AND status='active'", (sponsor_code,)).fetchone()
+        if parent is None:
+            flash(f"Sponsor referral code '{sponsor_code}' was not found or is not currently active.", "error")
+            return redirect(url_for("partner_register_page", ref=sponsor_code))
+
+    try:
+        with g.db:
+            cur_u = g.db.execute(
+                "INSERT INTO users(name, email, password_hash, role) VALUES(?,?,?,'agent')",
+                (name, email, generate_password_hash(password))
+            )
+            user_id = cur_u.lastrowid
+            depth = (parent["depth"] + 1) if parent else 1
+            temp_code = f"PENDING-L{depth}-{secrets.token_hex(2).upper()}"
+            parent_path = parent["path"] if parent else "/"
+            cur_a = g.db.execute(
+                """INSERT INTO agents(user_id, code, level, depth, path, parent_id, status, phone,
+                                      bank_name, bank_account_number, bank_ifsc, bank_account_holder)
+                   VALUES (?, ?, ?, ?, ?, ?, 'pending_approval', ?, ?, ?, ?, ?)""",
+                (user_id, temp_code, depth, depth, parent_path, parent["id"] if parent else None, phone,
+                 bank_name or None, bank_account_number or None, bank_ifsc or None, bank_account_holder or None)
+            )
+            agent_id = cur_a.lastrowid
+            audit("Partner recruit application initiated", "agent", agent_id)
+
+        flash("Application submitted successfully! Your partner registration is now in the Owner Review Queue.", "success")
+        return redirect(url_for("partner_application_status", agent_id=agent_id))
+    except sqlite3.IntegrityError:
+        flash("We couldn't process your application. Please check your details and try again.", "error")
+        return redirect(url_for("partner_register_page", ref=sponsor_code))
 
 
 @app.post("/admin/partners/<int:agent_id>/approve")
 @login_required
 def approve_partner(agent_id: int) -> Any:
-    """Owner explicit approval for new partner recruit."""
+    """Owner explicit approval for new partner recruit, issuing Level-based Referral Code."""
     if g.user["role"] != "admin":
         abort(403)
     agent = g.db.execute(
@@ -859,10 +922,8 @@ def approve_partner(agent_id: int) -> Any:
         abort(404)
     if agent["status"] != "pending_approval":
         flash("This partner is not currently awaiting approval.", "error")
-        return redirect(url_for("dashboard", view="partners"))
+        return redirect(url_for("dashboard", view="agents"))
 
-    # Generate guaranteed unique referral code
-    new_code = generate_unique_referral_code(g.db)
     # Calculate materialized path and depth from immediate superior
     if agent["parent_id"]:
         parent = g.db.execute("SELECT path, depth FROM agents WHERE id=?", (agent["parent_id"],)).fetchone()
@@ -871,6 +932,9 @@ def approve_partner(agent_id: int) -> Any:
     else:
         path = f"/{agent['id']}/"
         depth = 1
+
+    # Generate guaranteed unique referral code distinctly per level: TE-L{depth}-XXXX
+    new_code = generate_unique_referral_code(g.db, depth=depth)
 
     with g.db:
         g.db.execute(
@@ -881,8 +945,8 @@ def approve_partner(agent_id: int) -> Any:
         get_or_create_ledger_account(g.db, f"COMM_AGENT_{agent_id}", f"Partner {new_code} Commission Account", "liability")
         audit(f"Partner {new_code} approved by Owner", "agent", agent_id)
 
-    flash(f"Partner {agent['name']} approved! Unique Referral Code {new_code} generated. Partner is now active and can log in using their Referral Code.", "success")
-    return redirect(url_for("dashboard", view="partners"))
+    flash(f"Partner {agent['name']} approved! Unique Level {depth} Referral Code {new_code} generated. Partner can now log in using either their Referral Code ({new_code}) or Email.", "success")
+    return redirect(url_for("dashboard", view="agents"))
 
 
 @app.post("/admin/partners/<int:agent_id>/reject")
@@ -1307,6 +1371,23 @@ def dashboard() -> Any:
             (my_agent["id"],)
         ).fetchall()
 
+    total_direct_commissions = 0
+    total_overrides = 0
+    total_withdrawn = 0
+    if my_agent:
+        total_direct_commissions = g.db.execute(
+            "SELECT COALESCE(SUM(amount_paise),0) FROM wallet_transactions WHERE agent_id=? AND kind='commission'",
+            (my_agent["id"],)
+        ).fetchone()[0]
+        total_overrides = g.db.execute(
+            "SELECT COALESCE(SUM(amount_paise),0) FROM wallet_transactions WHERE agent_id=? AND kind='override'",
+            (my_agent["id"],)
+        ).fetchone()[0]
+        total_withdrawn = g.db.execute(
+            "SELECT COALESCE(SUM(amount_paise),0) FROM withdrawals WHERE agent_id=? AND status='completed'",
+            (my_agent["id"],)
+        ).fetchone()[0]
+
     stats["pending_partners"] = len(pending_partners) if role == "admin" else 0
     stats["total_active_partners"] = len(hierarchy_agents) if role == "admin" else 0
 
@@ -1321,6 +1402,8 @@ def dashboard() -> Any:
         pending_partners=pending_partners, hierarchy_agents=hierarchy_agents,
         ledger_transactions_list=ledger_transactions_list, my_sponsor=my_sponsor,
         downline_recruits=downline_recruits, ledger_earnings=ledger_earnings,
+        total_direct_commissions=total_direct_commissions, total_overrides=total_overrides,
+        total_withdrawn=total_withdrawn,
     )
 
 
@@ -1681,6 +1764,7 @@ def update_commissions() -> Any:
 
 
 @app.post("/withdrawals")
+@app.post("/partner/wallet/transfer-bank")
 @roles_required("agent")
 def request_withdrawal() -> Any:
     agent = get_my_agent()
@@ -1688,17 +1772,54 @@ def request_withdrawal() -> Any:
         abort(403)
     try:
         amount = money_to_paise(request.form.get("amount", ""))
+        bank_name = request.form.get("bank_name", "").strip() or agent["bank_name"] or "Bank Transfer"
+        bank_acc = request.form.get("bank_account_number", "").strip() or agent["bank_account_number"] or ""
+        bank_ifsc = request.form.get("bank_ifsc", "").strip().upper() or agent["bank_ifsc"] or ""
+        bank_holder = request.form.get("bank_account_holder", "").strip() or agent["bank_account_holder"] or g.user["name"]
+        instant_transfer = request.form.get("instant", "1") == "1"
+
         with g.db:
             balance = wallet_balance(agent["id"])
             reserved = reserved_withdrawals(agent["id"])
             if amount > balance - reserved:
-                raise ValueError("That amount exceeds your available wallet balance.")
-            cursor = g.db.execute(
-                "INSERT INTO withdrawals(agent_id,amount_paise,status) VALUES(?,?,'pending')",
-                (agent["id"], amount),
-            )
-            audit("Withdrawal requested", "withdrawal", cursor.lastrowid)
-        flash("Withdrawal request submitted for admin review.", "success")
+                raise ValueError("That amount exceeds your available TravelEasy wallet balance.")
+
+            payout_ref = f"UTR-TE-{datetime.now().strftime('%Y%m%d')}-{secrets.randbelow(90000) + 10000}"
+
+            # Save / update bank details in agent's profile for future transfers
+            if bank_acc:
+                g.db.execute(
+                    """UPDATE agents SET bank_name=?, bank_account_number=?, bank_ifsc=?, bank_account_holder=?
+                       WHERE id=?""",
+                    (bank_name, bank_acc, bank_ifsc, bank_holder, agent["id"])
+                )
+
+            if instant_transfer:
+                # Instant Bank Transfer (NEFT/IMPS) -> deduct wallet and record completed payout with UTR
+                cur = g.db.execute(
+                    """INSERT INTO withdrawals(agent_id, amount_paise, status, bank_name, bank_account_number,
+                                               bank_ifsc, bank_account_holder, payout_reference, reviewed_at)
+                       VALUES (?, ?, 'completed', ?, ?, ?, ?, ?, datetime('now'))""",
+                    (agent["id"], amount, bank_name, bank_acc, bank_ifsc, bank_holder, payout_ref),
+                )
+                withdrawal_id = cur.lastrowid
+                g.db.execute(
+                    """INSERT INTO wallet_transactions(agent_id, amount_paise, kind, reference)
+                       VALUES (?, ?, 'withdrawal', ?)""",
+                    (agent["id"], -amount, payout_ref),
+                )
+                audit("Instant wallet bank payout completed", "withdrawal", withdrawal_id)
+                last4 = bank_acc[-4:] if len(bank_acc) >= 4 else "Account"
+                flash(f"₹{(amount/100):,.2f} transferred from TravelEasy Wallet to {bank_name} (A/C ••••{last4}) successfully! Bank Reference UTR: {payout_ref}", "success")
+            else:
+                cursor = g.db.execute(
+                    """INSERT INTO withdrawals(agent_id, amount_paise, status, bank_name, bank_account_number,
+                                               bank_ifsc, bank_account_holder, payout_reference)
+                       VALUES (?, ?, 'pending', ?, ?, ?, ?, ?)""",
+                    (agent["id"], amount, bank_name, bank_acc, bank_ifsc, bank_holder, payout_ref),
+                )
+                audit("Bank payout requested", "withdrawal", cursor.lastrowid)
+                flash(f"Bank transfer request of ₹{(amount/100):,.2f} submitted for processing. Ref: {payout_ref}", "success")
     except ValueError as error:
         flash(str(error), "error")
     return redirect(url_for("dashboard", view="wallet"))

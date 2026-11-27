@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Application Submitted · TravelEasy Partner Program</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --te-blue-primary: #095ec2;
+      --te-blue-dark: #003e8a;
+      --te-gold: #f5a623;
+      --te-bg-page: #f8fafc;
+      --te-text-dark: #0f2942;
+      --te-text-muted: #64748b;
+      --te-border: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      color: var(--te-text-dark);
+      background: var(--te-bg-page);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .status-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--te-border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .status-header img { height: 42px; width: auto; }
+    .status-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    .status-card {
+      background: #ffffff;
+      border-radius: 24px;
+      border: 1px solid var(--te-border);
+      box-shadow: 0 20px 40px -15px rgba(15, 41, 66, 0.1);
+      max-width: 640px;
+      width: 100%;
+      overflow: hidden;
+      text-align: center;
+    }
+    .status-card-header {
+      background: linear-gradient(135deg, #095ec2 0%, #003e8a 100%);
+      color: #ffffff;
+      padding: 40px 32px 32px;
+      position: relative;
+    }
+    .status-icon-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #047857;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .status-card-header h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      font-weight: 800;
+    }
+    .status-card-header p {
+      margin: 0;
+      font-size: 14px;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+    .status-card-body {
+      padding: 32px;
+      text-align: left;
+    }
+    .status-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
+    }
+    .status-badge-row span.label {
+      font-size: 13px;
+      color: #92400e;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-pill-amber {
+      background: #d97706;
+      color: #ffffff;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 13.5px;
+    }
+    .details-table tr {
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .details-table td {
+      padding: 10px 0;
+    }
+    .details-table td.label-col {
+      color: var(--te-text-muted);
+      width: 40%;
+      font-weight: 600;
+    }
+    .details-table td.val-col {
+      color: var(--te-text-dark);
+      font-weight: 700;
+    }
+    .next-steps-box {
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      padding: 18px 20px;
+      margin-bottom: 28px;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.55;
+    }
+    .next-steps-box h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f2942;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .next-steps-box ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .next-steps-box li {
+      margin-bottom: 6px;
+    }
+    .status-actions-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .btn-action-primary {
+      background: #0066cc;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,102,204,0.25);
+    }
+    .btn-action-secondary {
+      background: #ffffff;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="status-header">
+    <a href="{{ url_for('public_home') }}">
+      <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy Logo">
+    </a>
+    <a href="{{ url_for('public_home') }}" style="text-decoration: none; font-size: 13.5px; font-weight: 700; color: #095ec2;">&larr; Back to TravelEasy Home</a>
+  </header>
+
+  <main class="status-main">
+    <div class="status-card">
+      <div class="status-card-header">
+        <div class="status-icon-circle">✓</div>
+        <h1>Application Submitted Successfully!</h1>
+        <p>Your partner registration has been submitted and is currently in the Owner Review Queue.</p>
+      </div>
+
+      <div class="status-card-body">
+        
+        <div class="status-badge-row">
+          <span class="label"><span>⏳</span> Application Status</span>
+          <span class="status-pill-amber">Pending Owner Approval</span>
+        </div>
+
+        <table class="details-table">
+          <tr>
+            <td class="label-col">Applicant Name</td>
+            <td class="val-col">{{ agent_user.name }}</td>
+          </tr>
+          <tr>
+            <td class="label-col">Registered Email</td>
+            <td class="val-col">{{ agent_user.email }}</td>
+          </tr>
+          <tr>
+            <td class="label-col">Contact Phone</td>
+            <td class="val-col">{{ agent.phone or 'Not provided' }}</td>
+          </tr>
+          <tr>
+            <td class="label-col">Immediate Superior</td>
+            <td class="val-col">
+              {% if sponsor %}
+                {{ sponsor.name }} ({{ sponsor.code }}) · Level {{ sponsor.depth }}
+              {% else %}
+                <span style="color: #095ec2;">Platform Owner Direct Root</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="label-col">Anticipated Partner Tier</td>
+            <td class="val-col">
+              <span style="background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 800;">
+                Level {{ agent.depth }}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td class="label-col">Submission Time</td>
+            <td class="val-col">{{ agent.created_at[:16] }}</td>
+          </tr>
+          {% if agent.bank_name %}
+            <tr>
+              <td class="label-col">Registered Bank Payout</td>
+              <td class="val-col">{{ agent.bank_name }} (••••{{ agent.bank_account_number[-4:] if agent.bank_account_number else '' }})</td>
+            </tr>
+          {% endif %}
+        </table>
+
+        <div class="next-steps-box">
+          <h4><span>💡</span> What Happens Next? (Strict Two-Step Validation)</h4>
+          <ol>
+            <li>The Platform Owner will review your application in the Admin Command Center.</li>
+            <li>Upon explicit approval, the system generates your unique Level-Based Referral ID (format: <strong>TE-L{{ agent.depth }}-XXXX</strong>).</li>
+            <li>Your TravelEasy Wallet will be activated to receive flat 10% booking commissions and cascading overrides.</li>
+            <li>You will be able to log in to your partner portal using <strong>either your Email or your new Referral ID</strong> with your password.</li>
+          </ol>
+        </div>
+
+        <div class="status-actions-row">
+          <a class="btn-action-primary" href="{{ url_for('login') }}">Go to Partner Login &rarr;</a>
+          <a class="btn-action-secondary" href="{{ url_for('public_home') }}">Browse TravelEasy</a>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

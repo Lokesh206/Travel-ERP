@@ -841,8 +841,8 @@
           Turn your travel network into an opportunity. Refer friends, family and fellow travellers to TravelEasy and grow with every successful journey.
         </p>
         <div class="ref-hero-cta-group">
-          <!-- Button opens partner application modal with two-step validation -->
-          <a class="btn-gold" href="#join-partner" onclick="openPartnerModal(event)">
+          <!-- Button opens dedicated partner application page with two-step validation -->
+          <a class="btn-gold" href="{{ url_for('partner_register_page', ref=request.args.get('ref', '')) }}">
             Join the Referral Program &rarr;
           </a>
           <a class="btn-outline-white" href="#how-it-works">
@@ -1025,8 +1025,8 @@
         <h3>Ready to share your next journey?</h3>
         <p>Join TravelEasy's Referral Program and start building your referral journey today.</p>
       </div>
-      <!-- Button opens partner application modal with two-step validation -->
-      <a class="btn-gold" href="#join-partner" onclick="openPartnerModal(event)">
+      <!-- Button opens dedicated partner application page with two-step validation -->
+      <a class="btn-gold" href="{{ url_for('partner_register_page', ref=request.args.get('ref', '')) }}">
         Join Now &rarr;
       </a>
     </div>
