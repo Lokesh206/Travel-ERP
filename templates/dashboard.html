@@ -8,6 +8,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>{{ view|replace('_',' ')|title }} · TravelEasy Travel Desk</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='traveleasy-icon-192.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,11 +17,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
   <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}?v=7">
   <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=7">
-  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=3">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=4">
 </head>
 <body class="app-page">
   <aside class="sidebar">
-    <a class="brand" href="{{ url_for('dashboard') }}"><img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 34px; vertical-align: middle;"></a>
+    <a class="brand" href="{{ url_for('dashboard') }}"><img src="{{ url_for('static', filename='traveleasy-logo.png') }}?v=2" alt="TravelEasy · Travel around the world" style="height: 46px; width: auto; vertical-align: middle; object-fit: contain;"></a>
     <div class="workspace-label">WORKSPACE</div>
     <nav class="nav-menu">
       <a class="nav-link {{ 'active' if view == 'overview' }}" href="{{ url_for('dashboard', view='overview') }}"><span>◫</span> Overview</a>
@@ -38,7 +40,7 @@
         <a class="nav-link {{ 'active' if view == 'commissions' }}" href="{{ url_for('dashboard', view='commissions') }}"><span>◈</span> Commission &amp; Ledger</a>
         <a class="nav-link {{ 'active' if view == 'wallet' }}" href="{{ url_for('dashboard', view='wallet') }}"><span>◉</span> Payouts queue {% if stats.pending_withdrawals %}<span class="nav-count" style="background: #faeae7; color: #a4594c;">{{ stats.pending_withdrawals }}</span>{% endif %}</a>
         <a class="nav-link {{ 'active' if view == 'inquiries' }}" href="{{ url_for('dashboard', view='inquiries') }}"><span>✉</span> Contact inbox {% if stats.new_inquiries %}<span class="nav-count" style="background: #eef7eb; color: #2d6b3c;">{{ stats.new_inquiries }}</span>{% endif %}</a>
-        <a class="nav-link {{ 'active' if view == 'emails' }}" href="{{ url_for('dashboard', view='emails') }}"><span>📧</span> Dispatched Emails <span class="nav-count">{{ sent_emails|length }}</span></a>
+        <a class="nav-link {{ 'active' if view == 'emails' }}" href="{{ url_for('dashboard', view='emails') }}"><span>📧</span> Dispatched Emails <span class="nav-count">{{ stats.sent_emails_count }}</span></a>
         <a class="nav-link {{ 'active' if view == 'reviews' }}" href="{{ url_for('dashboard', view='reviews') }}"><span>★</span> Traveler reviews</a>
         <a class="nav-link {{ 'active' if view == 'audit' }}" href="{{ url_for('dashboard', view='audit') }}"><span>◷</span> Activity audit</a>
         <div class="workspace-label nav-spacer">PUBLIC SITE</div>
@@ -70,7 +72,9 @@
     <div class="mobile-drawer-panel" onclick="event.stopPropagation()">
       <div class="mobile-drawer-header">
         <a class="brand brand-light" href="{{ url_for('dashboard') }}">
-          <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 32px; filter: brightness(0) invert(1);">
+          <span style="background: #ffffff; padding: 5px 12px; border-radius: 10px; display: inline-flex; align-items: center; box-shadow: 0 3px 10px rgba(0,0,0,0.2);">
+            <img src="{{ url_for('static', filename='traveleasy-logo.png') }}?v=2" alt="TravelEasy · Travel around the world" style="height: 36px; width: auto; display: block;">
+          </span>
         </a>
         <button type="button" class="mobile-drawer-close" onclick="closeMobileDrawer()" aria-label="Close menu">✕</button>
       </div>
@@ -114,6 +118,9 @@
 
         {% if g.user.role == 'admin' %}
           <div class="mobile-drawer-section-label">Administration</div>
+          <a class="mobile-drawer-link {{ 'active' if view == 'analytics' }}" href="{{ url_for('dashboard', view='analytics') }}">
+            <span class="link-icon">📊</span> Visual Analytics <span class="link-count">Live</span>
+          </a>
           <a class="mobile-drawer-link {{ 'active' if view == 'applications' }}" href="{{ url_for('dashboard', view='applications') }}">
             <span class="link-icon">📝</span> Agent Applications {% if stats.pending_partners %}<span class="link-count" style="background: #e11d48; color: #fff; font-weight: 800;">{{ stats.pending_partners }} new</span>{% endif %}
           </a>
@@ -130,7 +137,7 @@
             <span class="link-icon">✉</span> Contact Inbox {% if stats.new_inquiries %}<span class="link-count">{{ stats.new_inquiries }}</span>{% endif %}
           </a>
           <a class="mobile-drawer-link {{ 'active' if view == 'emails' }}" href="{{ url_for('dashboard', view='emails') }}">
-            <span class="link-icon">📧</span> Dispatched Emails <span class="link-count">{{ sent_emails|length }}</span>
+            <span class="link-icon">📧</span> Dispatched Emails <span class="link-count">{{ stats.sent_emails_count }}</span>
           </a>
           <a class="mobile-drawer-link {{ 'active' if view == 'reviews' }}" href="{{ url_for('dashboard', view='reviews') }}">
             <span class="link-icon">★</span> Traveler Reviews
@@ -521,25 +528,17 @@
               <div style="background: #ffffff; border: 1px solid #e5ebe6; border-radius: 8px; padding: 14px 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                   <span style="font-size: 11px; font-weight: 800; color: #1e3f28; text-transform: uppercase;">PARTNER NETWORK SALES SHARE</span>
-                  <a href="{{ url_for('dashboard', view='agents') }}" style="font-size: 10px; color: #235e35; font-weight: 700; text-decoration: none;">View All Partners ↗</a>
+                  <a href="{{ url_for('dashboard', view='agents') }}" style="font-size: 10px; color: #235e35; font-weight: 700; text-decoration: none;">View All Partners ({{ stats.total_active_partners }}) ↗</a>
                 </div>
                 <div style="display: grid; gap: 8px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed #eef2ee;">
-                    <span><strong>Priya Sharma</strong> (WW-1001 · Tier 4 Apex)</span>
-                    <span style="font-weight: 800; color: #194827;">₹45,000 Volume</span>
-                  </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed #eef2ee;">
-                    <span><strong>Rohan Das</strong> (WW-1002 · Tier 3 Senior)</span>
-                    <span style="font-weight: 800; color: #194827;">₹28,500 Volume</span>
-                  </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed #eef2ee;">
-                    <span><strong>Nisha Rao</strong> (WW-1003 · Tier 2 Associate)</span>
-                    <span style="font-weight: 800; color: #194827;">₹19,500 Volume</span>
-                  </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0;">
-                    <span><strong>Kabir Singh</strong> (WW-1004 · Tier 1 Junior)</span>
-                    <span style="font-weight: 800; color: #194827;">₹14,200 Volume</span>
-                  </div>
+                  {% for ps in partner_sales[:5] %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 4px 0; {% if not loop.last %}border-bottom: 1px dashed #eef2ee;{% endif %}">
+                      <span><strong>{{ ps.name }}</strong> ({{ ps.code }} · L{{ ps.level }} · {{ ps.booking_count }} bookings)</span>
+                      <span style="font-weight: 800; color: #194827;">{{ (ps.total_volume / 100)|inr }}</span>
+                    </div>
+                  {% else %}
+                    <p class="empty-note">Partner booking volumes will appear here as reservations are recorded.</p>
+                  {% endfor %}
                 </div>
               </div>
 
@@ -1471,7 +1470,7 @@
             </select>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="book-client-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
             <div>
               <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Client Full Name</label>
               <input type="text" name="guest_name" placeholder="e.g. Ramesh Kumar" required style="height: 40px; width: 100%;">
@@ -1482,7 +1481,7 @@
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+          <div class="book-client-grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
             <div>
               <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Client Contact Phone</label>
               <input type="tel" name="guest_phone" placeholder="+91 98765 43210" value="+91 98765 43210" style="height: 40px; width: 100%;">
@@ -1497,7 +1496,7 @@
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; align-items: center;">
+          <div class="book-client-grid-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; align-items: center;">
             <div>
               <label style="font-size: 12px; font-weight: 700; color: #1e3a26; margin-bottom: 6px; display: block;">Number of Guests</label>
               <input type="number" name="travellers" id="agent-guests-input" min="1" max="20" value="2" required style="height: 40px; width: 100%;" oninput="onAgentGuestsChange()">
@@ -1523,7 +1522,7 @@
             </div>
           </div>
 
-          <div style="background: #f7faf7; border: 1px solid #dce8dd; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div class="book-client-submit-bar" style="background: #f7faf7; border: 1px solid #dce8dd; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
             <div>
               <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #5f7064; display: block;">Total Booking Tariff:</span>
               <strong id="agent-total-display" style="font-size: 22px; color: #193826; font-family: 'DM Sans', sans-serif;">Calculating...</strong>
@@ -1556,10 +1555,15 @@
       <section class="panel table-panel">
         <div class="panel-heading">
           <div>
-            <span class="eyebrow">TRAVEL LEDGER</span>
+            <span class="eyebrow">TRAVEL LEDGER · PERMANENT ARCHIVE (ALL TIME)</span>
             <h2>{{ bookings|length }} {{ 'Booking' if bookings|length == 1 else 'Bookings' }}</h2>
           </div>
-          <input class="table-search" type="search" placeholder="Filter by name, ref, destination…" data-table-search>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <a class="mini-action" href="{{ url_for('dashboard', view='bookings', period='all') }}" style="{% if period == 'all' or not period %}background:#193826;color:#fff;border-color:#193826;{% endif %}text-decoration:none;">All Time</a>
+            <a class="mini-action" href="{{ url_for('dashboard', view='bookings', period='30d') }}" style="{% if period == '30d' %}background:#193826;color:#fff;border-color:#193826;{% endif %}text-decoration:none;">Last 30 Days (1 Mo)</a>
+            <a class="mini-action" href="{{ url_for('dashboard', view='bookings', period='90d') }}" style="{% if period == '90d' %}background:#193826;color:#fff;border-color:#193826;{% endif %}text-decoration:none;">Last 90 Days</a>
+            <input class="table-search" type="search" placeholder="Filter by name, ref, destination…" data-table-search>
+          </div>
         </div>
         <div class="table-scroll">
           <table>
@@ -1746,7 +1750,7 @@
                 <input name="amount" type="number" step="0.01" min="1" max="{{ '%.2f'|format(available_balance / 100) }}" value="{{ '%.2f'|format(available_balance / 100) if available_balance > 0 else '0.00' }}" required style="font-size: 16px; font-weight: 800; color: #047857;">
               </label>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+              <div class="wallet-bank-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
                 <label style="font-size: 11.5px; font-weight: 700;">Bank Name
                   <input name="bank_name" type="text" placeholder="e.g. State Bank of India" value="{{ my_agent.bank_name or '' }}" required style="font-size: 12px;">
                 </label>
@@ -1755,7 +1759,7 @@
                 </label>
               </div>
 
-              <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 6px;">
+              <div class="wallet-bank-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 6px;">
                 <label style="font-size: 11.5px; font-weight: 700;">Account Number
                   <input name="bank_account_number" type="text" placeholder="e.g. 50100234918231" value="{{ my_agent.bank_account_number or '' }}" required style="font-size: 12px;">
                 </label>
@@ -2620,11 +2624,58 @@
     {% elif view == 'audit' %}
       <section class="page-heading">
         <div>
-          <span class="eyebrow">TRANSPARENCY &amp; SECURITY</span>
-          <h1>System Audit <em>Trail.</em></h1>
-          <p class="muted">A transparent historical record of all administrative, booking, and wallet actions.</p>
+          <span class="eyebrow">TRANSPARENCY &amp; PERMANENT RETENTION</span>
+          <h1>System Audit <em>Trail &amp; Long-Term Storage.</em></h1>
+          <p class="muted">Permanent historical record of all administrative, agent, booking, email, and wallet data. All entered records are preserved long-term without automatic deletion.</p>
         </div>
       </section>
+
+      {% if retention_summary %}
+        <section class="panel" style="margin-bottom: 20px; border-left: 4px solid #1e6331;">
+          <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <span class="eyebrow" style="color: #1e6331;">PERMANENT DATA RETENTION POLICY</span>
+              <h2>All Entered Data Preserved ({{ retention_summary.total_records }} Total Records)</h2>
+              <p class="muted" style="font-size: 12.5px; margin: 4px 0 0;">
+                SQLite <strong>{{ retention_summary.journal_mode }}</strong> mode · {{ retention_summary.db_size_kb }} KB ·
+                {{ retention_summary.backup_count }} snapshot backup(s) ·
+                Span: <strong>{{ (retention_summary.oldest_created_at or '—')[:16] }}</strong> to <strong>{{ (retention_summary.newest_created_at or '—')[:16] }}</strong>
+              </p>
+            </div>
+            <div class="retention-actions-row" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <form method="post" action="{{ url_for('manual_backup') }}" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="return_to" value="{{ url_for('dashboard', view='audit') }}">
+                <button type="submit" class="button button-green">💾 Create Backup Snapshot</button>
+              </form>
+              <a class="button button-dark" href="{{ url_for('export_all_data') }}">⬇ Download Full Archive (.json)</a>
+            </div>
+          </div>
+          <div class="admin-kpi-grid" style="margin-top: 12px; margin-bottom: 0;">
+            <article class="admin-kpi-card">
+              <div class="admin-kpi-top"><span>AGENTS &amp; USERS</span></div>
+              <strong>{{ retention_summary.counts.agents }} / {{ retention_summary.counts.users }}</strong>
+              <div class="admin-kpi-sub"><span>Partners / Accounts (Permanent)</span></div>
+            </article>
+            <article class="admin-kpi-card">
+              <div class="admin-kpi-top"><span>BOOKINGS &amp; EMAILS</span></div>
+              <strong>{{ retention_summary.counts.bookings }} / {{ retention_summary.counts.sent_emails }}</strong>
+              <div class="admin-kpi-sub"><span>Reservations / Vouchers</span></div>
+            </article>
+            <article class="admin-kpi-card">
+              <div class="admin-kpi-top"><span>WALLET &amp; LEDGER</span></div>
+              <strong>{{ retention_summary.counts.wallet_transactions }} / {{ retention_summary.counts.ledger_entries }}</strong>
+              <div class="admin-kpi-sub"><span>Wallet Tx / Double-Entry Lines</span></div>
+            </article>
+            <article class="admin-kpi-card">
+              <div class="admin-kpi-top"><span>RETENTION GUARANTEE</span></div>
+              <strong>{{ retention_summary.retention_days }}+ Days</strong>
+              <div class="admin-kpi-sub"><span>Zero Auto-Purge · 90-Day Sessions</span></div>
+            </article>
+          </div>
+        </section>
+      {% endif %}
+
       <section class="panel table-panel">
         <div class="panel-heading">
           <div><span class="eyebrow">SECURITY LEDGER</span><h2>{{ logs|length }} Audit Records</h2></div>
@@ -2861,7 +2912,7 @@
           <span class="guide-badge">4-TIER HIERARCHICAL REVENUE ENGINE</span>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+        <div class="guide-arch-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
           <!-- 3A. Architecture Layers -->
           <div>
             <h3 style="font-size: 16px; margin: 0 0 12px; color: #1a2e21;">A. System Architecture Layers</h3>

@@ -1,25 +1,50 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import secrets
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote, urlsplit
 
-from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, Response, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
 ROOT = Path(__file__).resolve().parent
 DATABASE = Path(os.environ.get("TRAVEL_ERP_DATABASE", ROOT / "travel_erp.sqlite3"))
+BACKUP_DIR = Path(os.environ.get("TRAVEL_ERP_BACKUP_DIR", DATABASE.parent / "backups"))
+SECRET_FILE = Path(os.environ.get("TRAVEL_ERP_SECRET_FILE", DATABASE.parent / ".travel_erp_secret"))
+DATA_RETENTION_DAYS = int(os.environ.get("TRAVEL_ERP_RETENTION_DAYS", "3650"))
+
+
+def load_or_create_secret_key() -> str:
+    """Persist a stable secret key across restarts so user sessions remain valid long-term."""
+    env_secret = os.environ.get("TRAVEL_ERP_SECRET", "").strip()
+    if env_secret:
+        return env_secret
+    try:
+        SECRET_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if SECRET_FILE.exists():
+            stored = SECRET_FILE.read_text(encoding="utf-8").strip()
+            if len(stored) >= 32:
+                return stored
+        generated = secrets.token_hex(32)
+        SECRET_FILE.write_text(generated, encoding="utf-8")
+        return generated
+    except OSError:
+        return secrets.token_hex(32)
+
+
 app = Flask(__name__)
 app.config.update(
-    SECRET_KEY=os.environ.get("TRAVEL_ERP_SECRET") or secrets.token_hex(32),
+    SECRET_KEY=load_or_create_secret_key(),
+    PERMANENT_SESSION_LIFETIME=timedelta(days=90),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.environ.get("TRAVEL_ERP_HTTPS", "").lower() == "true",
@@ -205,11 +230,46 @@ CREATE INDEX IF NOT EXISTS ledger_entries_agent_idx ON ledger_entries(agent_id);
 
 
 def connect_db() -> sqlite3.Connection:
-    db = sqlite3.connect(DATABASE, timeout=10)
+    db = sqlite3.connect(DATABASE, timeout=15)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
-    db.execute("PRAGMA busy_timeout = 10000")
+    db.execute("PRAGMA busy_timeout = 15000")
+    db.execute("PRAGMA synchronous = NORMAL")
     return db
+
+
+def create_sqlite_backup(tag: str = "auto") -> Path | None:
+    """Create an atomic online SQLite backup snapshot for long-term data durability."""
+    if not DATABASE.exists():
+        return None
+    try:
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        backup_path = BACKUP_DIR / f"travel_erp_{tag}_{stamp}.sqlite3"
+        src = sqlite3.connect(DATABASE, timeout=15)
+        dst = sqlite3.connect(backup_path)
+        try:
+            src.backup(dst)
+        finally:
+            dst.close()
+            src.close()
+        return backup_path
+    except Exception as err:
+        print("Backup warning:", err)
+        return None
+
+
+def ensure_daily_backup() -> None:
+    """Ensure at least one snapshot exists for today without ever pruning active DB records."""
+    if not DATABASE.exists():
+        return
+    try:
+        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        today_prefix = f"travel_erp_daily_{date.today().isoformat()}"
+        if not any(BACKUP_DIR.glob(f"{today_prefix}*.sqlite3")):
+            create_sqlite_backup(tag="daily")
+    except Exception as err:
+        print("Daily backup warning:", err)
 
 
 def compute_return_date(start_date_str: str, duration_str: str) -> str:
@@ -292,8 +352,11 @@ def send_booking_email(booking: dict, email_type: str) -> None:
         html = f"""
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 650px; margin: 0 auto; background: #ffffff; border: 1px solid #dbe4dc; border-radius: 12px; overflow: hidden; color: #1e2822;">
           <div style="background: #193826; color: #ffffff; padding: 24px 30px; text-align: left;">
-            <div style="font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Wanderwise Travel ERP</div>
-            <div style="font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;">Incredible India Travel Desk · Official E-Ticket & Itinerary Report</div>
+            <div style="display: inline-block; background: #ffffff; padding: 6px 14px; border-radius: 10px; margin-bottom: 10px;">
+              <span style="font-size: 20px; font-weight: 800; color: #0073e6;">Travel</span><span style="font-size: 20px; font-weight: 800; color: #f26522;">Easy</span>
+              <span style="display: block; font-size: 10px; color: #1e2822; font-style: italic;">Travel around the world</span>
+            </div>
+            <div style="font-size: 11px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;">TravelEasy Travel Desk · Official E-Ticket & Itinerary Report</div>
           </div>
           <div style="padding: 26px 30px;">
             <div style="display: inline-block; background: {badge_color}18; color: {badge_color}; border: 1px solid {badge_color}40; border-radius: 20px; font-size: 11px; font-weight: 800; padding: 4px 12px; text-transform: uppercase;">{badge}</div>
@@ -339,6 +402,7 @@ def send_booking_email(booking: dict, email_type: str) -> None:
 def initialize_db() -> None:
     DATABASE.parent.mkdir(parents=True, exist_ok=True)
     with connect_db() as db:
+        db.execute("PRAGMA journal_mode = WAL")
         db.executescript(SCHEMA)
         db.executemany(
             "INSERT OR IGNORE INTO commission_rules(level, rate_bps) VALUES (?, ?)",
@@ -489,6 +553,8 @@ def initialize_db() -> None:
         run_seed()
     except Exception as err:
         print("Seed warning:", err)
+
+    ensure_daily_backup()
 
 
 # Ensure database and tables exist even when loaded via WSGI (e.g. gunicorn on Render)
@@ -852,6 +918,7 @@ def login() -> Any:
 
             next_url = safe_local_next(request.form.get("next") or request.args.get("next"))
             session.clear()
+            session.permanent = True
             session["user_id"] = user["id"]
             session["csrf_token"] = secrets.token_urlsafe(32)
             return redirect(next_url or url_for("dashboard"))
@@ -1280,35 +1347,83 @@ def booking_voucher(reference: str) -> Any:
     return render_template("booking_voucher.html", booking=booking)
 
 
+def build_retention_summary(db: sqlite3.Connection) -> dict[str, Any]:
+    """Summarize permanent data storage metrics across all operational tables."""
+    tracked_tables = [
+        ("users", "Users"),
+        ("agents", "Travel Partners"),
+        ("bookings", "Bookings"),
+        ("wallet_transactions", "Wallet Entries"),
+        ("withdrawals", "Payout Requests"),
+        ("ledger_transactions", "Ledger Tx"),
+        ("ledger_entries", "Ledger Lines"),
+        ("sent_emails", "Dispatched Emails"),
+        ("reviews", "Reviews"),
+        ("contact_inquiries", "Inquiries"),
+        ("audit_logs", "Audit Logs"),
+    ]
+    counts: dict[str, int] = {}
+    oldest_dt: str | None = None
+    newest_dt: str | None = None
+    for tbl, _label in tracked_tables:
+        row = db.execute(f"SELECT COUNT(*), MIN(created_at), MAX(created_at) FROM {tbl}").fetchone()
+        counts[tbl] = row[0]
+        if row[1] and (oldest_dt is None or row[1] < oldest_dt):
+            oldest_dt = row[1]
+        if row[2] and (newest_dt is None or row[2] > newest_dt):
+            newest_dt = row[2]
+    packages_count = db.execute("SELECT COUNT(*) FROM packages").fetchone()[0]
+    journal_mode = db.execute("PRAGMA journal_mode").fetchone()[0]
+    db_size_kb = round(DATABASE.stat().st_size / 1024, 1) if DATABASE.exists() else 0.0
+    backup_count = len(list(BACKUP_DIR.glob("travel_erp_*.sqlite3"))) if BACKUP_DIR.exists() else 0
+    return {
+        "counts": counts,
+        "packages_count": packages_count,
+        "total_records": sum(counts.values()) + packages_count,
+        "oldest_created_at": oldest_dt,
+        "newest_created_at": newest_dt,
+        "journal_mode": str(journal_mode).upper(),
+        "db_size_kb": db_size_kb,
+        "backup_count": backup_count,
+        "retention_days": DATA_RETENTION_DAYS,
+    }
+
+
 @app.get("/dashboard")
 @login_required
 def dashboard() -> Any:
     role = g.user["role"]
     view = request.args.get("view", "overview")
+    period = request.args.get("period", "all").strip().lower()
+    period_days = {"30d": 30, "90d": 90, "365d": 365}.get(period)
+    cutoff_clause = f"datetime('now', '-{period_days} days')" if period_days else None
+
     packages = g.db.execute(
         "SELECT *, capacity-reserved AS available FROM packages WHERE status='active' ORDER BY id"
     ).fetchall()
     my_agent = get_my_agent() if role == "agent" else None
+    booking_period_sql = f" AND b.created_at >= {cutoff_clause}" if cutoff_clause else ""
     if role == "customer":
         bookings = g.db.execute(
-            """SELECT b.*,p.title,p.destination,p.duration,
+            f"""SELECT b.*,p.title,p.destination,p.duration,
                       EXISTS(SELECT 1 FROM reviews r WHERE r.booking_id=b.id) AS reviewed
                FROM bookings b JOIN packages p ON p.id=b.package_id
-               WHERE b.customer_id=? ORDER BY b.created_at DESC""", (g.user["id"],)
+               WHERE b.customer_id=?{booking_period_sql} ORDER BY b.created_at DESC""", (g.user["id"],)
         ).fetchall()
     elif role == "agent":
         bookings = g.db.execute(
-            """SELECT b.*,p.title,p.destination,p.duration,u.name AS customer_name,
+            f"""SELECT b.*,p.title,p.destination,p.duration,u.name AS customer_name,
                       EXISTS(SELECT 1 FROM reviews r WHERE r.booking_id=b.id) AS reviewed FROM bookings b
                JOIN packages p ON p.id=b.package_id JOIN users u ON u.id=b.customer_id
-               WHERE b.agent_id=? ORDER BY b.created_at DESC""", (my_agent["id"],)
+               WHERE b.agent_id=?{booking_period_sql} ORDER BY b.created_at DESC""", (my_agent["id"],)
         ).fetchall()
     else:
+        where_admin_b = f"WHERE b.created_at >= {cutoff_clause}" if cutoff_clause else ""
         bookings = g.db.execute(
-            """SELECT b.*,p.title,p.destination,p.duration,u.name AS customer_name,
+            f"""SELECT b.*,p.title,p.destination,p.duration,u.name AS customer_name,
                       EXISTS(SELECT 1 FROM reviews r WHERE r.booking_id=b.id) AS reviewed FROM bookings b
                JOIN packages p ON p.id=b.package_id JOIN users u ON u.id=b.customer_id
-               ORDER BY b.created_at DESC LIMIT 50"""
+               {where_admin_b} ORDER BY b.created_at DESC"""
         ).fetchall()
     agents = g.db.execute(
         """SELECT a.id,a.code,a.level,u.name,u.email,
@@ -1319,17 +1434,17 @@ def dashboard() -> Any:
     withdrawals = g.db.execute(
         """SELECT w.*,u.name AS agent_name,a.code FROM withdrawals w
            JOIN agents a ON a.id=w.agent_id JOIN users u ON u.id=a.user_id
-           ORDER BY w.created_at DESC LIMIT 30"""
+           ORDER BY w.created_at DESC"""
     ).fetchall() if role == "admin" else (
         g.db.execute("SELECT * FROM withdrawals WHERE agent_id=? ORDER BY created_at DESC",
                      (my_agent["id"],)).fetchall() if my_agent else []
     )
     transactions = g.db.execute(
-        "SELECT * FROM wallet_transactions WHERE agent_id=? ORDER BY created_at DESC LIMIT 12",
+        "SELECT * FROM wallet_transactions WHERE agent_id=? ORDER BY created_at DESC",
         (my_agent["id"],)
     ).fetchall() if my_agent else []
     sent_emails = g.db.execute(
-        "SELECT * FROM sent_emails ORDER BY created_at DESC LIMIT 50"
+        "SELECT * FROM sent_emails ORDER BY created_at DESC"
     ).fetchall() if role == "admin" else []
     stats = {
         "bookings": g.db.execute("SELECT COUNT(*) FROM bookings").fetchone()[0],
@@ -1343,7 +1458,7 @@ def dashboard() -> Any:
         "cancelled_bookings": g.db.execute("SELECT COUNT(*) FROM bookings WHERE status='cancelled'").fetchone()[0],
         "pending_withdrawals": g.db.execute("SELECT COUNT(*) FROM withdrawals WHERE status='pending'").fetchone()[0],
         "new_inquiries": g.db.execute("SELECT COUNT(*) FROM contact_inquiries WHERE status='new'").fetchone()[0],
-        "sent_emails_count": len(sent_emails) if role == "admin" else 0,
+        "sent_emails_count": g.db.execute("SELECT COUNT(*) FROM sent_emails").fetchone()[0] if role == "admin" else 0,
         "review_count": g.db.execute("SELECT COUNT(*) FROM reviews").fetchone()[0],
         "active_packages": g.db.execute("SELECT COUNT(*) FROM packages WHERE status='active'").fetchone()[0],
         "total_packages": g.db.execute("SELECT COUNT(*) FROM packages").fetchone()[0],
@@ -1372,7 +1487,7 @@ def dashboard() -> Any:
         ).fetchall()
     logs = g.db.execute(
         """SELECT l.*,u.name AS actor FROM audit_logs l LEFT JOIN users u ON u.id=l.actor_id
-           ORDER BY l.created_at DESC LIMIT 12"""
+           ORDER BY l.created_at DESC"""
     ).fetchall() if role == "admin" else []
     inquiries = g.db.execute(
         "SELECT * FROM contact_inquiries ORDER BY CASE status WHEN 'new' THEN 0 ELSE 1 END, created_at DESC"
@@ -1381,7 +1496,7 @@ def dashboard() -> Any:
         """SELECT r.rating,r.body,r.created_at,u.name,p.title AS package_title
            FROM reviews r JOIN users u ON u.id=r.customer_id
            JOIN bookings b ON b.id=r.booking_id JOIN packages p ON p.id=b.package_id
-           ORDER BY r.created_at DESC LIMIT 50"""
+           ORDER BY r.created_at DESC"""
     ).fetchall() if role == "admin" else []
 
     # Graphical analytics queries for Executive Dashboard
@@ -1410,7 +1525,7 @@ def dashboard() -> Any:
            FROM agents a
            JOIN users u ON u.id=a.user_id
            LEFT JOIN bookings b ON b.agent_id=a.id AND b.status != 'cancelled'
-           GROUP BY a.id ORDER BY total_volume DESC, booking_count DESC LIMIT 5"""
+           GROUP BY a.id ORDER BY total_volume DESC, booking_count DESC LIMIT 10"""
     ).fetchall() if role == "admin" else []
 
     # Multi-tier hierarchy, approvals, and double-entry ledger queries
@@ -1448,7 +1563,7 @@ def dashboard() -> Any:
                   (SELECT COUNT(*) FROM ledger_entries WHERE transaction_id = lt.id) AS entries_count
            FROM ledger_transactions lt
            LEFT JOIN bookings b ON b.id = lt.booking_id
-           ORDER BY lt.created_at DESC LIMIT 30"""
+           ORDER BY lt.created_at DESC"""
     ).fetchall() if role == "admin" else []
 
     my_sponsor = None
@@ -1479,7 +1594,7 @@ def dashboard() -> Any:
                JOIN ledger_transactions lt ON lt.id = le.transaction_id
                LEFT JOIN bookings b ON b.id = lt.booking_id
                WHERE le.agent_id = ?
-               ORDER BY le.created_at DESC LIMIT 50""",
+               ORDER BY le.created_at DESC""",
             (my_agent["id"],)
         ).fetchall()
 
@@ -1502,9 +1617,10 @@ def dashboard() -> Any:
 
     stats["pending_partners"] = len(pending_partners) if role == "admin" else 0
     stats["total_active_partners"] = len(hierarchy_agents) if role == "admin" else 0
+    retention_summary = build_retention_summary(g.db) if role == "admin" else None
 
     return render_template(
-        "dashboard.html", view=view, packages=packages, all_packages=all_packages, bookings=bookings, stats=stats,
+        "dashboard.html", view=view, period=period, packages=packages, all_packages=all_packages, bookings=bookings, stats=stats,
         my_agent=my_agent, agents=agents, rules=rules, withdrawals=withdrawals,
         transactions=transactions, balance=balance, reserved=reserved,
         available_balance=max(0, balance - reserved), team=team, logs=logs,
@@ -1515,7 +1631,7 @@ def dashboard() -> Any:
         ledger_transactions_list=ledger_transactions_list, my_sponsor=my_sponsor,
         downline_recruits=downline_recruits, ledger_earnings=ledger_earnings,
         total_direct_commissions=total_direct_commissions, total_overrides=total_overrides,
-        total_withdrawn=total_withdrawn,
+        total_withdrawn=total_withdrawn, retention_summary=retention_summary,
     )
 
 
@@ -1532,6 +1648,60 @@ def sync_live_data() -> Any:
         })
     flash(f"Database synchronized successfully at {now_str}. All operational metrics updated.", "success")
     return redirect(url_for("dashboard", view="overview"))
+
+
+@app.post("/admin/backup")
+@roles_required("admin")
+def manual_backup() -> Any:
+    """Create an immediate durable SQLite snapshot backup."""
+    backup_path = create_sqlite_backup(tag="manual")
+    if backup_path:
+        with g.db:
+            audit(f"Full database backup snapshot created ({backup_path.name})", "system", "backup")
+        flash(f"Permanent database snapshot created: {backup_path.name}", "success")
+    else:
+        flash("Could not create backup snapshot right now.", "error")
+    return redirect(safe_local_next(request.form.get("return_to")) or url_for("dashboard", view="audit"))
+
+
+@app.get("/admin/export-data")
+@roles_required("admin")
+def export_all_data() -> Response:
+    """Export all TravelEasy ERP tables permanently as a JSON archive."""
+    export_payload: dict[str, Any] = {
+        "exported_at": datetime.utcnow().isoformat() + "Z",
+        "retention_policy": f"permanent (>={DATA_RETENTION_DAYS} days, no auto-expiry)",
+        "tables": {},
+    }
+    tables = [
+        ("users", "SELECT id, name, email, role, created_at FROM users ORDER BY id"),
+        ("agents", "SELECT * FROM agents ORDER BY id"),
+        ("packages", "SELECT * FROM packages ORDER BY id"),
+        ("package_details", "SELECT * FROM package_details ORDER BY package_id"),
+        ("bookings", "SELECT * FROM bookings ORDER BY id"),
+        ("commission_rules", "SELECT * FROM commission_rules ORDER BY level"),
+        ("wallet_transactions", "SELECT * FROM wallet_transactions ORDER BY id"),
+        ("withdrawals", "SELECT * FROM withdrawals ORDER BY id"),
+        ("ledger_accounts", "SELECT * FROM ledger_accounts ORDER BY id"),
+        ("ledger_transactions", "SELECT * FROM ledger_transactions ORDER BY id"),
+        ("ledger_entries", "SELECT * FROM ledger_entries ORDER BY id"),
+        ("sent_emails", "SELECT * FROM sent_emails ORDER BY id"),
+        ("reviews", "SELECT * FROM reviews ORDER BY id"),
+        ("contact_inquiries", "SELECT * FROM contact_inquiries ORDER BY id"),
+        ("audit_logs", "SELECT * FROM audit_logs ORDER BY id"),
+    ]
+    for name, sql in tables:
+        export_payload["tables"][name] = [dict(r) for r in g.db.execute(sql).fetchall()]
+
+    with g.db:
+        audit("Full ERP JSON archive exported by Admin", "system", "export")
+
+    filename = f"traveleasy_full_archive_{date.today().isoformat()}.json"
+    return Response(
+        json.dumps(export_payload, indent=2, ensure_ascii=False),
+        mimetype="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/inquiries/<int:inquiry_id>/resolve")

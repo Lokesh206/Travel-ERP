@@ -38,8 +38,70 @@
   }
 
   /* Smooth momentum scrolling for all touch areas */
-  .table-panel, .admin-table-wrap, .gallery-marquee-viewport, .marquee-viewport {
+  .table-panel, .table-scroll, .admin-table-wrap, .gallery-marquee-viewport, .marquee-viewport {
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Constrain panels so tables scroll inside without stretching the page */
+  .panel, .table-panel, .form-panel, .chart-card {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Stack inline multi-column dashboard grids cleanly on mobile */
+  .content-grid,
+  .partner-split-grid,
+  .guide-arch-grid,
+  .book-client-grid-2,
+  .book-client-grid-3,
+  .wallet-bank-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .book-client-submit-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .book-client-submit-bar .button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .agent-welcome-banner {
+    padding: 18px 16px !important;
+    gap: 14px !important;
+  }
+
+  .agent-welcome-banner > div:last-child {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .agent-welcome-banner .button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .guide-hero {
+    padding: 20px 16px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+
+  .retention-actions-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .retention-actions-row .button,
+  .retention-actions-row form,
+  .retention-actions-row button {
+    width: 100% !important;
+    justify-content: center !important;
   }
 }
 
@@ -467,8 +529,9 @@
   }
 
   /* Smooth horizontal scroll wrapper for wide tables */
-  .admin-table-wrap, .table-wrap {
+  .table-scroll, .admin-table-wrap, .table-wrap {
     width: 100% !important;
+    max-width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     border-radius: 8px;
@@ -778,9 +841,33 @@
    9. Printable Voucher (booking_voucher.html) Mobile Polish
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
+  body {
+    padding: 12px !important;
+  }
+
+  .voucher-actions-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .voucher-actions-bar > div {
+    display: flex !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .voucher-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+    font-size: 12.5px !important;
+  }
+
+  .voucher-card,
   .voucher-container {
-    margin: 12px auto !important;
-    padding: 18px 14px !important;
+    margin: 8px auto !important;
     border-radius: 12px !important;
     box-shadow: none !important;
     border: 1px solid #e1e8e2 !important;
@@ -789,12 +876,31 @@
   .voucher-header {
     flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 10px !important;
+    gap: 12px !important;
+    padding: 20px 16px !important;
   }
 
-  .voucher-grid-2col {
+  .voucher-body {
+    padding: 16px !important;
+  }
+
+  .date-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 14px !important;
+  }
+
+  .voucher-grid,
+  .voucher-grid-2col,
+  .inclusions-list,
+  .voucher-footer {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
+  }
+
+  .voucher-footer {
+    padding: 18px 16px !important;
   }
 
   .voucher-floating-action-bar {
@@ -951,8 +1057,8 @@
     padding: 0 16px !important;
   }
   .traveleasy-logo-img {
-    height: 38px !important;
-    max-height: 40px !important;
+    height: 42px !important;
+    max-height: 44px !important;
   }
   .traveleasy-nav {
     display: none !important;
@@ -1112,5 +1218,204 @@
     width: 100% !important;
     min-height: 46px !important;
     justify-content: center !important;
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   11. Complete Mobile View Across Public, Trip Details, Partner & Referral Pages
+   -------------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .traveleasy-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    padding: 0 16px !important;
+    height: 64px !important;
+  }
+
+  .traveleasy-header .mobile-menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f2942;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .traveleasy-nav {
+    display: none !important;
+    position: absolute !important;
+    top: 64px !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    border-bottom: 2px solid #095ec2 !important;
+    padding: 14px 20px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    box-shadow: 0 14px 30px rgba(15, 41, 66, 0.14) !important;
+    z-index: 999 !important;
+  }
+
+  .traveleasy-nav.nav-open {
+    display: flex !important;
+  }
+
+  .traveleasy-nav .nav-item {
+    padding: 10px 4px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    font-size: 15px !important;
+  }
+
+  .section-heading > div[style*="text-align: right"] {
+    text-align: left !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Trip Details mobile polish */
+  .trip-top-nav-wrap {
+    padding: 10px 14px !important;
+    overflow-x: auto !important;
+  }
+
+  .breadcrumbs-list {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    font-size: 11.5px !important;
+  }
+
+  .trip-layout-grid {
+    padding: 14px 12px 36px !important;
+    gap: 18px !important;
+  }
+
+  .trip-booking-panel,
+  .trip-booking-card {
+    padding: 16px 14px !important;
+  }
+
+  .trip-booking-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .payment-tabs-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  .upi-apps-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  .header-user-actions {
+    gap: 6px !important;
+  }
+
+  .btn-header-login,
+  .header-login-btn {
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+    min-height: 38px !important;
+  }
+
+  /* Partner Register & Status pages mobile polish */
+  .register-header,
+  .status-header {
+    padding: 10px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .register-nav {
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .register-nav .nav-link-item {
+    font-size: 12.5px !important;
+  }
+
+  .register-hero {
+    padding: 28px 16px 36px !important;
+  }
+
+  .register-hero h1 {
+    font-size: 26px !important;
+  }
+
+  .progress-ribbon {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .register-container {
+    padding: 0 12px 32px !important;
+  }
+
+  .register-card {
+    padding: 18px 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .status-main {
+    padding: 18px 12px !important;
+  }
+
+  .status-card-header {
+    padding: 28px 18px 22px !important;
+  }
+
+  .status-card-body {
+    padding: 18px 16px !important;
+  }
+
+  .status-badge-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  /* Referral Program page mobile polish */
+  .ref-hero-section {
+    padding: 36px 16px 42px !important;
+  }
+
+  .ref-hero-title {
+    font-size: 32px !important;
+    line-height: 1.15 !important;
+  }
+
+  .ref-hero-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .ref-hero-actions a,
+  .ref-hero-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .ref-section {
+    padding: 36px 14px !important;
+  }
+
+  .partner-modal-header {
+    padding: 18px 16px !important;
+  }
+
+  .partner-apply-form {
+    padding: 18px 16px !important;
   }
 }

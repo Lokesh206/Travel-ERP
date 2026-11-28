@@ -8,6 +8,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>{{ 'Create account' if register else 'Sign In to TravelEasy Travel Desk' }} · TravelEasy</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='traveleasy-icon-192.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +17,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
   <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}?v=7">
   <link rel="stylesheet" href="{{ url_for('static', filename='enhancements.css') }}?v=7">
-  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=3">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}?v=4">
 </head>
 <body class="auth-page">
   <main class="auth-shell">
@@ -23,7 +25,9 @@
     <section class="auth-art">
       <div class="auth-art-header">
         <a class="brand brand-light" href="{{ url_for('public_home') }}">
-          <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 40px; filter: brightness(0) invert(1);">
+          <span style="background: #ffffff; padding: 7px 15px; border-radius: 12px; display: inline-flex; align-items: center; box-shadow: 0 6px 18px rgba(0,0,0,0.25);">
+            <img src="{{ url_for('static', filename='traveleasy-logo.png') }}?v=2" alt="TravelEasy · Travel around the world" style="height: 44px; width: auto; display: block;">
+          </span>
         </a>
         <span class="auth-badge-pill">★ TRAVEL AROUND THE WORLD</span>
       </div>
@@ -49,6 +53,9 @@
     <section class="auth-form-side">
       <div class="auth-form-wrap">
         <div class="auth-form-header">
+          <a href="{{ url_for('public_home') }}" style="display: inline-block; margin-bottom: 10px;" title="TravelEasy · Travel around the world">
+            <img src="{{ url_for('static', filename='traveleasy-logo.png') }}?v=2" alt="TravelEasy · Travel around the world" style="height: 44px; width: auto; display: block;">
+          </a>
           <span class="eyebrow" style="color: #49634e; font-weight: 700;">{{ 'YOUR NEXT CHAPTER' if register else 'WORKSPACE ACCESS' }}</span>
           <h2>{{ 'Create your account.' if register else 'Welcome back.' }}</h2>
           <p>{{ 'Join us to reserve handcrafted Indian journeys.' if register else 'Sign in to access your travel desk, bookings, and earnings.' }}</p>

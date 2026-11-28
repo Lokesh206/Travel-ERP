@@ -2415,11 +2415,28 @@
 }
 
 .traveleasy-logo-img {
-  height: 48px;
-  max-height: 52px;
+  height: 54px;
+  max-height: 58px;
   width: auto;
   object-fit: contain;
   display: block;
+}
+
+.traveleasy-logo-dark-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 8px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+
+.traveleasy-logo-dark-badge img {
+  height: 46px;
+  width: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .traveleasy-nav {

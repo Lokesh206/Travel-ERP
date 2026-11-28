@@ -4,14 +4,16 @@
   "description": "Travel around the world with TravelEasy. Thoughtfully planned tours, upcoming departure schedules, and verified bookings.",
   "icons": [
     {
-      "src": "/static/gallery-monument.jpg",
-      "type": "image/jpeg",
-      "sizes": "192x192"
+      "src": "/static/traveleasy-icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
-      "src": "/static/login-bg-india.jpg",
-      "type": "image/jpeg",
-      "sizes": "512x512"
+      "src": "/static/traveleasy-icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",

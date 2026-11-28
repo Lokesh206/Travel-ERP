@@ -432,18 +432,42 @@ def run_seed():
     ]
 
     for p in packages_data:
-        existing = db.execute("SELECT id FROM packages WHERE title=?", (p["title"],)).fetchone()
+        existing = db.execute(
+            "SELECT id, origin, original_price_paise, upcoming_dates, trust_text, image_file, official_url, activities FROM packages WHERE title=?",
+            (p["title"],),
+        ).fetchone()
         if existing:
             pkg_id = existing["id"]
+            # Preserve live user-facing pricing, capacity, status, and real reserved seat counts!
+            # Only backfill missing metadata columns so restarts never wipe live reservations.
             db.execute(
-                """UPDATE packages SET destination=?, category=?, description=?, duration=?,
-                                      price_paise=?, capacity=?, reserved=?, image_file=?, official_url=?, activities=?,
-                                      origin=?, original_price_paise=?, upcoming_dates=?, trust_text=?
+                """UPDATE packages
+                   SET origin = COALESCE(NULLIF(origin, ''), ?),
+                       original_price_paise = CASE WHEN COALESCE(original_price_paise, 0) = 0 THEN ? ELSE original_price_paise END,
+                       upcoming_dates = COALESCE(NULLIF(upcoming_dates, ''), ?),
+                       trust_text = COALESCE(NULLIF(trust_text, ''), ?),
+                       image_file = COALESCE(NULLIF(image_file, ''), ?),
+                       official_url = COALESCE(NULLIF(official_url, ''), ?),
+                       activities = COALESCE(NULLIF(activities, ''), ?)
                    WHERE id=?""",
-                (p["destination"], p["category"], p["description"], p["duration"],
-                 p["price_paise"], p["capacity"], p["reserved"], p["image_file"], p["official_url"], p["activities"],
-                 p["origin"], p["original_price_paise"], p["upcoming_dates"], p["trust_text"], pkg_id),
+                (
+                    p["origin"],
+                    p["original_price_paise"],
+                    p["upcoming_dates"],
+                    p["trust_text"],
+                    p["image_file"],
+                    p["official_url"],
+                    p["activities"],
+                    pkg_id,
+                ),
             )
+            has_details = db.execute("SELECT 1 FROM package_details WHERE package_id=?", (pkg_id,)).fetchone()
+            if not has_details:
+                db.execute(
+                    """INSERT INTO package_details(package_id, stay_type, meal_plan, transport, inclusions, itinerary)
+                       VALUES(?,?,?,?,?,?)""",
+                    (pkg_id, *p["details"]),
+                )
         else:
             cur = db.execute(
                 """INSERT INTO packages(title, destination, category, description, duration,
@@ -455,15 +479,14 @@ def run_seed():
                  p["origin"], p["original_price_paise"], p["upcoming_dates"], p["trust_text"]),
             )
             pkg_id = cur.lastrowid
-
-        db.execute(
-            """INSERT OR REPLACE INTO package_details(package_id, stay_type, meal_plan, transport, inclusions, itinerary)
-               VALUES(?,?,?,?,?,?)""",
-            (pkg_id, *p["details"]),
-        )
+            db.execute(
+                """INSERT OR REPLACE INTO package_details(package_id, stay_type, meal_plan, transport, inclusions, itinerary)
+                   VALUES(?,?,?,?,?,?)""",
+                (pkg_id, *p["details"]),
+            )
 
     db.commit()
-    print("TravelEasy packages seeded with diverse destinations, 5-month schedules, and 0 fake bookings!")
+    print("TravelEasy packages verified (live reservations and user data preserved permanently).")
     db.close()
 
 if __name__ == "__main__":

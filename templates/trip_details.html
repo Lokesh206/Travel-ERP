@@ -9,6 +9,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="{{ package.title }} — trip duration, stays, meals, activities and online booking.">
   <title>{{ package.title }} · TravelEasy</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='traveleasy-icon-192.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -892,10 +894,10 @@
   <!-- Unified TravelEasy Header -->
   <header class="traveleasy-header">
     <a class="traveleasy-brand" href="{{ url_for('public_home') }}" title="TravelEasy · Travel around the world">
-      <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy Logo">
+      <img src="{{ url_for('static', filename='traveleasy-logo.png') }}?v=2" alt="TravelEasy · Travel around the world" class="traveleasy-logo-img">
     </a>
 
-    <nav class="traveleasy-nav" aria-label="Main navigation">
+    <nav class="traveleasy-nav" id="traveleasy-nav-menu" aria-label="Main navigation">
       <a class="nav-item" href="{{ url_for('public_home') }}">Home</a>
       <a class="nav-item" href="{{ url_for('public_home', region='domestic') }}#trips">Domestic ⌵</a>
       <a class="nav-item" href="{{ url_for('public_home', region='international') }}#trips">International ⌵</a>
@@ -917,6 +919,7 @@
           <span>♟</span> Login / Register
         </a>
       {% endif %}
+      <button type="button" class="mobile-menu-toggle" aria-label="Toggle navigation" aria-expanded="false" onclick="toggleNavMenu()">☰</button>
     </div>
   </header>
 
@@ -1195,7 +1198,7 @@
             {% endif %}
 
             <!-- Departure and Return / Checkout Dates Linked -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="trip-booking-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
               <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
                 Departure / Start Date
                 <input name="travel_date" id="start-date-input" class="date-input-field" type="date" min="{{ today }}" value="{{ initial_travel_date }}" required onchange="handleStartDateChange(this.value)" oninput="handleStartDateChange(this.value)">
@@ -1214,7 +1217,7 @@
             </div>
 
             <!-- Traveller & E-Ticket Recipient Details -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div class="trip-booking-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
               <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
                 Lead Traveller Name
                 <input name="guest_name" type="text" placeholder="Full Name" value="{% if g.user %}{{ g.user.name }}{% endif %}" required style="height: 40px; font-size: 12.5px; border-radius: 8px; border: 1.5px solid #cbd5e1; padding: 6px 10px; width: 100%;">
@@ -1323,7 +1326,7 @@
               </label>
 
               <!-- Payment Tabs Selector -->
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px;">
+              <div class="payment-tabs-row" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px;">
                 <button type="button" class="payment-tab-btn active" id="tab-btn-upi" onclick="switchPaymentTab('upi')">
                   ⚡ UPI / QR
                 </button>
@@ -1393,7 +1396,7 @@
                   </div>
 
                   <!-- Direct Mobile App Launchers -->
-                  <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                  <div class="upi-apps-row" style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
                     <button type="button" onclick="triggerUpiIntent('Google Pay', 'gpay')" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 2px; font-size: 10px; font-weight: 700; color: #1e293b; cursor: pointer;">
                       🟢 GPay
                     </button>
@@ -1487,7 +1490,7 @@
           </div>
           {% endif %}
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div class="trip-booking-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
             <label style="margin-bottom: 0; font-size: 11.5px; font-weight: 700; color: #334155;">
               Departure / Start Date
               <input name="travel_date" id="start-date-input" class="date-input-field" type="date" min="{{ today }}" value="{{ initial_travel_date }}" required onchange="handleStartDateChange(this.value)" oninput="handleStartDateChange(this.value)">
@@ -1540,7 +1543,9 @@
   <footer class="traveleasy-footer">
     <div class="footer-container">
       <div>
-        <img src="{{ url_for('static', filename='traveleasy-logo.png') }}" alt="TravelEasy" style="height: 44px; filter: brightness(0) invert(1); margin-bottom: 14px;">
+        <span style="background: #ffffff; padding: 8px 16px; border-radius: 12px; display: inline-flex; align-items: center; margin-bottom: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.22);">
+          <img src="{{ url_for('static', filename='traveleasy-logo.png') }}?v=2" alt="TravelEasy · Travel around the world" style="height: 46px; width: auto; display: block;">
+        </span>
         <p style="font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin: 0;">
           TravelEasy · Travel around the world.<br>
           Philippines, Kashmir, Dubai, Bali, Goa, Kerala, Agra, Amritsar, Kevadia, Thailand &amp; beyond.
@@ -1804,6 +1809,15 @@
         upiInput.value = `traveller@ok${handle}`;
       }
       alert(`Opening ${appName} UPI Intent for instant verified payment to TravelEasy.`);
+    }
+
+    function toggleNavMenu() {
+      const nav = document.getElementById('traveleasy-nav-menu');
+      const toggle = document.querySelector('.mobile-menu-toggle');
+      if (!nav) return;
+      const isOpen = nav.classList.contains('nav-open');
+      nav.classList.toggle('nav-open', !isOpen);
+      if (toggle) toggle.setAttribute('aria-expanded', String(!isOpen));
     }
 
     function simulateQrScan() {
